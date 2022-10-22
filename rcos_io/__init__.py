@@ -1,10 +1,11 @@
 import os
+from typing import Dict
 
 from flask import Flask, render_template
 from rcos_io.auth import login_required
 
 
-def create_app(test_config=None):
+def create_app(test_config: Dict[str, str | bool] | None = None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(

@@ -2,6 +2,7 @@ import functools
 import random
 import string
 from flask import (
+    current_app,
     Blueprint,
     g,
     redirect,
@@ -41,10 +42,13 @@ def login():
         otp = generate_otp()
         session["user_otp"] = otp
 
-        # Send it to the user via email
-        # send_otp_to_email(user_email, otp)
-
-        print("OTP:", otp)
+        if current_app.config.get('TESTING'):
+            print("OTP:", otp)
+        else:
+            # Send it to the user via email
+            # send_otp_to_email(user_email, otp)
+            print("OTP:", otp) # TODO: remove
+            pass
 
         # Render OTP form for user to enter OTP
         return render_template("auth/otp.html", user_email=user_email)
@@ -77,7 +81,7 @@ def otp():
 
     # Find or creat the user from the email entered
     # user = find_or_create_user_by_email(user_email)
-    # session['user_id'] = user['id]
+    # session['user_id'] = user['id']
     session["user_id"] = "fakeid"
 
     # Go home OR to the desired path the user tried going to before login
