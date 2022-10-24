@@ -2,7 +2,10 @@ import functools
 import os
 import random
 import string
+from typing import Any, Dict
 from urllib.error import HTTPError
+
+from rcos_io.db import find_or_create_user_by_email
 from .discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
 from flask import (
     current_app,
@@ -23,13 +26,16 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 @bp.before_app_request
 def load_logged_in_user():
     """Set global user variables `is_logged_in` and `user` for access in views and templates."""
-    user_id: str | None = session.get("user_id")
+    user: Dict[str, Any] | None = session.get("user")
 
-    g.is_logged_in = user_id is not None
-    if user_id is None:
+    g.is_logged_in = user is not None
+    if user is None:
         g.user = None
     else:
-        g.user = {"id": user_id}
+        g.user = user
+
+    print(g.user)
+    print(session)
 
 
 def login_required(view):
@@ -89,7 +95,7 @@ def otp():
     """
     Finish the login process by checking that the submitted OTP matches the OTP sent to the user.
 
-    Sets `user_id` in the session on success, and flashes, resets session, and redirects to login on fail.
+    Sets `user` in the session on success, and flashes, resets session, and redirects to login on fail.
     """
 
     # Grab the OTP from the submitted form
@@ -102,6 +108,10 @@ def otp():
 
     session.clear()
 
+    if user_otp is None or user_email is None:
+        flash("There was an error logging you in. Please try again later.", "danger")
+        return
+
     # Check that OTP matches and flash error and go back to login if wrong OTP
     if submitted_otp != user_otp:
         flash("Wrong one-time password!", "danger")
@@ -110,9 +120,10 @@ def otp():
     # Correct OTP, time to login!
 
     # Find or creat the user from the email entered
-    # user = find_or_create_user_by_email(user_email)
-    # session['user_id'] = user['id']
-    session["user_id"] = "fakeid"
+    user = find_or_create_user_by_email(
+        user_email, "student" if "@rpi.edu" in user_email else "external"
+    )
+    session["user"] = user
 
     # Go home OR to the desired path the user tried going to before login
     if redirect_to:
