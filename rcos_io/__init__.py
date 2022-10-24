@@ -1,9 +1,11 @@
 import os
 from typing import Dict
+from dotenv import load_dotenv
 
 from flask import Flask, render_template
 from rcos_io.auth import login_required
 
+load_dotenv()
 
 def create_app(test_config: Dict[str, str | bool] | None = None):
     # create and configure the app
