@@ -200,7 +200,7 @@ def discord_callback():
 
 ##################################################################
 
-DEFAULT_OTP_LENGTH = 8
+DEFAULT_OTP_LENGTH = 4
 
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
