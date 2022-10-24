@@ -1,23 +1,29 @@
 {% extends "base.html" %} {% block content %}
 <div class="container">
-  <h1 class="mb-3">Login</h1>
+  {# Choose the proper heading to display based on the role #} {% if role ==
+  "student" %}
+  <h1>Login as RPI Student</h1>
+  {% elif role == "external" %}
+  <h1>Login as Guest</h1>
+  {% else %}
+  <h1>Login via Email</h1>
+  {% endif %}
+  <h3>You'll be sent a one-time password to complete your login</h3>
 
   {% include 'flashed_messages.html' %}
 
-  <div class="alert alert-warning" role="alert">
-    <strong>RPI students and faculty:</strong> Use your
-    <strong>@rpi.edu</strong> email address!
-  </div>
-  <form action="/auth/login" method="POST">
+  <form class="mt-4" action="/auth/login" method="POST">
     <div class="mb-3">
-      <input
-        class="form-control"
-        type="email"
-        name="email"
-        id="email"
-        placeholder="Your email"
-        required
-      />
+      <label for="email" class="form-label">
+        {% if role == 'student' %}Your RPI Email Address{% else %}Your Email
+        Address{% endif %}
+      </label>
+
+      {# Set the proper attributes based on role #} <input class="form-control"
+      type="email" name="email" id="email" placeholder="{% if role == 'student'
+      %}user@rpi.edu{% else %}user@example.com{% endif %}" {% if role=='student'
+      %}pattern="^[A-Za-z0-9._%+-]+@rpi\.edu$" {% endif %} title="{% if role ==
+      'student' %}Use your @rpi.edu email address!{% endif %}" required />
     </div>
   </form>
 </div>

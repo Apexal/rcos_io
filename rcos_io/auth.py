@@ -1,4 +1,5 @@
 import functools
+import os
 import random
 import string
 from flask import (
@@ -19,8 +20,10 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @bp.before_app_request
 def load_logged_in_user():
+    '''Set global user variables `is_logged_in` and `user` for access in views and templates.'''
     user_id: str | None = session.get("user_id")
 
+    g.is_logged_in = user_id is not None
     if user_id is None:
         g.user = None
     else:
@@ -30,25 +33,27 @@ def load_logged_in_user():
 @bp.route("/login", methods=("GET", "POST"))
 def login():
     if request.method == "GET":
+        # Check if user tried to go to website that requires auth and was redirected to login
         if request.args.get("redirect_to"):
+            # Store the page they wanted to get to in the session, to use after successful login
             session["redirect_to"] = request.args.get("redirect_to")
 
-        return render_template("auth/login.html")
+        # "role" could be "student" or "external" to determine what to show on login page
+        return render_template("auth/login.html", role=request.args.get("role"))
     elif request.method == "POST":
         user_email = request.form["email"]
         session["user_email"] = user_email
 
-        # Generate OTP
+        # Generate and store OTP
         otp = generate_otp()
         session["user_otp"] = otp
 
-        if current_app.config.get('TESTING'):
-            print("OTP:", otp)
-        else:
+        if os.environ.get('ENV') == 'production':
             # Send it to the user via email
             # send_otp_to_email(user_email, otp)
-            print("OTP:", otp) # TODO: remove
             pass
+    
+        current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
 
         # Render OTP form for user to enter OTP
         return render_template("auth/otp.html", user_email=user_email)
@@ -75,7 +80,7 @@ def otp():
     # Check that OTP matches and flash error and go back to login if wrong OTP
     if submitted_otp != user_otp:
         flash("Wrong one-time password!", "danger")
-        redirect(url_for("auth.login"))
+        return redirect(url_for("auth.login"))
 
     # Correct OTP, time to login!
 
