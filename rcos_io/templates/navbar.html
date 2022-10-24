@@ -1,3 +1,11 @@
+{% macro nav_item(name, href) -%}
+<a
+  class="nav-link {%if request.path == href or (href != '/' and href in request.path) %}active{% endif %}"
+  href="{{ href }}"
+  >{{name}}</a
+>
+{%- endmacro %}
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
     <a class="navbar-brand" href="#">RCOS I/O</a>
@@ -14,10 +22,8 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav me-auto">
-        <a class="nav-link active" aria-current="page" href="/">Home</a>
-        <a class="nav-link" href="#">Projects</a>
-        <a class="nav-link" href="#">Members</a>
-        <a class="nav-link" href="#">Meetings</a>
+        {{ nav_item("Home", "/") }} {{ nav_item("Projects", "/projects") }} {{
+        nav_item("Meetings", "#") }}
         <a class="nav-link" href="https://handbook.rcos.io" target="_blank"
           >Handbook</a
         >

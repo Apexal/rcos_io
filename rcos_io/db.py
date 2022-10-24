@@ -1,10 +1,8 @@
-import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-GQL_API_URL = os.environ.get("GQL_API_URL")
-HASURA_ADMIN_SECRET = os.environ.get("HASURA_ADMIN_SECRET")
+from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
 
 transport = RequestsHTTPTransport(
     url=GQL_API_URL,
@@ -108,6 +106,8 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         query, variable_values={"user_id": user_id, "updates": updates}
     )["update_users"]["returning"][0]
     return user
+
+
 
 def get_project(project_id: str) -> Dict[str, Any] | None:
     query = gql(

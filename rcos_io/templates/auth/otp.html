@@ -8,6 +8,8 @@
 
   {% include 'flashed_messages.html' %}
 
+  <!-- OTP for testing: {{ otp }} -->
+
   <form action="{{ url_for('auth.otp') }}" method="POST">
     <input
       class="form-control"

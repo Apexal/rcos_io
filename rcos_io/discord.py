@@ -1,14 +1,16 @@
 from typing import Any, Dict
 import requests
-import os
+from rcos_io.settings import (
+    DISCORD_BOT_TOKEN,
+    DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET,
+    DISCORD_REDIRECT_URL,
+    DISCORD_SERVER_ID,
+)
 
 DISCORD_VERSION_NUMBER = "10"
 DISCORD_API_ENDPOINT = f"https://discord.com/api/v{DISCORD_VERSION_NUMBER}"
-DISCORD_REDIRECT_URL = os.environ.get("DISCORD_REDIRECT_URL")
-DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID")
-DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET")
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN")
-DISCORD_SERVER_ID = os.environ.get("DISCORD_SERVER_ID")
+
 
 # See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
 DISCORD_AUTH_URL = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URL}&response_type=code&scope=identify%20guilds.join&prompt=none"
