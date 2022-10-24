@@ -87,3 +87,24 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
     )["insert_users"]["returning"][0]
 
     return user
+
+
+def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    """Update a user with the given ID and the given updates. Returns basic user data."""
+    query = gql(
+        BASIC_USER_DATA_FRAGMENT_INLINE
+        + """
+    mutation update_user($user_id: uuid!, $updates: users_set_input!) {
+      update_users(_set: $updates, where: { id :{_eq: $user_id}}) {
+        returning {
+          ...basicUser
+        }
+      }
+    }
+    """
+    )
+
+    user = client.execute(
+        query, variable_values={"user_id": user_id, "updates": updates}
+    )["update_users"]["returning"][0]
+    return user

@@ -5,7 +5,7 @@ import string
 from typing import Any, Dict
 from urllib.error import HTTPError
 
-from rcos_io.db import find_or_create_user_by_email
+from rcos_io.db import find_or_create_user_by_email, update_user_by_id
 from .discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
 from flask import (
     current_app,
@@ -173,6 +173,16 @@ def discord_callback():
 
     # Extract and store Discord user id on user in database
     discord_user_id = discord_user_info["id"]
+
+    try:
+        session["user"] = update_user_by_id(
+            g.user["id"], {"discord_user_id": discord_user_id}
+        )
+        g.user = session["user"]
+    except Exception as e:
+        flash("Yikes! Failed to save your Discord link.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
 
     flash_message = f"Linked Discord account @{discord_user_info['username']}#{discord_user_info['discriminator']}"
 

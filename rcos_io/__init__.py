@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from flask import Flask, render_template
 from rcos_io.auth import login_required
+import rcos_io.db
 
 load_dotenv()
 
@@ -11,17 +12,7 @@ load_dotenv()
 def create_app(test_config: Dict[str, str | bool] | None = None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY="dev",
-        DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
-    )
-
-    if test_config is None:
-        # load the instance config, if it exists, when not testing
-        app.config.from_pyfile("config.py", silent=True)
-    else:
-        # load the test config if passed in
-        app.config.from_mapping(test_config)
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
     # ensure the instance folder exists
     try:
@@ -29,11 +20,12 @@ def create_app(test_config: Dict[str, str | bool] | None = None):
     except OSError:
         pass
 
-    # a simple page that says hello
+    # Temporary home route
     @app.route("/")
     def index():
         return render_template("index.html")
 
+    # Route for testing log in
     @app.route("/secret")
     @login_required
     def secret():
