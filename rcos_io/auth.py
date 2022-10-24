@@ -2,6 +2,8 @@ import functools
 import os
 import random
 import string
+from urllib.error import HTTPError
+from .discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
 from flask import (
     current_app,
     Blueprint,
@@ -20,7 +22,7 @@ bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 @bp.before_app_request
 def load_logged_in_user():
-    '''Set global user variables `is_logged_in` and `user` for access in views and templates.'''
+    """Set global user variables `is_logged_in` and `user` for access in views and templates."""
     user_id: str | None = session.get("user_id")
 
     g.is_logged_in = user_id is not None
@@ -28,6 +30,29 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = {"id": user_id}
+
+
+def login_required(view):
+    """Flask decorator to require that the user is logged in to access the view.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @login_required
+    def secret():
+        return 'Hello logged in users!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            flash("You must login to view that page!", "danger")
+            return redirect(url_for("auth.login", redirect_to=request.path))
+
+        return view(**kwargs)
+
+    return wrapped_view
 
 
 @bp.route("/login", methods=("GET", "POST"))
@@ -48,11 +73,11 @@ def login():
         otp = generate_otp()
         session["user_otp"] = otp
 
-        if os.environ.get('ENV') == 'production':
+        if os.environ.get("ENV") == "production":
             # Send it to the user via email
             # send_otp_to_email(user_email, otp)
             pass
-    
+
         current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
 
         # Render OTP form for user to enter OTP
@@ -102,6 +127,58 @@ def logout():
     return redirect(url_for("index"))
 
 
+@bp.route("/discord")
+@login_required
+def discord():
+    """Redirects to Discord's auth flow for linking accounts."""
+    return redirect(DISCORD_AUTH_URL)
+
+
+@bp.route("/discord/callback")
+@login_required
+def discord_callback():
+    """
+    The callback URL that Discord redirects to after getting user consent.
+
+    This view:
+    1. Exchanges Discord OAuth2 code for access token
+    2. Fetches Discord user info with the token
+    3. Stores the Discord user id on the user database record.
+    """
+
+    code = request.args.get("code")
+    if code is None:
+        return redirect("/")
+
+    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    try:
+        discord_user_tokens = get_tokens(code)
+        discord_access_token = discord_user_tokens["access_token"]
+        discord_user_info = get_user_info(discord_access_token)
+    except HTTPError as e:
+        flash("Yikes! Failed to link your Discord.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
+
+    # Extract and store Discord user id on user in database
+    discord_user_id = discord_user_info["id"]
+
+    flash_message = f"Linked Discord account @{discord_user_info['username']}#{discord_user_info['discriminator']}"
+
+    # Attempt to add them to the Discord server (will do nothing if already in the server)
+    try:
+        response = add_user_to_server(discord_access_token, discord_user_id)
+        # Was not previously in server and now was added
+        if response.status_code == 201:
+            flash_message += " and added you to the RCOS server!"
+    except HTTPError as e:
+        current_app.logger.exception(e)
+
+    flash(flash_message, "primary")
+
+    return redirect("/")
+
+
 ##################################################################
 
 DEFAULT_OTP_LENGTH = 8
@@ -115,26 +192,3 @@ def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
         otp += random.choice(string.ascii_uppercase)
 
     return otp
-
-
-def login_required(view):
-    """Flask decorator to require that the user is logged in to access the view.
-
-    ```
-    # Example
-    @app.route('/secret')
-    @login_required
-    def secret():
-        return 'Hello logged in users!'
-    ```
-    """
-
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if g.user is None:
-            flash("You must login to view that page!", "danger")
-            return redirect(url_for("auth.login", redirect_to=request.path))
-
-        return view(**kwargs)
-
-    return wrapped_view
