@@ -32,7 +32,9 @@ def create_app(test_config: Dict[str, str | bool] | None = None):
         return "Hello logged in users!"
 
     from . import auth
+    from .views import projects
 
     app.register_blueprint(auth.bp)
+    app.register_blueprint(projects.bp)
 
     return app

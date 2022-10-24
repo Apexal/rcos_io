@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
@@ -108,3 +108,82 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         query, variable_values={"user_id": user_id, "updates": updates}
     )["update_users"]["returning"][0]
     return user
+
+
+
+def get_project(project_id: str) -> Dict[str, Any] | None:
+    query = gql(
+        """
+        query GetProject($pid: uuid!) {
+            projects(limit: 1, where: {id: {_eq: $pid} }) {
+                name
+                tags
+                github_repos
+                id
+                description_markdown
+                enrollments {
+                    user {
+                        rcs_id
+                        first_name
+                        last_name
+                    }
+                    semester {
+                        id
+                    }
+                }
+            }
+        }
+        """
+    )
+
+    result = client.execute(query, variable_values={"pid": project_id})
+    return result["projects"]
+
+def get_all_projects() -> List[Dict[str, Any]]:
+    query = gql(
+        """
+        query {
+            projects(order_by: {name: asc}) {
+                id
+                name
+                github_repos
+            }
+        }
+        """
+    )
+
+    result = client.execute(query, variable_values={})
+    return result["projects"]
+
+
+def get_semester_projects(semester: str, with_enrollments: bool) -> List[Dict[str, Any]]:
+    query = gql(
+        """
+        query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
+          projects(order_by: {name: asc}, where: {enrollments: {_or: [{semester_id: {_eq: $semesterId}}]}}) {
+              id
+              name
+              enrollments @include(if: $withEnrollments) {
+                user {
+                    id
+                    first_name
+                    last_name
+                    graduation_int
+                }
+                is_project_lead
+                credits
+              }
+          }
+        }
+    """
+    )
+
+    result = client.execute(
+        query,
+        variable_values={
+            "semesterId": semester,
+            "withEnrollments": with_enrollments,
+        },
+    )
+
+    return result["projects"]
