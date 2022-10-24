@@ -6,6 +6,7 @@ from typing import Any, Dict
 from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
+from rcos_io.settings import ENV
 from .discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
 from flask import (
     current_app,
@@ -33,9 +34,6 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
-
-    print(g.user)
-    print(session)
 
 
 def login_required(view):
@@ -79,7 +77,7 @@ def login():
         otp = generate_otp()
         session["user_otp"] = otp
 
-        if os.environ.get("ENV") == "production":
+        if ENV == "production":
             # Send it to the user via email
             # send_otp_to_email(user_email, otp)
             pass
@@ -87,7 +85,7 @@ def login():
         current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
 
         # Render OTP form for user to enter OTP
-        return render_template("auth/otp.html", user_email=user_email)
+        return render_template("auth/otp.html", user_email=user_email, otp=otp)
 
 
 @bp.route("/login/otp", methods=("POST",))
@@ -119,7 +117,7 @@ def otp():
 
     # Correct OTP, time to login!
 
-    # Find or creat the user from the email entered
+    # Find or create the user from the email entered
     user = find_or_create_user_by_email(
         user_email, "student" if "@rpi.edu" in user_email else "external"
     )

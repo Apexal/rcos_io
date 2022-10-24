@@ -1,10 +1,8 @@
-import os
 from typing import Any, Dict
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
-GQL_API_URL = os.environ.get("GQL_API_URL")
-HASURA_ADMIN_SECRET = os.environ.get("HASURA_ADMIN_SECRET")
+from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
 
 transport = RequestsHTTPTransport(
     url=GQL_API_URL,
