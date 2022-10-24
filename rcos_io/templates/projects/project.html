@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project['name'] }}{% endblock %}
+
+{% block content %}
+<div class="container">
+	<h2>{{ project['name'] }}</h2>
+	<p>{{ project['description_markdown'] }}</p>
+
+	<h3>Stack</h3>
+	{% if project['tags'] is defined and project['tags'] is not none and project['tags']|length > 0 %}
+		<ul>
+			{% for s in project['tags'] %}
+				<li>{{ s }}</li>
+			{% endfor %}
+		</ul>
+	{% else %}
+		<i>None yet!</i>
+	{% endif %}
+
+
+	<h3>Members</h3>
+	{% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
+		{% for user in project['enrollments'] %}
+			<li>{{ user['user']['first_name'] }} {{ user['user']['last_name'] }} ({{ user['semester']['title'] }})</li>
+		{% endfor %}
+	{% else %}
+		<i>None yet!</i>
+	{% endif %}
+	<!-- {% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
+		{% for semester_title, semester in project['assignments'].items() %}
+			<h4>{{ semester_title }}</h4>
+			<ul>
+				{% for user in semester %}
+					<li>{{ user['user']['first_name'] }} {{ user['user']['last_name'] }} ({{ user['semester']['title'] }})</li>
+				{% endfor %}
+			</ul>
+		{% endfor %}
+	{% else %}
+		<i>None yet!</i>
+	{% endif %} -->
+</div>
+{% endblock %}
