@@ -5,6 +5,7 @@ alert type like 'primary', 'warning', 'danger', etc. We fall back to 'secondary'
 by default. #}
 <div
   class="alert alert-{% if type != 'message' %}{{ type }}{% else %}secondary{% endif %}"
+  role="alert"
 >
   {{ message }}
 </div>
