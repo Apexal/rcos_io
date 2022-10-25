@@ -4,9 +4,9 @@
 
 {% block content %}
 <div class="container">
-	<a href="/projects">Current Projects</a>
-	<a href="/projects/past">Past Projects</a>
-	<a href="/projects/add">Add Project</a>
+	<a href="{{ url_for('projects.current_projects') }}">Current Projects</a>
+	<a href="{{ url_for('projects.past_projects') }}">Past Projects</a>
+	<a href="{{ url_for('projects.add_project') }}">Add Project</a>
 
 	{% for project in projects %}
 	<tr>
