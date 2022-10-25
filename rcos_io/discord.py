@@ -45,7 +45,7 @@ def get_tokens(code: str) -> Dict[str, Any]:
 
 def get_user_info(access_token: str) -> Dict[str, Any]:
     """
-    Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error if failed request.
+    Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error on failed request.
 
     See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
     """
@@ -61,20 +61,49 @@ def get_user_info(access_token: str) -> Dict[str, Any]:
     return user
 
 
-def add_user_to_server(access_token: str, user_id: str, nickname: str | None = None):
+def add_user_to_server(access_token: str, user_id: str):
     """
-    Given a Discord user's id, add them to the RCOS server with the given nickname. Throws an error if failed request.
+    Given a Discord user's id, add them to the RCOS server with the given nickname. Throws an error on failed request.
 
     See https://discord.com/developers/docs/resources/guild#add-guild-member
     """
     data = {
         "access_token": access_token,
     }
-    if nickname:
-        data["nick"] = nickname
     response = requests.put(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         json=data,
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    return response
+
+
+def add_role_to_member(user_id: str, role_id: str):
+    """Add a role (identified by its id) to a server member. Throws an error on failed request."""
+    response = requests.put(
+        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}/roles/{role_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    return response
+
+
+def kick_user_from_server(user_id: str):
+    """Given a Discord user's id, kick them from the RCOS server. Throws an error on failed request."""
+    response = requests.delete(
+        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    return response
+
+
+def set_member_nickname(user_id: str, nickname: str):
+    """Given a Discord user's id, set their nickname on the server. Throws an error on failed request."""
+    response = requests.patch(
+        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
+        json={"nick": nickname},
         headers=HEADERS,
     )
     response.raise_for_status()
