@@ -1,4 +1,5 @@
 # RCOS I/O
+
 The final RCOS web client. Built on the RCOS database via Hasura and an extremely safe and boring Python Flask stack.
 
 # Motivation
@@ -43,8 +44,7 @@ Setup is very straightforward.
 
 ## Deploying
 
-~~The deployment at https://rcos.io automatically deploys on updates to the `main` branch!~~ (will be true)
-
+The test deployment at https://rcos.up.railway.app/ automatically deploys on updates to the `main` branch!
 ## License
 
 MIT
