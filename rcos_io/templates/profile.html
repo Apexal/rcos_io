@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="container">
-  <h1>Your {% if g.user["role"] == "student" %}Student{% endif %} Profile</h1>
+  <h1>Your {% if g.user["role"] == "rpi" %}RPI{% endif %} Profile</h1>
 
   {% include 'flashed_messages.html' %}
 
@@ -44,6 +44,23 @@
         disabled
       />
     </div>
+
+    {% if g.user["role"] == "rpi" %}
+    <div class="mb-3">
+      <label for="graduation_year" class="form-label">Graduation Year</label>
+      <input
+        type="number"
+        name="graduation_year"
+        id="graduation_year"
+        placeholder="{{ g.user['graduation_year'] if g.user['graduation_year'] else '1900' }}"
+        value="{{ g.user['graduation_year'] if g.user['graduation_year'] }}"
+        class="form-control"
+        min="1900"
+        max="2100"
+        required
+      />
+    </div>
+    {% endif %}
 
     <button type="submit" class="btn btn-success">Save</button>
   </form>

@@ -1,8 +1,8 @@
 {% extends "base.html" %} {% block content %}
 <div class="container">
   {# Choose the proper heading to display based on the role #} {% if role ==
-  "student" %}
-  <h1>Login as RPI Student</h1>
+  "rpi" %}
+  <h1>Login as RPI Student/Faculty</h1>
   {% elif role == "external" %}
   <h1>Login as Guest</h1>
   {% else %}
@@ -15,15 +15,15 @@
   <form class="mt-4" method="POST">
     <div class="mb-3">
       <label for="email" class="form-label">
-        {% if role == 'student' %}Your RPI Email Address{% else %}Your Email
+        {% if role == 'rpi' %}Your RPI Email Address{% else %}Your Email
         Address{% endif %}
       </label>
 
       {# Set the proper attributes based on role #} <input class="form-control"
-      type="email" name="email" id="email" placeholder="{% if role == 'student'
-      %}user@rpi.edu{% else %}user@example.com{% endif %}" {% if role=='student'
+      type="email" name="email" id="email" placeholder="{% if role == 'rpi'
+      %}user@rpi.edu{% else %}user@example.com{% endif %}" {% if role=='rpi'
       %}pattern="^[A-Za-z0-9._%+-]+@rpi\.edu$" {% endif %} title="{% if role ==
-      'student' %}Use your @rpi.edu email address!{% endif %}" required />
+      'rpi' %}Use your @rpi.edu email address!{% endif %}" required />
     </div>
   </form>
 </div>

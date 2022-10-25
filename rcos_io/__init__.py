@@ -10,7 +10,7 @@ load_dotenv()
 
 def create_app(test_config: Dict[str, str | bool] | None = None):
     # Create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY
 
     # Temporary home route

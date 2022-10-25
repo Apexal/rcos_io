@@ -2,6 +2,7 @@ import os
 
 
 def env_get(env_var: str) -> str:
+    """Gets the value of an environment variable or throws a `KeyError` if it is not set."""
     val = os.environ.get(env_var)
     if not val:
         raise KeyError(f"Env variable '{env_var}' is not set!")

@@ -6,7 +6,7 @@ from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
 from rcos_io.settings import ENV
-from ..discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
+from ..discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info, set_member_nickname, generate_nickname
 from flask import (
     current_app,
     Blueprint,
@@ -89,7 +89,7 @@ def login():
             # Store the page they wanted to get to in the session, to use after successful login
             session["redirect_to"] = request.args.get("redirect_to")
 
-        # "role" could be "student" or "external" to determine what to show on login page
+        # "role" could be "rpi" or "external" to determine what to show on login page
         return render_template("auth/login.html", role=request.args.get("role"))
     elif request.method == "POST":
         user_email = request.form["email"]
@@ -140,10 +140,10 @@ def otp():
     # Correct OTP, time to login!
 
     # Find or create the user from the email entered
-    user = find_or_create_user_by_email(
-        user_email, "student" if "@rpi.edu" in user_email else "external"
+    session["user"] = find_or_create_user_by_email(
+        user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
-    session["user"] = user
+    g.user = session["user"]
 
     # Go home OR to the desired path the user tried going to before login
     if redirect_to:
@@ -212,6 +212,15 @@ def discord_callback():
         # Was not previously in server and now was added
         if response.status_code == 201:
             flash_message += " and added you to the RCOS server!"
+        
+        # Set Discord nickname
+        new_nickname = generate_nickname(g.user)
+        print(new_nickname)
+        if new_nickname:
+            try:
+                set_member_nickname(g.user["discord_user_id"], new_nickname)
+            except Exception as e:
+                current_app.logger.exception(e)
     except HTTPError as e:
         current_app.logger.exception(e)
 
@@ -223,11 +232,31 @@ def discord_callback():
 @bp.route("/profile", methods=("GET", "POST"))
 @login_required
 def profile():
+    """Renders the profile form on GET request and updates it on POST."""
     if request.method == "GET":
         return render_template("profile.html")
     else:
-        # TODO: store in database
-        print(request.form)
+        # Store in database
+        updates: Dict[str, str | int] = dict()
+        if request.form["first_name"] and request.form["first_name"].strip():
+            updates["first_name"] = request.form["first_name"].strip()
+        
+        if request.form["last_name"] and request.form["last_name"].strip():
+            updates["last_name"] = request.form["last_name"].strip()
+
+        if request.form["graduation_year"]:
+            try:
+                updates["graduation_year"] = int(request.form["graduation_year"])
+            except ValueError:
+                pass
+        
+        try:
+            update_logged_in_user(updates)
+            flash("Updated your profile!", "success")
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("There was an error while updating your profile!", "danger")
+
         return redirect(url_for("auth.profile"))
 
 
@@ -235,6 +264,27 @@ def profile():
 
 DEFAULT_OTP_LENGTH = 4
 
+def update_logged_in_user(updates: Dict[str, Any]):
+    """
+    Updates the logged in user.
+    
+    1. Applies DB update
+    2. Updates `session['user']` and `g.user`
+    3. Updates Discord nickname if linked
+    """
+    session["user"] = update_user_by_id(
+        g.user["id"], updates
+    )
+    g.user = session["user"]
+
+    # Update Discord nickname
+    if g.user["discord_user_id"]:
+        new_nickname = generate_nickname(g.user)
+        if new_nickname:
+            try:
+                set_member_nickname(g.user["discord_user_id"], new_nickname)
+            except Exception as e:
+                current_app.logger.exception(e)
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
     """Randomly generates an alphabetic one-time password for a user to be sent and login with."""
