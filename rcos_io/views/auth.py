@@ -1,5 +1,4 @@
 import functools
-import os
 import random
 import string
 from typing import Any, Dict
@@ -7,7 +6,7 @@ from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
 from rcos_io.settings import ENV
-from .discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
+from ..discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info
 from flask import (
     current_app,
     Blueprint,

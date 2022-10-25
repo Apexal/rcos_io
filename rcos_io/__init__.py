@@ -3,7 +3,7 @@ from typing import Dict
 from dotenv import load_dotenv
 
 from flask import Flask, render_template
-from rcos_io.auth import login_required
+from rcos_io.views.auth import login_required
 import rcos_io.db
 from rcos_io.settings import SECRET_KEY
 
@@ -32,7 +32,7 @@ def create_app(test_config: Dict[str, str | bool] | None = None):
     def secret():
         return "Hello logged in users!"
 
-    from . import auth
+    from .views import auth
     from .views import projects
 
     app.register_blueprint(auth.bp)
