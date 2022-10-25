@@ -12,7 +12,7 @@
 
   {% include 'flashed_messages.html' %}
 
-  <form class="mt-4" action="/auth/login" method="POST">
+  <form class="mt-4" method="POST">
     <div class="mb-3">
       <label for="email" class="form-label">
         {% if role == 'student' %}Your RPI Email Address{% else %}Your Email

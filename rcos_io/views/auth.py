@@ -20,7 +20,7 @@ from flask import (
 )
 
 
-bp = Blueprint("auth", __name__, url_prefix="/auth")
+bp = Blueprint("auth", __name__, url_prefix="/")
 
 
 @bp.before_app_request
@@ -52,6 +52,29 @@ def login_required(view):
         if g.user is None:
             flash("You must login to view that page!", "danger")
             return redirect(url_for("auth.login", redirect_to=request.path))
+
+        return view(**kwargs)
+
+    return wrapped_view
+
+
+def verified_required(view):
+    """Flask decorator to require that the logged in user is verified to access the view.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @verified_required
+    def secret():
+        return 'Hello verified users!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or not g.user["is_verified"]:
+            flash("You must verified to view that page!", "danger")
+            return redirect("/")
 
         return view(**kwargs)
 
@@ -195,6 +218,17 @@ def discord_callback():
     flash(flash_message, "primary")
 
     return redirect("/")
+
+
+@bp.route("/profile", methods=("GET", "POST"))
+@login_required
+def profile():
+    if request.method == "GET":
+        return render_template("profile.html")
+    else:
+        # TODO: store in database
+        print(request.form)
+        return redirect(url_for("auth.profile"))
 
 
 ##################################################################

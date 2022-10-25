@@ -1,0 +1,52 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container">
+  <h1>Your {% if g.user["role"] == "student" %}Student{% endif %} Profile</h1>
+
+  {% include 'flashed_messages.html' %}
+
+  <form method="POST">
+    <div class="mb-3">
+      <label for="first_name" class="form-label">First Name</label>
+      <input
+        type="text"
+        name="first_name"
+        id="first_name"
+        placeholder="{{ g.user['first_name'] if g.user['first_name'] }}"
+        value="{{ g.user['first_name'] if g.user['first_name'] }}"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="last_name" class="form-label">Last Name</label>
+      <input
+        type="text"
+        name="last_name"
+        id="last_name"
+        placeholder="{{ g.user['last_name'] if g.user['last_name'] }}"
+        value="{{ g.user['last_name'] if g.user['last_name'] }}"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email</label>
+      <input
+        type="text"
+        name="email"
+        id="email"
+        placeholder="{{ g.user['email'] }}"
+        value="{{ g.user['email'] if g.user['email'] }}"
+        class="form-control"
+        disabled
+      />
+    </div>
+
+    <button type="submit" class="btn btn-success">Save</button>
+  </form>
+</div>
+
+{% endblock %}

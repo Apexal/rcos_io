@@ -108,7 +108,6 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     return user
 
 
-
 def get_project(project_id: str) -> Dict[str, Any] | None:
     query = gql(
         """
@@ -137,6 +136,7 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
     result = client.execute(query, variable_values={"pid": project_id})
     return result["projects"]
 
+
 def get_all_projects() -> List[Dict[str, Any]]:
     query = gql(
         """
@@ -154,7 +154,9 @@ def get_all_projects() -> List[Dict[str, Any]]:
     return result["projects"]
 
 
-def get_semester_projects(semester: str, with_enrollments: bool) -> List[Dict[str, Any]]:
+def get_semester_projects(
+    semester: str, with_enrollments: bool
+) -> List[Dict[str, Any]]:
     query = gql(
         """
         query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
@@ -186,6 +188,7 @@ def get_semester_projects(semester: str, with_enrollments: bool) -> List[Dict[st
 
     return result["projects"]
 
+
 def add_project(id: str, owner_id: str, name: str, desc: str):
     query = gql(
         """
@@ -203,12 +206,7 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
 
     result = client.execute(
         query,
-        variable_values={
-            "id": id,
-            "owner_id": owner_id,
-            "name": name,
-            "desc": desc
-        },
+        variable_values={"id": id, "owner_id": owner_id, "name": name, "desc": desc},
     )
 
     return result["insert_projects"]
