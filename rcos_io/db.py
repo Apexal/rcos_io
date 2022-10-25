@@ -185,3 +185,30 @@ def get_semester_projects(semester: str, with_enrollments: bool) -> List[Dict[st
     )
 
     return result["projects"]
+
+def add_project(id: str, owner_id: str, name: str, desc: str):
+    query = gql(
+        """
+        mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
+            insert_projects(objects: [
+                { id: $id, owner_id: $owner_id, name: $name, description_markdown: $desc }
+            ]) {
+                returning {
+                    id
+                }
+            }
+        }
+    """
+    )
+
+    result = client.execute(
+        query,
+        variable_values={
+            "id": id,
+            "owner_id": owner_id,
+            "name": name,
+            "desc": desc
+        },
+    )
+
+    return result["insert_projects"]

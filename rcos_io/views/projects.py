@@ -1,4 +1,5 @@
-from flask import Flask, Blueprint, request, render_template
+from uuid import uuid4
+from flask import Flask, Blueprint, request, render_template, g, redirect
 from datetime import date
 from typing import Any, Dict, List
 
@@ -52,6 +53,26 @@ def current_projects():
 def past_projects():
     return render_projects(db.get_all_projects())
 
+@bp.route("/projects/add", methods = ('GET', 'POST'))
+@auth.login_required
+def add_project():
+    if request.method == 'POST':
+        name = request.form['project_name']
+        desc = request.form['project_desc']
+        stack = request.form['project_stack']
+
+        # separate each technology in the list string 
+        # into separate strings and then trim extra whitespace
+        stack = [s.strip() for s in stack.split(',')]
+
+        user: Dict[str, Any] | None = g.user
+        inserted_project = db.add_project(str(uuid4()), user['id'], name, desc)['returning']
+        
+        if len(inserted_project) > 0:
+            return redirect("/project/%s" % (inserted_project[0]['id']))
+
+    return render_template("projects/add_project.html")
+
 @bp.route("/project/<project_id>")
 def project(project_id: str):
     project = db.get_project(project_id)
@@ -72,21 +93,3 @@ def project(project_id: str):
     # project['assignments'] = members_by_semester
 
     return render_template("projects/project.html", project=project)
-
-@bp.route("/project/add", methods = ('GET', 'POST'))
-@auth.login_required
-def add_project():
-    if request.method == 'POST':
-        name = request.form['project_name']
-        desc = request.form['project_desc']
-        stack = request.form['project_stack']
-
-        # separate each technology in the list string 
-        # into separate strings and then trim extra whitespace
-        stack = [s.strip() for s in stack.split(',')]
-
-        print(name, desc, stack)
-
-        # TODO: persist this data to the database
-    
-    return render_template("projects/add_project.html")
