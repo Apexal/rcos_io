@@ -33,6 +33,7 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
+        g.logged_in_user_nickname = generate_nickname(user) or g.user["email"]
 
 
 def login_required(view):
