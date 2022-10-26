@@ -3,7 +3,7 @@
 <div class="container">
   <h1>Your {% if g.user["role"] == "rpi" %}RPI{% endif %} Profile</h1>
 
-  {% include 'flashed_messages.html' %}
+  {% include '/includes/flashed_messages.html' %}
 
   <form method="POST">
     <div class="mb-3">
