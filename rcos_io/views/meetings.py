@@ -1,8 +1,11 @@
 from datetime import date, datetime, timedelta
 from typing import Any, Dict
 from flask import Blueprint, render_template, request, url_for
+from pytz import timezone
 
 bp = Blueprint("meetings", __name__)
+
+eastern = timezone('US/Eastern')
 
 @bp.route("/meetings")
 def render_projects():
@@ -21,8 +24,8 @@ def events():
 
     return [{
         "title": "Small Group",
-        "start": datetime.now().isoformat(),
-        "end": (datetime.now() + timedelta(hours=2)).isoformat(),
+        "start": datetime.now(eastern).isoformat(),
+        "end": (datetime.now(eastern) + timedelta(hours=2)).isoformat(),
         "url": "/meetings/123"
     }]
 
