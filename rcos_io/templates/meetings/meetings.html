@@ -1,0 +1,21 @@
+{% extends "/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Meetings</h1>
+
+    <div id='calendar'></div>
+	<script>
+
+		document.addEventListener('DOMContentLoaded', function() {
+		  var calendarEl = document.getElementById('calendar');
+		  var calendar = new FullCalendar.Calendar(calendarEl, {
+			initialView: 'dayGridMonth',
+            events: '/api/events'
+		  });
+		  calendar.render();
+		});
+  
+	  </script>
+</div>
+{% endblock %}
