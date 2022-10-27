@@ -85,6 +85,13 @@ def add_project():
             "returning"
         ]
 
+        #
+        #   TODO: send validation to Discord, validation panel in site
+        #
+
+        # mark the creator of the project as the project lead
+        db.add_project_lead(inserted_project[0]["id"], user["id"], get_current_semester(), 4)
+
         if len(inserted_project) > 0:
             return redirect("/project/%s" % (inserted_project[0]["id"]))
 

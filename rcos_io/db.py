@@ -198,6 +198,27 @@ def get_semester_projects(
 
     return result["projects"]
 
+def add_project_lead(project_id: str, user_id: str):
+    query = gql(
+        """
+        mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
+            insert_projects(objects: [
+                { id: $id, owner_id: $owner_id, name: $name, description_markdown: $desc }
+            ]) {
+                returning {
+                    id
+                }
+            }
+        }
+    """
+    )
+
+    result = client.execute(
+        query,
+        variable_values={"id": id, "owner_id": owner_id, "name": name, "desc": desc},
+    )
+
+    return result["insert_projects"]
 
 def add_project(id: str, owner_id: str, name: str, desc: str):
     query = gql(
@@ -238,3 +259,25 @@ def get_meetings() -> List[Dict[str, Any]]:
     )
     result = client.execute(query)
     return result["meetings"]
+
+def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
+    query = gql("""
+        mutation AddEnrollment($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
+            insert_enrollments_one(object: {
+                is_project_lead: true,
+                user_id: $user_id,
+                project_id: $project_id,
+                semester_id: $semester_id,
+                credits: $credits
+            }) {
+                project_id
+            }
+        }
+    """)
+
+    result = client.execute(
+        query, 
+        variable_values={"project_id": project_id, "user_id": user_id, "semester_id": semester_id, "credits": credits},
+    )
+
+    return result["insert_enrollments_one"]
