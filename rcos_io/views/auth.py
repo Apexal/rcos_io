@@ -7,15 +7,8 @@ from urllib.error import HTTPError
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
 from rcos_io.github import GITHUB_AUTH_URL
 from rcos_io.settings import ENV
-from ..discord import (
-    DISCORD_AUTH_URL,
-    add_user_to_server,
-    get_tokens,
-    get_user,
-    get_user_info,
-    set_member_nickname,
-    generate_nickname,
-)
+from rcos_io import discord, github
+
 from flask import (
     current_app,
     Blueprint,
@@ -42,7 +35,7 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
-        g.logged_in_user_nickname = generate_nickname(user) or g.user["email"]
+        g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
 
 
 def login_required(view):
@@ -194,9 +187,9 @@ def logout():
 
 @bp.route("/discord")
 @login_required
-def discord():
+def discord_auth():
     """Redirects to Discord's auth flow for linking accounts."""
-    return redirect(DISCORD_AUTH_URL)
+    return redirect(discord.DISCORD_AUTH_URL)
 
 
 @bp.route("/discord/callback")
@@ -217,9 +210,9 @@ def discord_callback():
 
     # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
     try:
-        discord_user_tokens = get_tokens(code)
+        discord_user_tokens = discord.get_tokens(code)
         discord_access_token = discord_user_tokens["access_token"]
-        discord_user_info = get_user_info(discord_access_token)
+        discord_user_info = discord.get_user_info(discord_access_token)
     except HTTPError as e:
         flash("Yikes! Failed to link your Discord.", "danger")
         current_app.logger.exception(e)
@@ -229,10 +222,9 @@ def discord_callback():
     discord_user_id = discord_user_info["id"]
 
     try:
-        session["user"] = update_user_by_id(
-            g.user["id"], {"discord_user_id": discord_user_id}
-        )
-        g.user = session["user"]
+        update_logged_in_user({
+            "discord_user_id": discord_user_id
+        })
     except Exception as e:
         flash("Yikes! Failed to save your Discord link.", "danger")
         current_app.logger.exception(e)
@@ -242,17 +234,16 @@ def discord_callback():
 
     # Attempt to add them to the Discord server (will do nothing if already in the server)
     try:
-        response = add_user_to_server(discord_access_token, discord_user_id)
+        response = discord.add_user_to_server(discord_access_token, discord_user_id)
         # Was not previously in server and now was added
         if response.status_code == 201:
             flash_message += " and added you to the RCOS server!"
 
         # Set Discord nickname
-        new_nickname = generate_nickname(g.user)
-        print(new_nickname)
+        new_nickname = discord.generate_nickname(g.user)
         if new_nickname:
             try:
-                set_member_nickname(g.user["discord_user_id"], new_nickname)
+                discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
             except Exception as e:
                 current_app.logger.exception(e)
     except HTTPError as e:
@@ -260,12 +251,46 @@ def discord_callback():
 
     flash(flash_message, "primary")
 
-    return redirect("/")
+    return redirect(url_for("auth.profile"))
 
 
 @bp.route("/github")
-def github():
+def github_auth():
     return redirect(GITHUB_AUTH_URL)
+
+@bp.route("/github/callback")
+def github_callback():
+    """
+    The callback URL that GitHub redirects to after getting user consent.
+
+    This view:
+    1. Exchanges GitHub OAuth2 code for access token
+    """
+
+    code = request.args.get("code")
+    if code is None:
+        return redirect("/")
+
+    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    try:
+        github_user_tokens = github.get_tokens(code)
+        github_access_token = github_user_tokens["access_token"]
+        github_user_info = github.get_user_info(github_access_token)
+    except HTTPError as e:
+        flash("Yikes! Failed to link your GitHub.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
+
+    github_username = github_user_info["login"]
+
+    try:
+        update_logged_in_user({"github_username": github_username})
+    except Exception as e:
+        flash("Yikes! Failed to save your GitHub link.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
+
+    return redirect(url_for("auth.profile"))
 
 @bp.route("/profile", methods=("GET", "POST"))
 @login_required
@@ -273,7 +298,7 @@ def profile():
     """Renders the profile form on GET request and updates it on POST."""
     if request.method == "GET":
         if g.user["discord_user_id"]:
-            discord_user = get_user(g.user["discord_user_id"])
+            discord_user = discord.get_user(g.user["discord_user_id"])
         else:
             discord_user = None
             
@@ -328,10 +353,10 @@ def update_logged_in_user(updates: Dict[str, Any]):
 
     # Update Discord nickname
     if g.user["discord_user_id"]:
-        new_nickname = generate_nickname(g.user)
+        new_nickname = discord.generate_nickname(g.user)
         if new_nickname:
             try:
-                set_member_nickname(g.user["discord_user_id"], new_nickname)
+                discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
             except Exception as e:
                 current_app.logger.exception(e)
 

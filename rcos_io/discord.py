@@ -49,8 +49,15 @@ def get_tokens(code: str) -> DiscordTokens:
     tokens = response.json()
     return tokens
 
+class DiscordUser(TypedDict):
+    id: str
+    username: str
+    discriminator: str
+    avatar: NotRequired[str]
+    banner: NotRequired[str]
+    accent_color: NotRequired[str]
 
-def get_user_info(access_token: str) -> Dict[str, Any]:
+def get_user_info(access_token: str) -> DiscordUser:
     """
     Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error on failed request.
 
@@ -84,14 +91,6 @@ def add_user_to_server(access_token: str, user_id: str):
     )
     response.raise_for_status()
     return response
-
-class DiscordUser(TypedDict):
-    id: str
-    username: str
-    discriminator: str
-    avatar: NotRequired[str]
-    banner: NotRequired[str]
-    accent_color: NotRequired[str]
 
 def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
     response = requests.get(
