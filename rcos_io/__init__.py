@@ -21,9 +21,11 @@ def create_app(test_config: Dict[str, str | bool] | None = None):
     from .views import auth
     from .views import projects
     from .views import meetings
+    from .views import members
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(projects.bp)
     app.register_blueprint(meetings.bp)
+    app.register_blueprint(members.bp)
 
     return app
