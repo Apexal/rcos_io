@@ -274,7 +274,6 @@ def profile():
     if request.method == "GET":
         if g.user["discord_user_id"]:
             discord_user = get_user(g.user["discord_user_id"])
-            print(discord_user)
         else:
             discord_user = None
             

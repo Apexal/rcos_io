@@ -1,4 +1,5 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, TypedDict, Union
+from typing_extensions import NotRequired
 import requests
 from rcos_io.settings import (
     DISCORD_BOT_TOKEN,
@@ -19,8 +20,14 @@ HEADERS = {
     "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
 }
 
+class DiscordTokens(TypedDict):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
 
-def get_tokens(code: str) -> Dict[str, Any]:
+def get_tokens(code: str) -> DiscordTokens:
     """
     Given an authorization code, request the access and refresh tokens for a Discord user. Returns the tokens. Throws an error if invalid request.
 
@@ -78,7 +85,15 @@ def add_user_to_server(access_token: str, user_id: str):
     response.raise_for_status()
     return response
 
-def get_user(discord_user_id: str) -> Union[Dict[str, Any], None]:
+class DiscordUser(TypedDict):
+    id: str
+    username: str
+    discriminator: str
+    avatar: NotRequired[str]
+    banner: NotRequired[str]
+    accent_color: NotRequired[str]
+
+def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
     response = requests.get(
         f"{DISCORD_API_ENDPOINT}/users/{discord_user_id}",
         headers=HEADERS,
