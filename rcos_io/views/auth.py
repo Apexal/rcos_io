@@ -5,6 +5,7 @@ from typing import Any, Dict
 from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
+from rcos_io.github import GITHUB_AUTH_URL
 from rcos_io.settings import ENV
 from ..discord import (
     DISCORD_AUTH_URL,
@@ -261,6 +262,10 @@ def discord_callback():
 
     return redirect("/")
 
+
+@bp.route("/github")
+def github():
+    return redirect(GITHUB_AUTH_URL)
 
 @bp.route("/profile", methods=("GET", "POST"))
 @login_required
