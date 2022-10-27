@@ -129,6 +129,7 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
                 id
                 description_markdown
                 enrollments {
+                    is_project_lead
                     user {
                         rcs_id
                         first_name

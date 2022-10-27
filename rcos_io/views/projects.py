@@ -37,15 +37,15 @@ def render_projects(projects: List[Any]):
 
 
 
-@bp.route("/<semester>")
-def semester_projects(semester: str = None):
-    """
-        Get all projects for a specific semester.
-    """
-    if semester == None:
-        return render_projects([], False)
+# @bp.route("/<semester>")
+# def semester_projects(semester: str = None):
+#     """
+#         Get all projects for a specific semester.
+#     """
+#     if semester == None:
+#         return render_projects([], False)
 
-    return render_projects(db.get_semester_projects(semester, False))
+#     return render_projects(db.get_semester_projects(semester, False))
 
 
 
@@ -102,19 +102,9 @@ def add_project():
 def project(project_id: str):
     project = db.get_project(project_id)
 
+    print(project)
+
     if len(project) == 1:
         project = project[0]
-
-        # get all semesters where the project had members
-    # semesters = set([ user['semester']['id'] for user in project['enrollments'] ])
-    # members_by_semester = {}
-
-    # for s in semesters:
-    #     members_by_semester[s] = []
-
-    # for user in project['enrollments']:
-    #     members_by_semester.get(user['semester']['id']).append(user)
-
-    # project['assignments'] = members_by_semester
 
     return render_template("projects/project.html", project=project)
