@@ -37,15 +37,15 @@ def render_projects(projects: List[Any]):
 
 
 
-@bp.route("/<semester>")
-def semester_projects(semester: str = None):
-    """
-        Get all projects for a specific semester.
-    """
-    if semester == None:
-        return render_projects([], False)
+# @bp.route("/<semester>")
+# def semester_projects(semester: str = None):
+#     """
+#         Get all projects for a specific semester.
+#     """
+#     if semester == None:
+#         return render_projects([], False)
 
-    return render_projects(db.get_semester_projects(semester, False))
+#     return render_projects(db.get_semester_projects(semester, False))
 
 
 
@@ -85,6 +85,13 @@ def add_project():
             "returning"
         ]
 
+        #
+        #   TODO: send validation to Discord, validation panel in site
+        #
+
+        # mark the creator of the project as the project lead
+        db.add_project_lead(inserted_project[0]["id"], user["id"], get_current_semester(), 4)
+
         if len(inserted_project) > 0:
             return redirect("/project/%s" % (inserted_project[0]["id"]))
 
@@ -98,16 +105,9 @@ def project(project_id: str):
     if len(project) == 1:
         project = project[0]
 
-        # get all semesters where the project had members
-    # semesters = set([ user['semester']['id'] for user in project['enrollments'] ])
-    # members_by_semester = {}
+    current_semester = get_current_semester()
 
-    # for s in semesters:
-    #     members_by_semester[s] = []
-
-    # for user in project['enrollments']:
-    #     members_by_semester.get(user['semester']['id']).append(user)
-
-    # project['assignments'] = members_by_semester
+    # parse out any project members that are *not* in the project this semester
+    project['enrollments'] = list(filter(lambda user: user['semester']['id'] == current_semester, project['enrollments']))
 
     return render_template("projects/project.html", project=project)
