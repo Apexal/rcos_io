@@ -32,18 +32,18 @@ fragment basicUser on users {
 """
 
 '''
-id
-first_name
-last_name
-graduation_year
-preferred_name
-role -> student/faculty/external
-email
-secondary_email
-is_secondary_email_verified
-rcs_id
-discord_user_id
-github_username
+                         id -> required -> uuid
+                 first_name -> optional
+                  last_name -> optional
+            graduation_year -> optional 
+             preferred_name -> optional
+                       role -> required -> rpi/external
+                      email -> required
+            secondary_email -> optional
+is_secondary_email_verified -> default: false
+                     rcs_id -> optional
+            discord_user_id -> optional
+            github_username -> optional
 '''
 
 def find_or_create_user_by_email(email: str, role: str) -> Dict[str, Any]:
