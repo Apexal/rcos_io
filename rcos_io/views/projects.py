@@ -102,9 +102,12 @@ def add_project():
 def project(project_id: str):
     project = db.get_project(project_id)
 
-    print(project)
-
     if len(project) == 1:
         project = project[0]
+
+    current_semester = get_current_semester()
+
+    # parse out any project members that are *not* in the project this semester
+    project['enrollments'] = list(filter(lambda user: user['semester']['id'] == current_semester, project['enrollments']))
 
     return render_template("projects/project.html", project=project)
