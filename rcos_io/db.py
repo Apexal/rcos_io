@@ -31,6 +31,20 @@ fragment basicUser on users {
 }
 """
 
+'''
+id
+first_name
+last_name
+graduation_year
+preferred_name
+role -> student/faculty/external
+email
+secondary_email
+is_secondary_email_verified
+rcs_id
+discord_user_id
+github_username
+'''
 
 def find_or_create_user_by_email(email: str, role: str) -> Dict[str, Any]:
     """
@@ -119,6 +133,10 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_project(project_id: str) -> Dict[str, Any] | None:
+    """
+    Fetches the project with the given ID. 
+    Returns project name, participants, description, tags and relevant repos.
+    """
     query = gql(
         """
         query GetProject($pid: uuid!) {
@@ -149,6 +167,10 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
 
 
 def get_all_projects() -> List[Dict[str, Any]]:
+    """
+    Fetches all projects. 
+    Returns project name, and relevant repos.
+    """
     query = gql(
         """
         query {
@@ -168,6 +190,10 @@ def get_all_projects() -> List[Dict[str, Any]]:
 def get_semester_projects(
     semester: str, with_enrollments: bool
 ) -> List[Dict[str, Any]]:
+    """
+    Fetches all projects in the current semester. 
+    Returns project name.
+    """
     query = gql(
         """
         query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
@@ -199,29 +225,10 @@ def get_semester_projects(
 
     return result["projects"]
 
-def add_project_lead(project_id: str, user_id: str):
-    query = gql(
-        """
-        mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
-            insert_projects(objects: [
-                { id: $id, owner_id: $owner_id, name: $name, description_markdown: $desc }
-            ]) {
-                returning {
-                    id
-                }
-            }
-        }
-    """
-    )
-
-    result = client.execute(
-        query,
-        variable_values={"id": id, "owner_id": owner_id, "name": name, "desc": desc},
-    )
-
-    return result["insert_projects"]
-
 def add_project(id: str, owner_id: str, name: str, desc: str):
+    """
+    Creates new project with name=name and description=desc where owner is user that has id=owner_id
+    """
     query = gql(
         """
         mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
@@ -245,6 +252,10 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
 
 
 def get_meetings() -> List[Dict[str, Any]]:
+    """
+    Fetches all meetings. 
+    Returns meeting name, type, start and end timestamps.
+    """
     query = gql(
         """
         query meetings {
@@ -262,6 +273,10 @@ def get_meetings() -> List[Dict[str, Any]]:
     return result["meetings"]
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
+    """
+    Adds user with id=user_id as project lead of project with id=project_id.
+    Also adds corresponding enrollment to current semester.
+    """
     query = gql("""
         mutation AddEnrollment($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
             insert_enrollments_one(object: {
