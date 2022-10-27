@@ -226,7 +226,7 @@ def get_meetings() -> List[Dict[str, Any]]:
         """
         query meetings {
             meetings {
-                meeting_id
+                id
                 name
                 type
                 start_date_time

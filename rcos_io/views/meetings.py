@@ -26,10 +26,10 @@ def events():
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     return {
-        "id": meeting["meeting_id"],
+        "id": meeting["id"],
         "title": meeting["name"],
         "start": meeting["start_date_time"],
         "end": meeting["end_date_time"],
-        "url": f"/meetings/{meeting['meeting_id']}",
+        "url": f"/meetings/{meeting['id']}",
         "color": "red" # TODO: reflect meeting type
     }
