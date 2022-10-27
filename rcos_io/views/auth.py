@@ -10,6 +10,7 @@ from ..discord import (
     DISCORD_AUTH_URL,
     add_user_to_server,
     get_tokens,
+    get_user,
     get_user_info,
     set_member_nickname,
     generate_nickname,
@@ -82,6 +83,29 @@ def verified_required(view):
     def wrapped_view(**kwargs):
         if g.user is None or not g.user["is_verified"]:
             flash("You must verified to view that page!", "danger")
+            return redirect("/")
+
+        return view(**kwargs)
+
+    return wrapped_view
+
+
+def full_profile_required(view):
+    """Flask decorator to require that the logged in user is has Discord, GitHub, and a secondary email set.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @full_profile_required
+    def secret():
+        return 'Hello fully setup users!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or not g.user["discord_user_id"] or not g.user["github_username"] or not g.user["secondary_email"] or not g.user["is_secondary_email_verified"]:
+            flash("You must finish your profile first!", "danger")
             return redirect("/")
 
         return view(**kwargs)
@@ -243,7 +267,13 @@ def discord_callback():
 def profile():
     """Renders the profile form on GET request and updates it on POST."""
     if request.method == "GET":
-        return render_template("auth/profile.html")
+        if g.user["discord_user_id"]:
+            discord_user = get_user(g.user["discord_user_id"])
+            print(discord_user)
+        else:
+            discord_user = None
+            
+        return render_template("auth/profile.html", discord_user=discord_user)
     else:
         # Store in database
         updates: Dict[str, str | int] = dict()

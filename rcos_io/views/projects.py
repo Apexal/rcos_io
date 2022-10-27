@@ -6,14 +6,15 @@ from typing import Any, Dict, List
 import rcos_io.db as db
 import rcos_io.views.auth as auth
 
-bp = Blueprint("projects", __name__)
+bp = Blueprint("projects", __name__, url_prefix="/projects")
 
-"""
-    Calculate which semester we are in given today's date.
-"""
+
 
 
 def get_current_semester():
+    """
+        Calculate which semester we are in given today's date.
+    """
     current_date = date.today()
     start_month = "01"
 
@@ -25,49 +26,49 @@ def get_current_semester():
     return "%d%s" % (current_date.year, start_month)
 
 
-"""
-    Render the projects page given a list of projects.
-"""
 
 
 def render_projects(projects: List[Any]):
+    """
+        Render the projects page given a list of projects.
+    """
     return render_template("projects/projects.html", projects=projects)
 
 
-"""
-    Get all projects for a specific semester.
-"""
 
 
-@bp.route("/projects/<semester>")
+@bp.route("/<semester>")
 def semester_projects(semester: str = None):
+    """
+        Get all projects for a specific semester.
+    """
     if semester == None:
         return render_projects([], False)
 
     return render_projects(db.get_semester_projects(semester, False))
 
 
-"""
-    Get all projects for the current semester.
-"""
 
 
-@bp.route("/projects")
+@bp.route("/")
 def current_projects():
+    """
+        Get all projects for the current semester.
+    """
     return render_projects(db.get_semester_projects(get_current_semester(), False))
 
 
-"""
-    Get all projects for all past semesters, current semester included.
-"""
 
 
-@bp.route("/projects/past")
+@bp.route("/past")
 def past_projects():
+    """
+        Get all projects for all past semesters, current semester included.
+    """
     return render_projects(db.get_all_projects())
 
 
-@bp.route("/projects/add", methods=("GET", "POST"))
+@bp.route("/add", methods=("GET", "POST"))
 @auth.login_required
 def add_project():
     if request.method == "POST":
@@ -90,7 +91,7 @@ def add_project():
     return render_template("projects/add_project.html")
 
 
-@bp.route("/project/<project_id>")
+@bp.route("/<project_id>")
 def project(project_id: str):
     project = db.get_project(project_id)
 

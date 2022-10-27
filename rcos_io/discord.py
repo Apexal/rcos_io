@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Union
 import requests
 from rcos_io.settings import (
     DISCORD_BOT_TOKEN,
@@ -78,6 +78,14 @@ def add_user_to_server(access_token: str, user_id: str):
     response.raise_for_status()
     return response
 
+def get_user(discord_user_id: str) -> Union[Dict[str, Any], None]:
+    response = requests.get(
+        f"{DISCORD_API_ENDPOINT}/users/{discord_user_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    user = response.json()
+    return user
 
 def add_role_to_member(user_id: str, role_id: str):
     """Add a role (identified by its id) to a server member. Throws an error on failed request."""
