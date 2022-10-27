@@ -3,6 +3,8 @@ from typing import Any, Dict
 from flask import Blueprint, render_template, request, url_for
 from pytz import timezone
 
+from rcos_io.db import get_meetings
+
 bp = Blueprint("meetings", __name__)
 
 eastern = timezone('US/Eastern')
@@ -18,21 +20,16 @@ def events():
 
     # TODO:
     # Fetch meetings
-    # meetings = get_meetings(start=start, end=end) 
-    # events = map(meeting_to_event, meetings)
-    # return events
-
-    return [{
-        "title": "Small Group",
-        "start": datetime.now(eastern).isoformat(),
-        "end": (datetime.now(eastern) + timedelta(hours=2)).isoformat(),
-        "url": "/meetings/123"
-    }]
+    meetings = get_meetings() 
+    events = list(map(meeting_to_event, meetings))
+    return events
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     return {
-        "id": meeting["id"],
+        "id": meeting["meeting_id"],
         "title": meeting["name"],
-        "url": url_for("meeting", meeting_id=meeting["id"]),
+        "start": meeting["start_date_time"],
+        "end": meeting["end_date_time"],
+        "url": f"/meetings/{meeting['meeting_id']}",
         "color": "red" # TODO: reflect meeting type
     }

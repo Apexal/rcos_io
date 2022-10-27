@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
@@ -217,3 +218,20 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
     )
 
     return result["insert_projects"]
+
+def get_meetings() -> List[Dict[str, Any]]:
+    query = gql(
+        """
+        query meetings {
+            meetings {
+                meeting_id
+                name
+                type
+                start_date_time
+                end_date_time
+            }
+        }
+        """
+    )
+    result = client.execute(query)
+    return result["meetings"]

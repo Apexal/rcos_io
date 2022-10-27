@@ -236,7 +236,7 @@ def discord_callback():
 def profile():
     """Renders the profile form on GET request and updates it on POST."""
     if request.method == "GET":
-        return render_template("profile.html")
+        return render_template("auth/profile.html")
     else:
         # Store in database
         updates: Dict[str, str | int] = dict()
