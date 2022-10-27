@@ -45,6 +45,18 @@
       />
     </div>
 
+    <!-- <div class="mb-3">
+      <label for="secondary_email" class="form-label">Secondary Email</label>
+      <input
+        type="text"
+        name="secondary_email"
+        id="secondary_email"
+        placeholder="{{ g.user['secondary_email'] }} or 'Backup email to login with'"
+        value="{{ g.user['secondary_email'] if g.user['secondary_email'] }}"
+        class="form-control"
+      />
+    </div> -->
+
     {% if g.user["role"] == "rpi" %}
     <div class="mb-3">
       <label for="graduation_year" class="form-label">Graduation Year</label>

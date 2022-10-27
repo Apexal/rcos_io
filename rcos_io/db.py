@@ -23,6 +23,8 @@ fragment basicUser on users {
   preferred_name
   role
   email
+  secondary_email
+  is_secondary_email_verified
   rcs_id
   discord_user_id
   github_username
@@ -49,7 +51,7 @@ def find_user_by_email(email: str) -> Dict[str, Any] | None:
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
         query find_user($email: String!) {
-            users(limit: 1, where: { email: {_eq: $email}}) {
+            users(limit: 1, where: {_or: [{email: {_eq: $email}}, {_and: [{is_secondary_email_verified: {_eq:true}, secondary_email: {_eq: $email}}]}]}) {
                 ...basicUser
             }
         }

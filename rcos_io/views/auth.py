@@ -252,6 +252,13 @@ def profile():
             except ValueError:
                 pass
         
+        if request.form["secondary_email"]:
+            try:
+                updates["secondary_email"] = request.form["secondary_email"]
+                updates["is_secondary_email_verified"] = False
+            except ValueError:
+                pass
+        
         try:
             update_logged_in_user(updates)
             flash("Updated your profile!", "success")
