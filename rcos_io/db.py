@@ -90,9 +90,9 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
         rcs_id = email.removesuffix("@rpi.edu")
         user_values["rcs_id"] = rcs_id
 
-    user = client.execute(
-        query, variable_values={"user": user_values}
-    )["insert_users"]["returning"][0]
+    user = client.execute(query, variable_values={"user": user_values})["insert_users"][
+        "returning"
+    ][0]
 
     return user
 
@@ -220,6 +220,7 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
     )
 
     return result["insert_projects"]
+
 
 def get_meetings() -> List[Dict[str, Any]]:
     query = gql(

@@ -109,12 +109,13 @@ def set_member_nickname(user_id: str, nickname: str):
     response.raise_for_status()
     return response
 
+
 def generate_nickname(user: Dict[str, Any]) -> str | None:
     name = ""
     if user["first_name"] and user["last_name"]:
         name = f"{user['first_name']} {user['last_name'][0]}"
     elif user["first_name"]:
-        name = user['first_name']
+        name = user["first_name"]
     elif user["rcs_id"]:
         return user["rcs_id"]
 

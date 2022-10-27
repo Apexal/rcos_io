@@ -6,7 +6,14 @@ from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
 from rcos_io.settings import ENV
-from ..discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info, set_member_nickname, generate_nickname
+from ..discord import (
+    DISCORD_AUTH_URL,
+    add_user_to_server,
+    get_tokens,
+    get_user_info,
+    set_member_nickname,
+    generate_nickname,
+)
 from flask import (
     current_app,
     Blueprint,
@@ -214,7 +221,7 @@ def discord_callback():
         # Was not previously in server and now was added
         if response.status_code == 201:
             flash_message += " and added you to the RCOS server!"
-        
+
         # Set Discord nickname
         new_nickname = generate_nickname(g.user)
         print(new_nickname)
@@ -242,7 +249,7 @@ def profile():
         updates: Dict[str, str | int] = dict()
         if request.form["first_name"] and request.form["first_name"].strip():
             updates["first_name"] = request.form["first_name"].strip()
-        
+
         if request.form["last_name"] and request.form["last_name"].strip():
             updates["last_name"] = request.form["last_name"].strip()
 
@@ -251,14 +258,14 @@ def profile():
                 updates["graduation_year"] = int(request.form["graduation_year"])
             except ValueError:
                 pass
-        
+
         if request.form["secondary_email"]:
             try:
                 updates["secondary_email"] = request.form["secondary_email"]
                 updates["is_secondary_email_verified"] = False
             except ValueError:
                 pass
-        
+
         try:
             update_logged_in_user(updates)
             flash("Updated your profile!", "success")
@@ -273,17 +280,16 @@ def profile():
 
 DEFAULT_OTP_LENGTH = 4
 
+
 def update_logged_in_user(updates: Dict[str, Any]):
     """
     Updates the logged in user.
-    
+
     1. Applies DB update
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = update_user_by_id(
-        g.user["id"], updates
-    )
+    session["user"] = update_user_by_id(g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname
@@ -294,6 +300,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
                 set_member_nickname(g.user["discord_user_id"], new_nickname)
             except Exception as e:
                 current_app.logger.exception(e)
+
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
     """Randomly generates an alphabetic one-time password for a user to be sent and login with."""
