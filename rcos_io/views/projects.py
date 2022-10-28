@@ -93,7 +93,7 @@ def add_project():
         db.add_project_lead(inserted_project[0]["id"], user["id"], get_current_semester(), 4)
 
         if len(inserted_project) > 0:
-            return redirect("/project/%s" % (inserted_project[0]["id"]))
+            return redirect("/projects/%s" % (inserted_project[0]["id"]))
 
     return render_template("projects/add_project.html")
 
