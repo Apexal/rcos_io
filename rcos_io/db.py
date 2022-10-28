@@ -263,14 +263,20 @@ def get_meetings() -> List[Dict[str, Any]]:
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     query = gql("""
-        mutation AddEnrollment($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
-            insert_enrollments_one(object: {
-                is_project_lead: true,
-                user_id: $user_id,
-                project_id: $project_id,
-                semester_id: $semester_id,
-                credits: $credits
-            }) {
+        mutation AddProjectLead($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
+            insert_enrollments_one(
+                object: {
+                    is_project_lead: true,
+                    user_id: $user_id,
+                    project_id: $project_id,
+                    semester_id: $semester_id,
+                    credits: $credits
+                },  
+                on_conflict: {
+                    constraint: enrollments_pkey,
+                    update_columns: [ project_id ]
+                }
+            ) {
                 project_id
             }
         }
