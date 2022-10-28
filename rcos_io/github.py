@@ -33,14 +33,15 @@ def get_tokens(code: str) -> GitHubTokens:
         }
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     tokens = response.json()
     return tokens
 
 class GitHubUser(TypedDict):
     id: str
     login: str
-    avatar_url: str
-
+    avatar_url: str # link to github profile page
 
 def get_user_info(access_token: str) -> GitHubUser:
     """
@@ -56,5 +57,7 @@ def get_user_info(access_token: str) -> GitHubUser:
         },
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     user = response.json()
     return user
