@@ -7,7 +7,8 @@ from rcos_io.db import get_meetings
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
-eastern = timezone('US/Eastern')
+eastern = timezone("US/Eastern")
+
 
 @bp.route("/")
 def meetings():
@@ -40,6 +41,7 @@ def events_api():
 
     return events
 
+
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     """Creates a Fullcalendar event object from a meeting."""
     return {
@@ -48,5 +50,5 @@ def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
         "start": meeting["start_date_time"],
         "end": meeting["end_date_time"],
         "url": f"/meetings/{meeting['id']}",
-        "color": "red" # TODO: reflect meeting type
+        "color": "red",  # TODO: reflect meeting type
     }

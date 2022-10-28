@@ -5,8 +5,10 @@ from typing import Any, Dict
 from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
+from rcos_io.github import GITHUB_AUTH_URL
 from rcos_io.settings import ENV
-from ..discord import DISCORD_AUTH_URL, add_user_to_server, get_tokens, get_user_info, set_member_nickname, generate_nickname
+from rcos_io import discord, github
+
 from flask import (
     current_app,
     Blueprint,
@@ -33,7 +35,7 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
-        g.logged_in_user_nickname = generate_nickname(user) or g.user["email"]
+        g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
 
 
 def login_required(view):
@@ -75,6 +77,29 @@ def verified_required(view):
     def wrapped_view(**kwargs):
         if g.user is None or not g.user["is_verified"]:
             flash("You must verified to view that page!", "danger")
+            return redirect("/")
+
+        return view(**kwargs)
+
+    return wrapped_view
+
+
+def full_profile_required(view):
+    """Flask decorator to require that the logged in user is has Discord, GitHub, and a secondary email set.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @full_profile_required
+    def secret():
+        return 'Hello fully setup users!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or not g.user["discord_user_id"] or not g.user["github_username"] or not g.user["secondary_email"] or not g.user["is_secondary_email_verified"]:
+            flash("You must finish your profile first!", "danger")
             return redirect("/")
 
         return view(**kwargs)
@@ -162,9 +187,9 @@ def logout():
 
 @bp.route("/discord")
 @login_required
-def discord():
+def discord_auth():
     """Redirects to Discord's auth flow for linking accounts."""
-    return redirect(DISCORD_AUTH_URL)
+    return redirect(discord.DISCORD_AUTH_URL)
 
 
 @bp.route("/discord/callback")
@@ -185,9 +210,9 @@ def discord_callback():
 
     # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
     try:
-        discord_user_tokens = get_tokens(code)
+        discord_user_tokens = discord.get_tokens(code)
         discord_access_token = discord_user_tokens["access_token"]
-        discord_user_info = get_user_info(discord_access_token)
+        discord_user_info = discord.get_user_info(discord_access_token)
     except HTTPError as e:
         flash("Yikes! Failed to link your Discord.", "danger")
         current_app.logger.exception(e)
@@ -197,10 +222,9 @@ def discord_callback():
     discord_user_id = discord_user_info["id"]
 
     try:
-        session["user"] = update_user_by_id(
-            g.user["id"], {"discord_user_id": discord_user_id}
-        )
-        g.user = session["user"]
+        update_logged_in_user({
+            "discord_user_id": discord_user_id
+        })
     except Exception as e:
         flash("Yikes! Failed to save your Discord link.", "danger")
         current_app.logger.exception(e)
@@ -210,17 +234,16 @@ def discord_callback():
 
     # Attempt to add them to the Discord server (will do nothing if already in the server)
     try:
-        response = add_user_to_server(discord_access_token, discord_user_id)
+        response = discord.add_user_to_server(discord_access_token, discord_user_id)
         # Was not previously in server and now was added
         if response.status_code == 201:
             flash_message += " and added you to the RCOS server!"
-        
+
         # Set Discord nickname
-        new_nickname = generate_nickname(g.user)
-        print(new_nickname)
+        new_nickname = discord.generate_nickname(g.user)
         if new_nickname:
             try:
-                set_member_nickname(g.user["discord_user_id"], new_nickname)
+                discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
             except Exception as e:
                 current_app.logger.exception(e)
     except HTTPError as e:
@@ -228,21 +251,64 @@ def discord_callback():
 
     flash(flash_message, "primary")
 
-    return redirect("/")
+    return redirect(url_for("auth.profile"))
 
+
+@bp.route("/github")
+def github_auth():
+    return redirect(GITHUB_AUTH_URL)
+
+@bp.route("/github/callback")
+def github_callback():
+    """
+    The callback URL that GitHub redirects to after getting user consent.
+
+    This view:
+    1. Exchanges GitHub OAuth2 code for access token
+    """
+
+    code = request.args.get("code")
+    if code is None:
+        return redirect("/")
+
+    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    try:
+        github_user_tokens = github.get_tokens(code)
+        github_access_token = github_user_tokens["access_token"]
+        github_user_info = github.get_user_info(github_access_token)
+    except HTTPError as e:
+        flash("Yikes! Failed to link your GitHub.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
+
+    github_username = github_user_info["login"]
+
+    try:
+        update_logged_in_user({"github_username": github_username})
+    except Exception as e:
+        flash("Yikes! Failed to save your GitHub link.", "danger")
+        current_app.logger.exception(e)
+        return redirect("/")
+
+    return redirect(url_for("auth.profile"))
 
 @bp.route("/profile", methods=("GET", "POST"))
 @login_required
 def profile():
     """Renders the profile form on GET request and updates it on POST."""
     if request.method == "GET":
-        return render_template("auth/profile.html")
+        if g.user["discord_user_id"]:
+            discord_user = discord.get_user(g.user["discord_user_id"])
+        else:
+            discord_user = None
+            
+        return render_template("auth/profile.html", discord_user=discord_user)
     else:
         # Store in database
         updates: Dict[str, str | int] = dict()
         if request.form["first_name"] and request.form["first_name"].strip():
             updates["first_name"] = request.form["first_name"].strip()
-        
+
         if request.form["last_name"] and request.form["last_name"].strip():
             updates["last_name"] = request.form["last_name"].strip()
 
@@ -251,14 +317,14 @@ def profile():
                 updates["graduation_year"] = int(request.form["graduation_year"])
             except ValueError:
                 pass
-        
+
         if request.form["secondary_email"]:
             try:
                 updates["secondary_email"] = request.form["secondary_email"]
                 updates["is_secondary_email_verified"] = False
             except ValueError:
                 pass
-        
+
         try:
             update_logged_in_user(updates)
             flash("Updated your profile!", "success")
@@ -273,27 +339,27 @@ def profile():
 
 DEFAULT_OTP_LENGTH = 4
 
+
 def update_logged_in_user(updates: Dict[str, Any]):
     """
     Updates the logged in user.
-    
+
     1. Applies DB update
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = update_user_by_id(
-        g.user["id"], updates
-    )
+    session["user"] = update_user_by_id(g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname
     if g.user["discord_user_id"]:
-        new_nickname = generate_nickname(g.user)
+        new_nickname = discord.generate_nickname(g.user)
         if new_nickname:
             try:
-                set_member_nickname(g.user["discord_user_id"], new_nickname)
+                discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
             except Exception as e:
                 current_app.logger.exception(e)
+
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
     """Randomly generates an alphabetic one-time password for a user to be sent and login with."""

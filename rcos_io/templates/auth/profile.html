@@ -1,7 +1,7 @@
 {% extends "base.html" %} {% block content %}
 
 <div class="container">
-  <h1>Your {% if g.user["role"] == "rpi" %}RPI{% endif %} Profile</h1>
+  <h1>Your Profile</h1>
 
   {% include '/includes/flashed_messages.html' %}
 
@@ -45,7 +45,7 @@
       />
     </div>
 
-    <!-- <div class="mb-3">
+    <div class="mb-3">
       <label for="secondary_email" class="form-label">Secondary Email</label>
       <input
         type="text"
@@ -55,7 +55,7 @@
         value="{{ g.user['secondary_email'] if g.user['secondary_email'] }}"
         class="form-control"
       />
-    </div> -->
+    </div>
 
     {% if g.user["role"] == "rpi" %}
     <div class="mb-3">
@@ -76,6 +76,49 @@
 
     <button type="submit" class="btn btn-success">Save</button>
   </form>
+
+  <hr />
+
+  <div class="mb-3">
+    <div class="row">
+      <div class="col">
+        <label class="form-label">Connected Discord Account</label>
+        <div class="card">
+          <div class="card-body d-flex align-items-center">
+            {% if discord_user %}
+            <img
+              src="https://cdn.discordapp.com/avatars/{{ discord_user['id'] }}/{{ discord_user['avatar'] }}.png?size=48"
+              alt="Discord avatar"
+              class="rounded-circle me-3"
+            />
+            <strong class="fs-3"
+              >@{{ discord_user["username"] }}#{{ discord_user["discriminator"]
+              }}</strong
+            >
+            {% else %}
+            <a href="{{ url_for('auth.discord_auth') }}" class="btn btn-link"
+              >Link Discord</a
+            >
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <label class="form-label">Connected GitHub Account</label>
+        <div class="card">
+          <div class="card-body d-flex align-items-center">
+            {% if g.user["github_username"] %}
+            <strong class="fs-3"><a target="_blank" href="https://github.com/{{ g.user["github_username"] }}">@{{ g.user["github_username"] }}</a></strong>
+            {% else %}
+            <a href="{{ url_for('auth.github_auth') }}" class="btn btn-link"
+              >Link GitHub</a
+            >
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% endblock %}

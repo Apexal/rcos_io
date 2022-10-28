@@ -31,6 +31,20 @@ fragment basicUser on users {
 }
 """
 
+'''
+                         id -> required -> uuid
+                 first_name -> optional
+                  last_name -> optional
+            graduation_year -> optional 
+             preferred_name -> optional
+                       role -> required -> rpi/external
+                      email -> required
+            secondary_email -> optional
+is_secondary_email_verified -> default: false
+                     rcs_id -> optional
+            discord_user_id -> optional
+            github_username -> optional
+'''
 
 def find_or_create_user_by_email(email: str, role: str) -> Dict[str, Any]:
     """
@@ -90,9 +104,9 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
         rcs_id = email.removesuffix("@rpi.edu")
         user_values["rcs_id"] = rcs_id
 
-    user = client.execute(
-        query, variable_values={"user": user_values}
-    )["insert_users"]["returning"][0]
+    user = client.execute(query, variable_values={"user": user_values})["insert_users"][
+        "returning"
+    ][0]
 
     return user
 
@@ -119,6 +133,10 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_project(project_id: str) -> Dict[str, Any] | None:
+    """
+    Fetches the project with the given ID. 
+    Returns project name, participants, description, tags and relevant repos.
+    """
     query = gql(
         """
         query GetProject($pid: uuid!) {
@@ -129,6 +147,7 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
                 id
                 description_markdown
                 enrollments {
+                    is_project_lead
                     user {
                         rcs_id
                         first_name
@@ -148,6 +167,10 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
 
 
 def get_all_projects() -> List[Dict[str, Any]]:
+    """
+    Fetches all projects. 
+    Returns project name, and relevant repos.
+    """
     query = gql(
         """
         query {
@@ -167,6 +190,10 @@ def get_all_projects() -> List[Dict[str, Any]]:
 def get_semester_projects(
     semester: str, with_enrollments: bool
 ) -> List[Dict[str, Any]]:
+    """
+    Fetches all projects in the current semester. 
+    Returns project name.
+    """
     query = gql(
         """
         query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
@@ -198,8 +225,10 @@ def get_semester_projects(
 
     return result["projects"]
 
-
 def add_project(id: str, owner_id: str, name: str, desc: str):
+    """
+    Creates new project with name=name and description=desc where owner is user that has id=owner_id
+    """
     query = gql(
         """
         mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
@@ -221,7 +250,12 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
 
     return result["insert_projects"]
 
+
 def get_meetings() -> List[Dict[str, Any]]:
+    """
+    Fetches all meetings. 
+    Returns meeting name, type, start and end timestamps.
+    """
     query = gql(
         """
         query meetings {
@@ -237,3 +271,29 @@ def get_meetings() -> List[Dict[str, Any]]:
     )
     result = client.execute(query)
     return result["meetings"]
+
+def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
+    """
+    Adds user with id=user_id as project lead of project with id=project_id.
+    Also adds corresponding enrollment to current semester.
+    """
+    query = gql("""
+        mutation AddEnrollment($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
+            insert_enrollments_one(object: {
+                is_project_lead: true,
+                user_id: $user_id,
+                project_id: $project_id,
+                semester_id: $semester_id,
+                credits: $credits
+            }) {
+                project_id
+            }
+        }
+    """)
+
+    result = client.execute(
+        query, 
+        variable_values={"project_id": project_id, "user_id": user_id, "semester_id": semester_id, "credits": credits},
+    )
+
+    return result["insert_enrollments_one"]

@@ -1,4 +1,5 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional, TypedDict, Union
+from typing_extensions import NotRequired
 import requests
 from rcos_io.settings import (
     DISCORD_BOT_TOKEN,
@@ -19,8 +20,14 @@ HEADERS = {
     "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
 }
 
+class DiscordTokens(TypedDict):
+    access_token: str
+    token_type: str
+    expires_in: int
+    refresh_token: str
+    scope: str
 
-def get_tokens(code: str) -> Dict[str, Any]:
+def get_tokens(code: str) -> DiscordTokens:
     """
     Given an authorization code, request the access and refresh tokens for a Discord user. Returns the tokens. Throws an error if invalid request.
 
@@ -39,11 +46,20 @@ def get_tokens(code: str) -> Dict[str, Any]:
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     tokens = response.json()
     return tokens
 
+class DiscordUser(TypedDict):
+    id: str
+    username: str
+    discriminator: str
+    avatar: NotRequired[str]
+    banner: NotRequired[str]
+    accent_color: NotRequired[str]
 
-def get_user_info(access_token: str) -> Dict[str, Any]:
+def get_user_info(access_token: str) -> DiscordUser:
     """
     Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error on failed request.
 
@@ -57,6 +73,8 @@ def get_user_info(access_token: str) -> Dict[str, Any]:
         },
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     user = response.json()
     return user
 
@@ -76,45 +94,84 @@ def add_user_to_server(access_token: str, user_id: str):
         headers=HEADERS,
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     return response
 
+def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
+    """
+    Given a Discord user's id, get their user info. Throws an error on failed request.
+
+    See https://discord.com/developers/docs/resources/user#get-user
+    """
+    response = requests.get(
+        f"{DISCORD_API_ENDPOINT}/users/{discord_user_id}",
+        headers=HEADERS,
+    )
+    response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
+    user = response.json()
+    return user
 
 def add_role_to_member(user_id: str, role_id: str):
-    """Add a role (identified by its id) to a server member. Throws an error on failed request."""
+    """
+    Add a role (identified by its id) to a server member. Throws an error on failed request.
+    
+    See https://discord.com/developers/docs/resources/guild#modify-guild-member
+    """
     response = requests.put(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}/roles/{role_id}",
         headers=HEADERS,
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     return response
 
 
 def kick_user_from_server(user_id: str):
-    """Given a Discord user's id, kick them from the RCOS server. Throws an error on failed request."""
+    """
+    Given a Discord user's id, kick them from the RCOS server. Throws an error on failed request.
+    
+    See https://discord.com/developers/docs/resources/guild#remove-guild-member
+    """
     response = requests.delete(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         headers=HEADERS,
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     return response
 
 
 def set_member_nickname(user_id: str, nickname: str):
-    """Given a Discord user's id, set their nickname on the server. Throws an error on failed request."""
+    """
+    Given a Discord user's id, set their nickname on the server. Throws an error on failed request.
+    
+    See https://discord.com/developers/docs/resources/guild#modify-current-member
+    """
     response = requests.patch(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         json={"nick": nickname},
         headers=HEADERS,
     )
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     return response
 
+
 def generate_nickname(user: Dict[str, Any]) -> str | None:
+    # Bill Ni, graduating 2022, nib@rpi.edu -> Bill N '22 (nib)
+    # Glen Darling, IBM, glendarling@us.ibm.com -> Glen D
+
     name = ""
     if user["first_name"] and user["last_name"]:
         name = f"{user['first_name']} {user['last_name'][0]}"
     elif user["first_name"]:
-        name = user['first_name']
+        name = user["first_name"]
     elif user["rcs_id"]:
         return user["rcs_id"]
 
