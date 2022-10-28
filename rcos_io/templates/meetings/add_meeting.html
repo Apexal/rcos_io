@@ -1,0 +1,47 @@
+{% extends "/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Add Meeting</h1>
+
+    <form method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">Name</label>
+            <input class="form-control" type="text" name="name" id="name" placeholder="Exciting Meeting (optional)">
+        </div>
+
+        <div class="mb-3">
+            <label for="type" class="form-label">Type</label>
+            <select class="form-select" id="type">
+                <option selected>Select type</option>
+                {% for meeting_type in meeting_types %}
+                <option value="{{ meeting_type }}">{{ meeting_type }}</option>
+                {% endfor %}
+              </select>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <div class="mb-3">
+                    <label for="start_date_time" class="form-label">Start</label>
+                    <input class="form-control" type="datetime-local" name="start_date_time" id="start_date_time">
+                </div>
+            </div>
+            <div class="col">
+                <div class="mb-3">
+                    <label for="end_date_time" class="form-label">End</label>
+                    <input class="form-control" type="datetime-local" name="end_date_time" id="end_date_time">
+                </div>
+            </div>  
+        </div>
+        
+
+        <div class="mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input class="form-control" type="text" name="location" id="location" placeholder="Sage 3510 (optional)">
+        </div>
+
+        <button type="submit" class="btn btn-success">Add</button>
+    </form>
+</div>
+{% endblock %}
