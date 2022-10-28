@@ -1,5 +1,5 @@
 import requests
-from typing import TypedDict
+from typing import List, Optional, TypedDict
 from rcos_io.settings import (
     GITHUB_APP_CLIENT_ID,
     GITHUB_APP_CLIENT_SECRET,
@@ -36,13 +36,13 @@ def get_tokens(code: str) -> GitHubTokens:
     tokens = response.json()
     return tokens
 
-class GitHubUser(TypedDict):
+class User(TypedDict):
     id: str
     login: str
     avatar_url: str
 
 
-def get_user_info(access_token: str) -> GitHubUser:
+def get_user_info(access_token: str) -> User:
     """
     Given an access token, get a GitHub user's info including id, username (login), avatar_url, etc. Throws an error on failed request.
 
@@ -58,3 +58,39 @@ def get_user_info(access_token: str) -> GitHubUser:
     response.raise_for_status()
     user = response.json()
     return user
+
+
+class Person(TypedDict):
+    name: str
+    email: str
+    date: str
+
+class Commit(TypedDict):
+    url: str
+    author: Person
+    committer: Person
+    message: str
+    comment_count: int
+    
+
+class CommitInfo(TypedDict):
+    url: str
+    sha: str
+    html_url: str
+    comments_url: str
+    commit: Commit
+    author: User
+    committer: User
+
+def get_repo_commits(repo_url: str, author_github_username: Optional[str]) -> List[CommitInfo]:
+    repo_short = repo_url.removeprefix("https://github.com/")
+
+    response = requests.get(
+        f"{GITHUB_API_ENDPOINT}/repos/{repo_short}/commits",
+        headers={
+            "Content-Type": "application/vnd.github+json",
+        },
+    )
+    response.raise_for_status()
+    commits = response.json()
+    return commits
