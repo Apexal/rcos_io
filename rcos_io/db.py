@@ -274,7 +274,7 @@ def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: i
                 },  
                 on_conflict: {
                     constraint: enrollments_pkey,
-                    update_columns: [ project_id ]
+                    update_columns: [ project_id, is_project_lead ]
                 }
             ) {
                 project_id
