@@ -112,6 +112,50 @@ def full_profile_required(view):
 
     return wrapped_view
 
+def rpi_required(view):
+    """Flask decorator to require that the logged in user is an RPI user to access the view.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @rpi_required
+    def students_only():
+        return 'Hello student!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user["role"] != "rpi":
+            flash("You must be an RPI student, faculty, or alum to view that page!", "danger")
+            return redirect("/")
+
+        return view(**kwargs)
+
+    return wrapped_view
+
+def mentor_or_above_required(view):
+    """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
+
+    ```
+    # Example
+    @app.route('/secret')
+    @rpi_required
+    def students_only():
+        return 'Hello student!'
+    ```
+    """
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user["role"] != "rpi":
+            flash("You must be an RPI student, faculty, or alum to view that page!", "danger")
+            return redirect("/")
+
+        return view(**kwargs)
+
+    return wrapped_view
+
 
 @bp.route("/login", methods=("GET", "POST"))
 def login():
@@ -195,7 +239,7 @@ def logout():
 @bp.route("/discord")
 @login_required
 def discord_auth():
-    """Redirects to Discord's auth flow for linking accounts."""
+    """Redirects to Discord's OAuth2 auth flow for linking accounts."""
     return redirect(discord.DISCORD_AUTH_URL)
 
 
@@ -261,6 +305,7 @@ def discord_callback():
 
 @bp.route("/github")
 def github_auth():
+    """Redirect to GitHub's OAuth2 flow for linking accounts."""
     return redirect(GITHUB_AUTH_URL)
 
 
