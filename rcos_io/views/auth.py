@@ -112,6 +112,7 @@ def full_profile_required(view):
 
     return wrapped_view
 
+
 def rpi_required(view):
     """Flask decorator to require that the logged in user is an RPI user to access the view.
 
@@ -127,12 +128,16 @@ def rpi_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None or g.user["role"] != "rpi":
-            flash("You must be an RPI student, faculty, or alum to view that page!", "danger")
+            flash(
+                "You must be an RPI student, faculty, or alum to view that page!",
+                "danger",
+            )
             return redirect("/")
 
         return view(**kwargs)
 
     return wrapped_view
+
 
 def mentor_or_above_required(view):
     """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
@@ -149,7 +154,10 @@ def mentor_or_above_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None or g.user["role"] != "rpi":
-            flash("You must be an RPI student, faculty, or alum to view that page!", "danger")
+            flash(
+                "You must be an RPI student, faculty, or alum to view that page!",
+                "danger",
+            )
             return redirect("/")
 
         return view(**kwargs)

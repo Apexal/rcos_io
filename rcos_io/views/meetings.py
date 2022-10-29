@@ -1,9 +1,10 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict
-from flask import Blueprint, render_template, request, url_for
+from flask import Blueprint, render_template, request
 from pytz import timezone
 
 from rcos_io.db import get_meetings
+from rcos_io.views.auth import login_required, rpi_required
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
@@ -17,6 +18,8 @@ def meetings():
 
 
 @bp.route("/add", methods=("GET", "POST"))
+@login_required
+@rpi_required
 def add_meeting():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":

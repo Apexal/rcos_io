@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
@@ -86,19 +86,19 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
-    mutation insert_user($user: users_insert_input!) {
-      insert_users(objects: [$user], on_conflict: {
-        constraint: users_email_key,
-        update_columns: []
-      }) {
-        returning {
-          ...basicUser
+        mutation insert_user($user: users_insert_input!) {
+            insert_users(objects: [$user], on_conflict: {
+                constraint: users_email_key,
+                update_columns: []
+            }) {
+                returning {
+                ...basicUser
+                }
+            }
         }
-      }
-    }
-  """
+        """
     )
-    user_values = {"email": email, "role": role}
+    user_values = {"email": email, "role": role, "is_verified": role == "rpi"}
 
     # Extract RCS ID from RPI email
     if role == "rpi":
@@ -109,6 +109,46 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
         "returning"
     ][0]
 
+    return user
+
+
+def find_user_by_id(
+    user_id: str, include_enrollments: bool = False
+) -> Optional[Dict[str, Any]]:
+    query = gql(
+        """
+        query find_user_by_id($user_id: uuid!, $include_enrollments: Boolean!) {
+            user: users_by_pk(id: $user_id) {
+                id
+                first_name
+                last_name
+                graduation_year
+                rcs_id
+                role
+                discord_user_id
+                github_username
+                enrollments @include(if: $include_enrollments) {
+                    credits
+                    project {
+                        id
+                        name
+                    }
+                    semester_id
+                    is_project_lead
+                    is_coordinator
+                    is_faculty_advisor
+                }
+            }
+        }
+        """
+    )
+    user = client.execute(
+        query,
+        variable_values={
+            "user_id": user_id,
+            "include_enrollments": include_enrollments,
+        },
+    )["user"]
     return user
 
 
@@ -131,6 +171,10 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
         query, variable_values={"user_id": user_id, "updates": updates}
     )["update_users"]["returning"][0]
     return user
+
+
+def get_current_or_next_semester() -> Optional[Dict[str, Any]]:
+    pass
 
 
 def get_project(project_id: str) -> Dict[str, Any] | None:
