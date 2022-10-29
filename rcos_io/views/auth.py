@@ -98,7 +98,13 @@ def full_profile_required(view):
 
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if g.user is None or not g.user["discord_user_id"] or not g.user["github_username"] or not g.user["secondary_email"] or not g.user["is_secondary_email_verified"]:
+        if (
+            g.user is None
+            or not g.user["discord_user_id"]
+            or not g.user["github_username"]
+            or not g.user["secondary_email"]
+            or not g.user["is_secondary_email_verified"]
+        ):
             flash("You must finish your profile first!", "danger")
             return redirect("/")
 
@@ -180,6 +186,7 @@ def otp():
 
 @bp.route("/logout")
 def logout():
+    """Logs out the user by clearing the session."""
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("index"))
@@ -222,9 +229,7 @@ def discord_callback():
     discord_user_id = discord_user_info["id"]
 
     try:
-        update_logged_in_user({
-            "discord_user_id": discord_user_id
-        })
+        update_logged_in_user({"discord_user_id": discord_user_id})
     except Exception as e:
         flash("Yikes! Failed to save your Discord link.", "danger")
         current_app.logger.exception(e)
@@ -257,6 +262,7 @@ def discord_callback():
 @bp.route("/github")
 def github_auth():
     return redirect(GITHUB_AUTH_URL)
+
 
 @bp.route("/github/callback")
 def github_callback():
@@ -292,6 +298,7 @@ def github_callback():
 
     return redirect(url_for("auth.profile"))
 
+
 @bp.route("/profile", methods=("GET", "POST"))
 @login_required
 def profile():
@@ -301,7 +308,7 @@ def profile():
             discord_user = discord.get_user(g.user["discord_user_id"])
         else:
             discord_user = None
-            
+
         return render_template("auth/profile.html", discord_user=discord_user)
     else:
         # Store in database

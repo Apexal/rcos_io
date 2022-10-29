@@ -1,13 +1,15 @@
 import os
 
+
 def env_get(env_var: str) -> str:
     """Gets the value of an environment variable or throws a `KeyError` if it is not set."""
-    val = os.environ.get(env_var) 
+    val = os.environ.get(env_var)
     # fetches value from .env file in root directory with "env_var" as the key
     if not val:
         raise KeyError(f"Env variable '{env_var}' is not set!")
         # occurs if key doesn't exist or .env file doesn't exist
     return val
+
 
 GQL_API_URL = env_get("GQL_API_URL")
 # url for querying rcos database with graphql

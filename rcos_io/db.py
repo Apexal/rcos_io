@@ -31,7 +31,7 @@ fragment basicUser on users {
 }
 """
 
-'''
+"""
                          id -> required -> uuid
                  first_name -> optional
                   last_name -> optional
@@ -44,7 +44,8 @@ is_secondary_email_verified -> default: false
                      rcs_id -> optional
             discord_user_id -> optional
             github_username -> optional
-'''
+"""
+
 
 def find_or_create_user_by_email(email: str, role: str) -> Dict[str, Any]:
     """
@@ -134,7 +135,7 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_project(project_id: str) -> Dict[str, Any] | None:
     """
-    Fetches the project with the given ID. 
+    Fetches the project with the given ID.
     Returns project name, participants, description, tags and relevant repos.
     """
     query = gql(
@@ -168,7 +169,7 @@ def get_project(project_id: str) -> Dict[str, Any] | None:
 
 def get_all_projects() -> List[Dict[str, Any]]:
     """
-    Fetches all projects. 
+    Fetches all projects.
     Returns project name, and relevant repos.
     """
     query = gql(
@@ -191,7 +192,7 @@ def get_semester_projects(
     semester: str, with_enrollments: bool
 ) -> List[Dict[str, Any]]:
     """
-    Fetches all projects in the current semester. 
+    Fetches all projects in the current semester.
     Returns project name.
     """
     query = gql(
@@ -225,6 +226,7 @@ def get_semester_projects(
 
     return result["projects"]
 
+
 def add_project(id: str, owner_id: str, name: str, desc: str):
     """
     Creates new project with name=name and description=desc where owner is user that has id=owner_id
@@ -253,7 +255,7 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
 
 def get_meetings() -> List[Dict[str, Any]]:
     """
-    Fetches all meetings. 
+    Fetches all meetings.
     Returns meeting name, type, start and end timestamps.
     """
     query = gql(
@@ -272,12 +274,14 @@ def get_meetings() -> List[Dict[str, Any]]:
     result = client.execute(query)
     return result["meetings"]
 
+
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     """
     Adds user with id=user_id as project lead of project with id=project_id.
     Also adds corresponding enrollment to current semester.
     """
-    query = gql("""
+    query = gql(
+        """
         mutation AddProjectLead($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
             insert_enrollments_one(
                 object: {
@@ -295,11 +299,17 @@ def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: i
                 project_id
             }
         }
-    """)
+    """
+    )
 
     result = client.execute(
-        query, 
-        variable_values={"project_id": project_id, "user_id": user_id, "semester_id": semester_id, "credits": credits},
+        query,
+        variable_values={
+            "project_id": project_id,
+            "user_id": user_id,
+            "semester_id": semester_id,
+            "credits": credits,
+        },
     )
 
     return result["insert_enrollments_one"]

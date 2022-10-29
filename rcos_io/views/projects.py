@@ -9,11 +9,9 @@ import rcos_io.views.auth as auth
 bp = Blueprint("projects", __name__, url_prefix="/projects")
 
 
-
-
 def get_current_semester():
     """
-        Calculate which semester we are in given today's date.
+    Calculate which semester we are in given today's date.
     """
     current_date = date.today()
     start_month = "01"
@@ -26,15 +24,11 @@ def get_current_semester():
     return "%d%s" % (current_date.year, start_month)
 
 
-
-
 def render_projects(projects: List[Any]):
     """
-        Render the projects page given a list of projects.
+    Render the projects page given a list of projects.
     """
     return render_template("projects/projects.html", projects=projects)
-
-
 
 
 # @bp.route("/<semester>")
@@ -48,22 +42,18 @@ def render_projects(projects: List[Any]):
 #     return render_projects(db.get_semester_projects(semester, False))
 
 
-
-
 @bp.route("/")
 def current_projects():
     """
-        Get all projects for the current semester.
+    Get all projects for the current semester.
     """
     return render_projects(db.get_semester_projects(get_current_semester(), False))
-
-
 
 
 @bp.route("/past")
 def past_projects():
     """
-        Get all projects for all past semesters, current semester included.
+    Get all projects for all past semesters, current semester included.
     """
     return render_projects(db.get_all_projects())
 
@@ -90,7 +80,9 @@ def add_project():
         #
 
         # mark the creator of the project as the project lead
-        db.add_project_lead(inserted_project[0]["id"], user["id"], get_current_semester(), 4)
+        db.add_project_lead(
+            inserted_project[0]["id"], user["id"], get_current_semester(), 4
+        )
 
         if len(inserted_project) > 0:
             return redirect("/projects/%s" % (inserted_project[0]["id"]))
@@ -108,6 +100,11 @@ def project(project_id: str):
     current_semester = get_current_semester()
 
     # parse out any project members that are *not* in the project this semester
-    project['enrollments'] = list(filter(lambda user: user['semester']['id'] == current_semester, project['enrollments']))
+    project["enrollments"] = list(
+        filter(
+            lambda user: user["semester"]["id"] == current_semester,
+            project["enrollments"],
+        )
+    )
 
     return render_template("projects/project.html", project=project)

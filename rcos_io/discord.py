@@ -20,12 +20,14 @@ HEADERS = {
     "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
 }
 
+
 class DiscordTokens(TypedDict):
     access_token: str
     token_type: str
     expires_in: int
     refresh_token: str
     scope: str
+
 
 def get_tokens(code: str) -> DiscordTokens:
     """
@@ -51,6 +53,7 @@ def get_tokens(code: str) -> DiscordTokens:
     tokens = response.json()
     return tokens
 
+
 class DiscordUser(TypedDict):
     id: str
     username: str
@@ -58,6 +61,7 @@ class DiscordUser(TypedDict):
     avatar: NotRequired[str]
     banner: NotRequired[str]
     accent_color: NotRequired[str]
+
 
 def get_user_info(access_token: str) -> DiscordUser:
     """
@@ -98,6 +102,7 @@ def add_user_to_server(access_token: str, user_id: str):
     # throws HTTPError for 4XX or 5XX
     return response
 
+
 def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
     """
     Given a Discord user's id, get their user info. Throws an error on failed request.
@@ -114,10 +119,11 @@ def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
     user = response.json()
     return user
 
+
 def add_role_to_member(user_id: str, role_id: str):
     """
     Add a role (identified by its id) to a server member. Throws an error on failed request.
-    
+
     See https://discord.com/developers/docs/resources/guild#modify-guild-member
     """
     response = requests.put(
@@ -133,7 +139,7 @@ def add_role_to_member(user_id: str, role_id: str):
 def kick_user_from_server(user_id: str):
     """
     Given a Discord user's id, kick them from the RCOS server. Throws an error on failed request.
-    
+
     See https://discord.com/developers/docs/resources/guild#remove-guild-member
     """
     response = requests.delete(
@@ -149,7 +155,7 @@ def kick_user_from_server(user_id: str):
 def set_member_nickname(user_id: str, nickname: str):
     """
     Given a Discord user's id, set their nickname on the server. Throws an error on failed request.
-    
+
     See https://discord.com/developers/docs/resources/guild#modify-current-member
     """
     response = requests.patch(
