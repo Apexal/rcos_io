@@ -224,7 +224,7 @@ def otp():
     # Correct OTP, time to login!
 
     # Find or create the user from the email entered
-    session["user"] = find_or_create_user_by_email(
+    session["user"], is_new_user = find_or_create_user_by_email(
         user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
@@ -233,7 +233,7 @@ def otp():
     if redirect_to:
         return redirect(redirect_to)
     else:
-        return redirect(url_for("index"))
+        return redirect(url_for("auth.profile" if is_new_user else "index"))
 
 
 @bp.route("/logout")
@@ -348,6 +348,8 @@ def github_callback():
         flash("Yikes! Failed to save your GitHub link.", "danger")
         current_app.logger.exception(e)
         return redirect("/")
+
+    flash(f"Linked GitHub account @{github_username}", "primary")
 
     return redirect(url_for("auth.profile"))
 

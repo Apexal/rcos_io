@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
@@ -47,16 +47,18 @@ is_secondary_email_verified -> default: false
 """
 
 
-def find_or_create_user_by_email(email: str, role: str) -> Dict[str, Any]:
+def find_or_create_user_by_email(email: str, role: str) -> Tuple[Dict[str, Any], bool]:
     """
     Given an email and a role (to be used only when creating new user) try to find the user
     and create them if they don't exist yet.
+
+    Returns (user, is_new)
     """
     user = find_user_by_email(email)
     if user is not None:
-        return user
+        return user, False
     else:
-        return create_user_with_email(email, role)
+        return create_user_with_email(email, role), True
 
 
 def find_user_by_email(email: str) -> Dict[str, Any] | None:
