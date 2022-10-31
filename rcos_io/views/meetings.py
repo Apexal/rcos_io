@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Any, Dict
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from pytz import timezone
 
-from rcos_io.db import get_meetings
+from rcos_io.db import get_meeting_by_id, get_meetings
 from rcos_io.views.auth import login_required, rpi_required
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
@@ -37,6 +37,22 @@ def add_meeting():
     else:
         # TODO: persist to database
         return request.form
+
+@bp.route("/<meeting_id>")
+def meeting_detail(meeting_id: str):
+    try:
+        meeting = get_meeting_by_id(meeting_id)
+        print(meeting)
+    except:
+        flash("Invalid meeting ID!", "warning")
+        return redirect(url_for("meetings.meetings"))
+    
+    if meeting:
+        return render_template("meetings/meeting.html", meeting=meeting, format_date=lambda date, format: datetime.fromisoformat(date).strftime(format))
+    else:
+        flash("No meeting with that ID found!", "danger")
+        return redirect(url_for("meetings.meetings"))
+
 
 
 @bp.route("/api/events")

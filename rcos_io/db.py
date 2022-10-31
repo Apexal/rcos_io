@@ -17,6 +17,7 @@ client = Client(transport=transport, fetch_schema_from_transport=True)
 BASIC_USER_DATA_FRAGMENT_INLINE = """
 fragment basicUser on users {
   id
+  is_verified
   first_name
   last_name
   graduation_year
@@ -49,7 +50,7 @@ is_secondary_email_verified -> default: false
 
 def find_or_create_user_by_email(email: str, role: str) -> Tuple[Dict[str, Any], bool]:
     """
-    Given an email and a role (to be used only when creating new user) try to find the user
+    Given an email and a role (to be used only when creating new user) tries to find the user
     and create them if they don't exist yet.
 
     Returns (user, is_new)
@@ -62,7 +63,7 @@ def find_or_create_user_by_email(email: str, role: str) -> Tuple[Dict[str, Any],
 
 
 def find_user_by_email(email: str) -> Dict[str, Any] | None:
-    """Given an email, find the user with that email. Returns `None` if not found. Returns basic user data if found."""
+    """Given an email, finds the user with that email. Returns `None` if not found. Returns basic user data if found."""
     # First attempt to find user via email
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
@@ -84,7 +85,7 @@ def find_user_by_email(email: str) -> Dict[str, Any] | None:
 
 
 def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
-    """Create a new user with the given email and role. Returns basic user data."""
+    """Creates a new user with the given email and role. Returns basic user data."""
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
@@ -117,13 +118,16 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
 def find_user_by_id(
     user_id: str, include_enrollments: bool = False
 ) -> Optional[Dict[str, Any]]:
+    """Fetches a user with the given user_id UUID. Optionally includes their enrollments."""
     query = gql(
         """
         query find_user_by_id($user_id: uuid!, $include_enrollments: Boolean!) {
             user: users_by_pk(id: $user_id) {
                 id
+                email
                 first_name
                 last_name
+                is_verified
                 graduation_year
                 rcs_id
                 role
@@ -135,7 +139,11 @@ def find_user_by_id(
                         id
                         name
                     }
-                    semester_id
+                    semester {
+                        id
+                        type
+                        start_date
+                    }
                     is_project_lead
                     is_coordinator
                     is_faculty_advisor
@@ -155,7 +163,7 @@ def find_user_by_id(
 
 
 def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
-    """Update a user with the given ID and the given updates. Returns basic user data."""
+    """Updates a user with the given ID and the given updates. Returns basic user data."""
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
@@ -320,6 +328,29 @@ def get_meetings() -> List[Dict[str, Any]]:
     result = client.execute(query)
     return result["meetings"]
 
+def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
+    query = gql(
+        """
+        query find_meeting_by_id($meeting_id: uuid!) {
+            meeting: meetings_by_pk(id:$meeting_id) {
+                id
+                name
+                type
+                start_date_time
+                end_date_time
+                location
+                is_remote
+                created_at
+                host: user {
+                    id
+                    full_name
+                }
+            }
+        }
+        """
+    )
+    meeting = client.execute(query, variable_values={ "meeting_id": meeting_id })["meeting"]
+    return meeting
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     """

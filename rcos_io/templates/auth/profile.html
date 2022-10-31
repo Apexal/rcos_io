@@ -55,7 +55,7 @@
             type="text"
             name="secondary_email"
             id="secondary_email"
-            placeholder="{{ g.user['secondary_email'] }} or 'Backup email to login with'"
+            placeholder="{{ g.user['secondary_email']  or 'Backup email to login with' }}"
             value="{{ g.user['secondary_email'] if g.user['secondary_email'] }}"
             class="form-control"
           />
