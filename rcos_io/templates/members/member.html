@@ -1,5 +1,91 @@
 {% extends "base.html" %} {% block content %}
 <div class="container">
-  <h1>{{ display_name or "Unnamed Member" }}</h1>
+  <h1 class="display-2">{{ display_name or "Unnamed Member" }}</h1>
+  <p class="fs-3">
+    {% if g.is_logged_in %}
+    <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
+    {% endif %}
+    <span class="badge bg-primary text-uppercase">{{ user["role"] }}</span>
+    {% if user["graduation_year"] %}
+    <span class="badge bg-info">Class of {{ user["graduation_year"] }}</span>
+    {% endif %}
+  </p>
+
+  <div class="row">
+    <div class="col">
+
+      <ol class="list-group">
+        {% for enrollment in user["enrollments"] %}
+        <li class="list-group-item">
+          <div class="fw-bold fs-4 text-capitalize">{{ enrollment["semester"]["type"] }} {{ enrollment["semester"]["start_date"][:4] }}</div>
+          <div class="fs-5">{{ enrollment["project"]["name"] }}</div>
+          <div></div>
+        </li>
+        {% endfor %}
+      </ol>
+
+    </div>
+    {% if g.is_logged_in %}
+    <div class="col-xs-12 col-md-4">
+      {% if user["github_username"] %}
+      <div
+        class="card mb-3"
+        style="background-color: #333; color: white; height: 95px"
+      >
+        <div class="card-body d-flex align-items-center">
+          <img
+            src="https://github.com/{{ user['github_username'] }}.png?size=48"
+            alt="GitHub avatar"
+            class="rounded-circle me-3"
+            style="border: 2px solid white"
+          />
+          <strong class="flex-grow-1 fs-4"
+            ><a
+              class="text-white text-decoration-none"
+              target="_blank"
+              href="https://github.com/{{ user['github_username'] }}"
+              >{{ user["github_username"] }}</a
+            ></strong
+          >
+          <img
+            class="img-fluid"
+            style="max-width: 50px"
+            src="/static/GitHub-Mark-Light-64px.png"
+            alt="GitHub white logo mark"
+          />
+        </div>
+      </div>
+      {% endif %}
+      {% if discord_user %}
+      <div
+        class="card mb-3"
+        style="background-color: #5865f2; color: white; height: 95px"
+      >
+        <div class="card-body d-flex align-items-center">
+          
+          <img
+            src="https://cdn.discordapp.com/avatars/{{ discord_user['id'] }}/{{ discord_user['avatar'] }}.png?size=48"
+            alt="Discord avatar"
+            class="rounded-circle me-3"
+            style="border: 2px solid white"
+          />
+          <div class="flex-grow-1 d-flex flex-column">
+            <strong class="fs-4">{{ discord_user["username"] }}</strong>
+            <span>#{{ discord_user["discriminator"] }}</span>
+          </div>
+          <img
+            class="img-fluid"
+            style="max-width: 50px"
+            src="/static/discord-mark-white.png"
+            alt="Discord white logo mark"
+          />
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  
+ 
 </div>
 {% endblock %}
