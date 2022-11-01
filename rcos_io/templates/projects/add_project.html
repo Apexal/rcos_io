@@ -1,33 +1,56 @@
-{% extends "base.html" %}
-
-{% block title %}{{ project['name'] }}{% endblock %}
-
+{% extends "base.html" %} {% block title %}{{ project['name'] }}{% endblock %}
 {% block content %}
 <div class="container">
-	<form method="post">
-        <div class="form-group">
-            <label for="project_name">Project Name</label>
-            <input type="text" class="form-control" id="project_name" name="project_name" placeholder="Submitty 2, Yet Another Course Scheduler, ...">
-        </div>
+  <h1>Propose New Project</h1>
+  <form method="post">
+    <div class="form-group">
+      <label for="project_name">Project Name</label>
+      <input
+        type="text"
+        class="form-control"
+        id="project_name"
+        name="project_name"
+        placeholder="Submitty 2, Yet Another Course Scheduler, ..."
+        required
+      />
+    </div>
 
-        <br>
+    <br />
 
-        <div class="form-group">
-            <label for="project_desc">Project Description</label>
-            <textarea class="form-control" id="project_desc" name="project_desc" rows="3", placeholder="XYZ is a revolutionary new Discord bot that does..."></textarea>
-        </div>
+    <div class="form-group">
+      <label for="project_desc">Project Description</label>
+      <textarea
+        class="form-control"
+        id="project_desc"
+        name="project_desc"
+        rows="3"
+        ,
+        placeholder="XYZ is a revolutionary new Discord bot that does..."
+        required
+      ></textarea>
+    </div>
 
-        <br>
+    <br />
 
-        <div class="form-group">
-            <label for="project_stack">Technical Stack</label>
-            <input type="text" class="form-control" id="project_stack" name="project_stack" placeholder="Node.js, React, Haskell, etc...">
-            <small id="project_stack_format" class="form-text text-muted">Separate the different technologies by a comma (Node.js, React.js)</small>
-        </div>
+    <div class="form-group">
+      <label for="project_stack">Technical Stack</label>
+      <input
+        type="text"
+        class="form-control"
+        id="project_stack"
+        name="project_stack"
+        placeholder="Node.js, React, Haskell, etc..."
+        required
+      />
+      <small id="project_stack_format" class="form-text text-muted"
+        >Separate the different technologies by a comma (Node.js,
+        React.js)</small
+      >
+    </div>
 
-        <br>
-        
-        <button type="submit" class="btn btn-primary">Create</button>
-    </form>
+    <br />
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
 </div>
 {% endblock %}

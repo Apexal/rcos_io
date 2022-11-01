@@ -264,11 +264,14 @@ def get_all_projects() -> List[Dict[str, Any]]:
     """
     query = gql(
         """
-        query {
+        {
             projects(order_by: {name: asc}) {
                 id
                 name
+                tags
                 github_repos
+                description_markdown
+                created_at
             }
         }
         """
@@ -279,7 +282,7 @@ def get_all_projects() -> List[Dict[str, Any]]:
 
 
 def get_semester_projects(
-    semester: str, with_enrollments: bool
+    semester_id: str, with_enrollments: bool
 ) -> List[Dict[str, Any]]:
     """
     Fetches all projects in the current semester.
@@ -289,9 +292,24 @@ def get_semester_projects(
         """
         query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
           projects(order_by: {name: asc}, where: {enrollments: {_or: [{semester_id: {_eq: $semesterId}}]}}) {
-              id
-              name
-              enrollments @include(if: $withEnrollments) {
+            id
+            name
+            tags
+            github_repos
+            description_markdown
+            created_at
+            project_leads: enrollments(limit: 1, where: {is_project_lead: {_eq:true}}) @include(if: $withEnrollments) {
+                user_id
+                user {
+                    full_name
+                }
+            }
+            enrollments_aggregate(where: {semester_id: {_eq:$semesterId}}) {
+                aggregate {
+                    count
+                }
+            }
+            enrollments @include(if: $withEnrollments) {
                 user {
                     id
                     first_name
@@ -300,7 +318,7 @@ def get_semester_projects(
                 }
                 is_project_lead
                 credits
-              }
+            }
           }
         }
     """
@@ -309,7 +327,7 @@ def get_semester_projects(
     result = client.execute(
         query,
         variable_values={
-            "semesterId": semester,
+            "semesterId": semester_id,
             "withEnrollments": with_enrollments,
         },
     )
@@ -317,15 +335,15 @@ def get_semester_projects(
     return result["projects"]
 
 
-def add_project(id: str, owner_id: str, name: str, desc: str):
+def add_project(owner_id: str, name: str, desc: str):
     """
     Creates new project with name=name and description=desc where owner is user that has id=owner_id
     """
     query = gql(
         """
-        mutation AddProject($id: uuid!, $owner_id: uuid!, $name: String!, $desc: String!) {
+        mutation AddProject($owner_id: uuid!, $name: String!, $desc: String!) {
             insert_projects(objects: [
-                { id: $id, owner_id: $owner_id, name: $name, description_markdown: $desc }
+                { owner_id: $owner_id, name: $name, description_markdown: $desc }
             ]) {
                 returning {
                     id
@@ -337,7 +355,7 @@ def add_project(id: str, owner_id: str, name: str, desc: str):
 
     result = client.execute(
         query,
-        variable_values={"id": id, "owner_id": owner_id, "name": name, "desc": desc},
+        variable_values={"owner_id": owner_id, "name": name, "desc": desc},
     )
 
     return result["insert_projects"]

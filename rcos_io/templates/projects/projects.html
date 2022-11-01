@@ -1,20 +1,95 @@
 {% extends "base.html" %}
-
 {% block title %}Projects{% endblock %}
+
+{% macro project_card(project) -%}
+<div class="card my-3">
+  <!-- <img src="" alt="Project " class="card-img-top"> -->
+  <div class="card-body">
+    <h5 class="card-title fs-2">{{ project["name"] }}</h5>
+    <p class="card-text">{{ project["description_markdown"] }}</p>
+  </div>
+  <ul class="list-group list-group-flush">
+    {% if project["enrollments_aggregate"] and project["project_leads"] %}
+    <li class="list-group-item">
+      Team of <strong>{{ project["enrollments_aggregate"]["aggregate"]["count"] }}</strong> lead by
+      {% for enrollment in project["project_leads"] %}
+      <a href="{{ url_for('members.member', user_id=enrollment['user_id']) }}">{{ enrollment["user"]["full_name"] }}</a>
+      {% endfor %}
+    </li>
+    {% endif %}
+    {% if project["github_repos"] %}
+    <li class="list-group-item">
+      {% for repo_url in project["github_repos"] %}
+      <a href="{{ repo_url }}" target="_blank">{{ repo_url|replace("https://github.com/", "") }}</a>
+      {% endfor%}
+    </li>
+    {% endif %}
+    {% if project["tags"] %}
+    <li class="list-group-item">
+      {% for tag in project["tags"] %}
+      <a href="?search={{ tag }}" class="badge bg-secondary">{{ tag }}</a>
+      {% endfor %}
+    </li>
+    {% endif %}
+  </ul>
+  <div class="card-footer text-muted d-flex">
+    <div class="me-auto">
+      <a href="{{ url_for('projects.project', project_id=project['id']) }}">View</a>
+      
+    </div>
+    <div>Created {{ project["created_at"] }}</div>
+  </div>
+</div>
+{%- endmacro %}
 
 {% block content %}
 <div class="container">
-	<a href="{{ url_for('projects.current_projects') }}">Current Projects</a>
-	<a href="{{ url_for('projects.past_projects') }}">Past Projects</a>
-	<a href="{{ url_for('projects.add_project') }}">Add Project</a>
+  <h1 class="text-capitalize">
+    
+    {% if semester %}
+    {{ semester["name"] }} Projects
+    {% else %}
+    All Projects
+    {% endif %}
+    
+    <span class="badge bg-secondary">{{ projects | length }}</span>
+  </h1>
 
-	{% for project in projects %}
-	<tr>
-		<td>
-			<h3>{{ project['name'] }}</h3>
-			<a href="{{ '/projects/%s' % project['id'] }}">Go to...</a>
-		</td>
-	</tr>
-	{% endfor %}
+  <form class="my-3">
+    <div class="row">
+      <div class="col-auto">
+        <label for="search" class="col-form-label">Search</label>
+      </div>
+      <div class="col">
+        <input
+          type="search"
+          id="search"
+          name="search"
+          class="form-control"
+          placeholder="By name, project lead, tech stack"
+        />
+      </div>
+      <div class="col-auto"></div>
+    </div>
+  </form>
+
+  <div class="row">
+    {% for project in projects %}
+    <div class="col-xs-12 col-md-6 col-lg-4">
+      {{ project_card(project) }}
+    </div>
+    {% endfor %}
+  </div>
+
+  <nav class="my-3">
+    {% if g.is_logged_in and g.user["role"] == "rpi" %}
+    <a href="{{ url_for('projects.add_project') }}" class="btn btn-success"
+      >➕ Propose New Project</a
+    >
+    {% endif %}
+
+    <a href="{{ url_for('projects.current_projects') }}">Current Projects</a>
+    <a href="{{ url_for('projects.past_projects') }}">Past Projects</a>
+  </nav>
 </div>
 {% endblock %}

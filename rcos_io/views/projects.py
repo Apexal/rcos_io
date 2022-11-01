@@ -1,5 +1,4 @@
-from uuid import uuid4
-from flask import Blueprint, request, render_template, g, redirect
+from flask import Blueprint, request, render_template, g, redirect, session, flash, url_for
 from datetime import date
 from typing import Any, Dict, List
 
@@ -24,13 +23,6 @@ def get_current_semester():
     return "%d%s" % (current_date.year, start_month)
 
 
-def render_projects(projects: List[Any]):
-    """
-    Render the projects page given a list of projects.
-    """
-    return render_template("projects/projects.html", projects=projects)
-
-
 # @bp.route("/<semester>")
 # def semester_projects(semester: str = None):
 #     """
@@ -47,15 +39,21 @@ def current_projects():
     """
     Get all projects for the current semester.
     """
-    return render_projects(db.get_semester_projects(get_current_semester(), False))
-
+    if "semester" in session:
+        semester_projects = db.get_semester_projects(session["semester"]["id"], True)
+        return render_template("projects/projects.html", semester=session["semester"], projects=semester_projects)
+    else:
+        flash("There's no active semester of RCOS right now!", "warning")
+        return redirect(url_for("index"))
 
 @bp.route("/past")
 def past_projects():
     """
     Get all projects for all past semesters, current semester included.
     """
-    return render_projects(db.get_all_projects())
+    projects = db.get_all_projects()
+    return render_template("projects/projects.html", projects=projects)
+
 
 
 @bp.route("/add", methods=("GET", "POST"))
@@ -71,7 +69,7 @@ def add_project():
         stack = [s.strip() for s in stack.split(",")]
 
         user: Dict[str, Any] = g.user
-        inserted_project = db.add_project(str(uuid4()), user["id"], name, desc)[
+        inserted_project = db.add_project(user["id"], name, desc)[
             "returning"
         ]
 
