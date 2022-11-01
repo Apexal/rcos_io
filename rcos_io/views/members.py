@@ -1,8 +1,9 @@
 from typing import Any, Dict
-from flask import Blueprint, render_template, redirect, url_for, flash, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 
-from rcos_io.services.db import find_user_by_id
+from rcos_io.services.db import find_user_by_id, get_unverified_users, update_user_by_id
 from rcos_io.services import discord
+from rcos_io.views.auth import coordinator_or_above_required, login_required
 
 bp = Blueprint("members", __name__, url_prefix="/members")
 
@@ -12,6 +13,34 @@ def members():
     """Renders the lists of members (users)."""
 
     return render_template("members/members.html")
+
+
+@bp.route("/verify", methods=("GET", "POST"))
+@login_required
+@coordinator_or_above_required
+def verify():
+    """Renders the list of **unverified** members and handles verifying them."""
+    if request.method == "GET":
+        unverified_users = get_unverified_users()
+
+        return render_template("members/verify.html", unverified_users=unverified_users)
+    else:
+        target_user_id = request.form["user_id"]
+        target_user_action = request.form["action"]
+        
+        if not target_user_id or not target_user_action or target_user_action not in ("verify", "delete"):
+            flash("Invalid action.", "danger")
+            return redirect(url_for("members.verify"))
+        
+        # Apply action
+        if target_user_action == "verify":
+            flash(f"Verified user {target_user_id}", "success")
+            update_user_by_id(target_user_id, {"is_verified": True})
+        else:
+            # TODO
+            flash(f"Deleted user {target_user_id}", "info")
+
+        return redirect(url_for("members.verify"))
 
 
 @bp.route("/<user_id>")
