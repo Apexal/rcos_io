@@ -31,18 +31,6 @@ def get_current_semester():
 
     return "%d%s" % (current_date.year, start_month)
 
-
-# @bp.route("/<semester>")
-# def semester_projects(semester: str = None):
-#     """
-#         Get all projects for a specific semester.
-#     """
-#     if semester == None:
-#         return render_projects([], False)
-
-#     return render_projects(db.get_semester_projects(semester, False))
-
-
 @bp.route("/")
 def current_projects():
     """
@@ -71,6 +59,7 @@ def all_projects():
 
 @bp.route("/add", methods=("GET", "POST"))
 @auth.login_required
+@auth.rpi_required
 def add_project():
     if request.method == "POST":
         name = request.form["project_name"]

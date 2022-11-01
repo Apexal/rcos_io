@@ -13,21 +13,25 @@
 
 {% block content %}
 <div class="container">
-  <h1>Meetings</h1>
+	<h1>Meetings</h1>
 	{% include '/includes/flashed_messages.html' %}
 
-  <div id='calendar'></div>
-	
-  <script>
-		// Initialize Fullcalendar
-    document.addEventListener('DOMContentLoaded', function() {
-		  var calendarEl = document.getElementById('calendar');
-		  var calendar = new FullCalendar.Calendar(calendarEl, {
+	{% if session["is_coordinator_or_above"] %}
+	<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">➕ Add Meeting</a>
+	{% endif %}
+
+	<div id='calendar'></div>
+
+	<script>
+	// Initialize Fullcalendar
+		document.addEventListener('DOMContentLoaded', function() {
+		var calendarEl = document.getElementById('calendar');
+		var calendar = new FullCalendar.Calendar(calendarEl, {
 			initialView: 'dayGridMonth',
-            events: '/meetings/api/events'
-		  });
-		  calendar.render();
+			events: '/meetings/api/events'
 		});
-  </script>
+		calendar.render();
+	});
+	</script>
 </div>
 {% endblock %}

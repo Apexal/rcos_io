@@ -8,6 +8,7 @@ from urllib.error import HTTPError
 from rcos_io.services.db import (
     find_or_create_user_by_email,
     get_current_or_next_semester,
+    get_enrollment,
     update_user_by_id,
 )
 from rcos_io.services.github import GITHUB_AUTH_URL
@@ -45,6 +46,15 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
+        
+        if "is_mentor_or_above" not in session or "is_coordinator_or_above" not in session or "is_faculty_advisor" not in session:
+            enrollment = get_enrollment(g.user["id"], session["semester"]["id"])
+            if enrollment:
+                session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
+                session["is_coordinator_or_above"] = enrollment["is_coordinator"] or g.is_faculty_advisor
+                # TODO
+                session["is_mentor_or_above"] = False
+
         g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
 
 
@@ -163,9 +173,9 @@ def mentor_or_above_required(view):
 
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if g.user is None or g.user["role"] != "rpi":
+        if not session.get("is_mentor_or_above"):
             flash(
-                "You must be an RPI student, faculty, or alum to view that page!",
+                "You must be a Mentor or above to view this page!",
                 "danger",
             )
             return redirect("/")
@@ -189,9 +199,9 @@ def coordinator_or_above_required(view):
 
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if g.user is None or g.user["role"] != "rpi":
+        if not session.get("is_coordinator_or_above"):
             flash(
-                "You must be an RPI student, faculty, or alum to view that page!",
+                "You must be a Coordinator or above to view that page!",
                 "danger",
             )
             return redirect("/")

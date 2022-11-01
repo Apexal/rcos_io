@@ -259,6 +259,24 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     result = client.execute(query, variable_values={"pid": project_id})
     return result["project"]
 
+def get_enrollment(user_id: str, semester_id: str) -> Optional[Dict[str, Any]]:
+    query = gql(
+        """
+        query get_enrollment($user_id: uuid!, $semester_id: String!) {
+            enrollments(limit: 1, where: { user_id: { _eq: $user_id }, semester_id: { _eq: $semester_id } }) {
+                is_project_lead
+                is_coordinator
+                is_faculty_advisor
+            }
+        }
+        """
+    )
+
+    enrollments = client.execute(query, variable_values={"user_id": user_id, "semester_id": semester_id})["enrollments"]
+    if len(enrollments) == 0:
+        return None
+    else:
+        return enrollments[0]
 
 def get_all_projects() -> List[Dict[str, Any]]:
     """

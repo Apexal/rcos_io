@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from pytz import timezone
 
 from rcos_io.services.db import get_meeting_by_id, get_meetings
-from rcos_io.views.auth import login_required, rpi_required
+from rcos_io.views.auth import coordinator_or_above_required, login_required, rpi_required
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
@@ -19,7 +19,7 @@ def meetings():
 
 @bp.route("/add", methods=("GET", "POST"))
 @login_required
-@rpi_required
+@coordinator_or_above_required
 def add_meeting():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":
