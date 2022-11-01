@@ -28,7 +28,7 @@ bp = Blueprint("auth", __name__, url_prefix="/")
 
 @bp.before_app_request
 def load_logged_in_user():
-    """Set global user variables `is_logged_in` and `user` for access in views and templates."""
+    """Set global user variables `is_logged_in`, `user`, and `logged_in_user_nickname` for access in views and templates."""
     user: Optional[Dict[str, Any]] = session.get("user")
 
     g.is_logged_in = user is not None
@@ -213,6 +213,7 @@ def otp():
 
     session.clear()
 
+    # This better be set! If it isn't something fishy is up so abort!
     if user_otp is None or user_email is None:
         flash("There was an error logging you in. Please try again later.", "danger")
         return
@@ -327,8 +328,10 @@ def github_callback():
     1. Exchanges GitHub OAuth2 code for access token
     """
 
+    # Code comes from GitHub, meant to be exchanged for access tokens for the user
     code = request.args.get("code")
     if code is None:
+        flash("What are you trying to do...", "danger")
         return redirect("/")
 
     # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
@@ -341,8 +344,10 @@ def github_callback():
         current_app.logger.exception(e)
         return redirect("/")
 
+    # All we really care about is their GitHub username
     github_username = github_user_info["login"]
 
+    # Attempt to store GitHub username on user
     try:
         update_logged_in_user({"github_username": github_username})
     except Exception as e:
@@ -370,25 +375,21 @@ def profile():
     else:
         # Store in database
         updates: Dict[str, Union[str, int]] = dict()
-        if request.form["first_name"] and request.form["first_name"].strip():
-            updates["first_name"] = request.form["first_name"].strip()
+        
+        def handle_update(input_name: str) -> str:
+            if input_name in request.form and request.form[input_name].strip() and len(request.form[input_name].strip()) > 0:
+                updates[input_name] = request.form[input_name].strip()
 
-        if request.form["last_name"] and request.form["last_name"].strip():
-            updates["last_name"] = request.form["last_name"].strip()
+        handle_update("first_name")
+        handle_update("last_name")
+        handle_update("graduation_year")
+        handle_update("secondary_email")
 
-        if request.form["graduation_year"]:
-            try:
-                updates["graduation_year"] = int(request.form["graduation_year"])
-            except ValueError:
-                pass
+        # If changing secondary email, mark it as unverified
+        if "secondary_email" in updates:
+            updates["is_secondary_email_verified"] = False
 
-        if request.form["secondary_email"]:
-            try:
-                updates["secondary_email"] = request.form["secondary_email"]
-                updates["is_secondary_email_verified"] = False
-            except ValueError:
-                pass
-
+        # Attempt to apply updates in DB. This will fail if constraints fails like secondary email is reused
         try:
             update_logged_in_user(updates)
             flash("Updated your profile!", "success")
