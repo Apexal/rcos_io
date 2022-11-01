@@ -31,6 +31,7 @@ def get_current_semester():
 
     return "%d%s" % (current_date.year, start_month)
 
+
 @bp.route("/")
 def current_projects():
     """
@@ -100,4 +101,6 @@ def project(project_id: str):
         )
     )
 
-    return render_template("projects/project.html", project=project, semester=session["semester"])
+    return render_template(
+        "projects/project.html", project=project, semester=session["semester"]
+    )

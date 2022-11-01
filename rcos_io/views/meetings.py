@@ -1,10 +1,14 @@
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from pytz import timezone
 
 from rcos_io.services.db import get_meeting_by_id, get_meetings, insert_meeting
-from rcos_io.views.auth import coordinator_or_above_required, login_required, rpi_required
+from rcos_io.views.auth import (
+    coordinator_or_above_required,
+    login_required,
+    rpi_required,
+)
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
@@ -36,18 +40,19 @@ def add_meeting():
         return render_template("meetings/add_meeting.html", meeting_types=meeting_types)
     else:
 
-
         # Add to database
-        meeting_data = {
+        meeting_data: dict[str, Optional[str]] = {
             "semester_id": session["semester"]["id"],
             "name": request.form["name"].strip(),
             "type": request.form["type"],
             "start_date_time": request.form["start_date_time"],
             "end_date_time": request.form["end_date_time"],
-            "location": request.form["location"].strip()
+            "location": request.form["location"].strip(),
         }
         new_meeting = insert_meeting(meeting_data)
-        return redirect(url_for("meetings.meeting_detail", meeting_id=new_meeting["id"]))
+        return redirect(
+            url_for("meetings.meeting_detail", meeting_id=new_meeting["id"])
+        )
 
 
 @bp.route("/<meeting_id>")

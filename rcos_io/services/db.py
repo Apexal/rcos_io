@@ -259,6 +259,7 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     result = client.execute(query, variable_values={"pid": project_id})
     return result["project"]
 
+
 def get_enrollment(user_id: str, semester_id: str) -> Optional[Dict[str, Any]]:
     query = gql(
         """
@@ -272,11 +273,14 @@ def get_enrollment(user_id: str, semester_id: str) -> Optional[Dict[str, Any]]:
         """
     )
 
-    enrollments = client.execute(query, variable_values={"user_id": user_id, "semester_id": semester_id})["enrollments"]
+    enrollments = client.execute(
+        query, variable_values={"user_id": user_id, "semester_id": semester_id}
+    )["enrollments"]
     if len(enrollments) == 0:
         return None
     else:
         return enrollments[0]
+
 
 def get_all_projects() -> List[Dict[str, Any]]:
     """
@@ -430,6 +434,7 @@ def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
     ]
     return meeting
 
+
 def insert_meeting(meeting_data: Dict[str, Any]) -> Dict[str, Any]:
     query = gql(
         """
@@ -440,8 +445,11 @@ def insert_meeting(meeting_data: Dict[str, Any]) -> Dict[str, Any]:
         }
         """
     )
-    new_meeting = client.execute(query, variable_values={"meeting_data": meeting_data})["insert_meetings_one"]
+    new_meeting = client.execute(query, variable_values={"meeting_data": meeting_data})[
+        "insert_meetings_one"
+    ]
     return new_meeting
+
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     """
