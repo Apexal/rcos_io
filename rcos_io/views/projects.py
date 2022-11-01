@@ -1,4 +1,13 @@
-from flask import Blueprint, request, render_template, g, redirect, session, flash, url_for
+from flask import (
+    Blueprint,
+    request,
+    render_template,
+    g,
+    redirect,
+    session,
+    flash,
+    url_for,
+)
 from datetime import date
 from typing import Any, Dict, List
 
@@ -41,19 +50,23 @@ def current_projects():
     """
     if "semester" in session:
         semester_projects = db.get_semester_projects(session["semester"]["id"], True)
-        return render_template("projects/projects.html", semester=session["semester"], projects=semester_projects)
+        return render_template(
+            "projects/projects.html",
+            semester=session["semester"],
+            projects=semester_projects,
+        )
     else:
         flash("There's no active semester of RCOS right now!", "warning")
         return redirect(url_for("index"))
 
-@bp.route("/past")
-def past_projects():
+
+@bp.route("/all")
+def all_projects():
     """
-    Get all projects for all past semesters, current semester included.
+    Get all projects for all semesters, current semester included.
     """
     projects = db.get_all_projects()
     return render_template("projects/projects.html", projects=projects)
-
 
 
 @bp.route("/add", methods=("GET", "POST"))
@@ -69,9 +82,7 @@ def add_project():
         stack = [s.strip() for s in stack.split(",")]
 
         user: Dict[str, Any] = g.user
-        inserted_project = db.add_project(user["id"], name, desc)[
-            "returning"
-        ]
+        inserted_project = db.add_project(user["id"], name, desc)["returning"]
 
         #
         #   TODO: send validation to Discord, validation panel in site
@@ -92,17 +103,12 @@ def add_project():
 def project(project_id: str):
     project = db.get_project(project_id)
 
-    if len(project) == 1:
-        project = project[0]
-
-    current_semester = get_current_semester()
-
     # parse out any project members that are *not* in the project this semester
     project["enrollments"] = list(
         filter(
-            lambda user: user["semester"]["id"] == current_semester,
+            lambda user: user["semester"]["id"] == session["semester"]["id"],
             project["enrollments"],
         )
     )
 
-    return render_template("projects/project.html", project=project)
+    return render_template("projects/project.html", project=project, semester=session["semester"])

@@ -6,7 +6,7 @@
   <!-- <img src="" alt="Project " class="card-img-top"> -->
   <div class="card-body">
     <h5 class="card-title fs-2">{{ project["name"] }}</h5>
-    <p class="card-text">{{ project["description_markdown"] }}</p>
+    <p class="card-text">{{ project["short_description"] }}</p>
   </div>
   <ul class="list-group list-group-flush">
     {% if project["enrollments_aggregate"] and project["project_leads"] %}
@@ -49,7 +49,7 @@
     {% if semester %}
     {{ semester["name"] }} Projects
     {% else %}
-    All Projects
+    Projects Across All Semesters
     {% endif %}
     
     <span class="badge bg-secondary">{{ projects | length }}</span>
@@ -69,7 +69,17 @@
           placeholder="By name, project lead, tech stack"
         />
       </div>
-      <div class="col-auto"></div>
+      <div class="col-auto">
+        <nav aria-label="Page navigation example">
+          <ul class="pagination">
+            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+          </ul>
+        </nav>
+      </div>
     </div>
   </form>
 
@@ -89,7 +99,7 @@
     {% endif %}
 
     <a href="{{ url_for('projects.current_projects') }}">Current Projects</a>
-    <a href="{{ url_for('projects.past_projects') }}">Past Projects</a>
+    <a href="{{ url_for('projects.all_projects') }}">Past Projects</a>
   </nav>
 </div>
 {% endblock %}

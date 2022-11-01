@@ -216,7 +216,9 @@ def get_current_or_next_semester(search_date: date) -> Optional[Dict[str, Any]]:
         """
     )
 
-    result = client.execute(query, variable_values={"date": search_date.strftime("%Y-%m-%d")})["semesters"]
+    result = client.execute(
+        query, variable_values={"date": search_date.strftime("%Y-%m-%d")}
+    )["semesters"]
     if len(result) == 0:
         return None
     else:
@@ -231,11 +233,12 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     query = gql(
         """
         query GetProject($pid: uuid!) {
-            projects(limit: 1, where: {id: {_eq: $pid} }) {
+            project: projects_by_pk(id: $pid) {
                 name
                 tags
                 github_repos
                 id
+                short_description
                 description_markdown
                 enrollments {
                     is_project_lead
@@ -254,7 +257,7 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     )
 
     result = client.execute(query, variable_values={"pid": project_id})
-    return result["projects"]
+    return result["project"]
 
 
 def get_all_projects() -> List[Dict[str, Any]]:
@@ -270,7 +273,7 @@ def get_all_projects() -> List[Dict[str, Any]]:
                 name
                 tags
                 github_repos
-                description_markdown
+                short_description
                 created_at
             }
         }
@@ -296,7 +299,7 @@ def get_semester_projects(
             name
             tags
             github_repos
-            description_markdown
+            short_description
             created_at
             project_leads: enrollments(limit: 1, where: {is_project_lead: {_eq:true}}) @include(if: $withEnrollments) {
                 user_id

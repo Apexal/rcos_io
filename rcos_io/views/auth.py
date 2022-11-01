@@ -5,7 +5,11 @@ import string
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
-from rcos_io.services.db import find_or_create_user_by_email, get_current_or_next_semester, update_user_by_id
+from rcos_io.services.db import (
+    find_or_create_user_by_email,
+    get_current_or_next_semester,
+    update_user_by_id,
+)
 from rcos_io.services.github import GITHUB_AUTH_URL
 from rcos_io.services import github
 from rcos_io.settings import ENV
