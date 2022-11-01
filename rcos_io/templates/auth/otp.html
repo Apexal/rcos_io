@@ -1,9 +1,11 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="container">
   <h1 class="mb-3">
     Check
-    <span class="px-2 bg-primary text-light rounded">{{ user_email }}</span> for
-    your one-time password
+    <span class="px-2 bg-primary text-light rounded">{{ user_email }}</span>
+    for your one-time password
   </h1>
 
   {% include '/includes/flashed_messages.html' %}

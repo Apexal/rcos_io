@@ -1,14 +1,26 @@
 {% extends "/base.html" %}
 
+{% block head %}
+<!-- Fullcalendar CSS -->
+<link
+	rel="stylesheet"
+	href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"
+/>
+
+<!-- Fullcalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
-    <h1>Meetings</h1>
+  <h1>Meetings</h1>
 	{% include '/includes/flashed_messages.html' %}
 
-    <div id='calendar'></div>
-	<script>
-
-		document.addEventListener('DOMContentLoaded', function() {
+  <div id='calendar'></div>
+	
+  <script>
+		// Initialize Fullcalendar
+    document.addEventListener('DOMContentLoaded', function() {
 		  var calendarEl = document.getElementById('calendar');
 		  var calendar = new FullCalendar.Calendar(calendarEl, {
 			initialView: 'dayGridMonth',
@@ -16,7 +28,6 @@
 		  });
 		  calendar.render();
 		});
-  
-	  </script>
+  </script>
 </div>
 {% endblock %}

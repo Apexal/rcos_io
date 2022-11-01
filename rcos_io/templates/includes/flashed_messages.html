@@ -1,8 +1,10 @@
-{% for type, message in get_flashed_messages(with_categories=true) %} {# By
-default, using flash() sets the category to 'message', so if it does *not* equal
-message then it was intentionally set and be expected to be a valid Bootstrap
-alert type like 'primary', 'warning', 'danger', etc. We fall back to 'secondary'
-by default. #}
+{#
+  By default, using flash() sets the category to 'message', so if it does *not* equal message
+  then it was intentionally set and be expected to be a valid Bootstrap alert type like 'primary', 'warning', 'danger', etc.
+  We fall back to 'secondary' by default.
+#}
+
+{% for type, message in get_flashed_messages(with_categories=true) %}
 <div
   class="alert alert-{% if type != 'message' %}{{ type }}{% else %}secondary{% endif %}"
   role="alert"
