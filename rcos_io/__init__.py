@@ -8,7 +8,7 @@ from rcos_io.settings import SECRET_KEY
 load_dotenv()
 
 
-def create_app(test_config: Dict[str, str | bool] | None = None):
+def create_app():
     # Create and configure the app
     app = Flask(__name__)
     app.config["SECRET_KEY"] = SECRET_KEY

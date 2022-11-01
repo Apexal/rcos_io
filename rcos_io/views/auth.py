@@ -1,7 +1,7 @@
 import functools
 import random
 import string
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
 from rcos_io.db import find_or_create_user_by_email, update_user_by_id
@@ -28,7 +28,7 @@ bp = Blueprint("auth", __name__, url_prefix="/")
 @bp.before_app_request
 def load_logged_in_user():
     """Set global user variables `is_logged_in` and `user` for access in views and templates."""
-    user: Dict[str, Any] | None = session.get("user")
+    user: Optional[Dict[str, Any]] = session.get("user")
 
     g.is_logged_in = user is not None
     if user is None:
@@ -206,9 +206,9 @@ def otp():
     submitted_otp = request.form["otp"]
 
     # Grab and then clear session variables
-    user_otp: str | None = session.pop("user_otp", None)
-    user_email: str | None = session.pop("user_email", None)
-    redirect_to: str | None = session.pop("redirect_to", None)
+    user_otp: Optional[str] = session.pop("user_otp", None)
+    user_email: Optional[str] = session.pop("user_email", None)
+    redirect_to: Optional[str] = session.pop("redirect_to", None)
 
     session.clear()
 
@@ -367,7 +367,7 @@ def profile():
         return render_template("auth/profile.html", discord_user=discord_user)
     else:
         # Store in database
-        updates: Dict[str, str | int] = dict()
+        updates: Dict[str, Union[str, int]] = dict()
         if request.form["first_name"] and request.form["first_name"].strip():
             updates["first_name"] = request.form["first_name"].strip()
 

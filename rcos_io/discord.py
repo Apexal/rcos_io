@@ -169,7 +169,7 @@ def set_member_nickname(user_id: str, nickname: str):
     return response
 
 
-def generate_nickname(user: Dict[str, Any]) -> str | None:
+def generate_nickname(user: Dict[str, Any]) -> Optional[str]:
     # Bill Ni, graduating 2022, nib@rpi.edu -> Bill N '22 (nib)
     # Glen Darling, IBM, glendarling@us.ibm.com -> Glen D
 

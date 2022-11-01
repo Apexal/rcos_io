@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
@@ -62,7 +62,7 @@ def find_or_create_user_by_email(email: str, role: str) -> Tuple[Dict[str, Any],
         return create_user_with_email(email, role), True
 
 
-def find_user_by_email(email: str) -> Dict[str, Any] | None:
+def find_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     """Given an email, finds the user with that email. Returns `None` if not found. Returns basic user data if found."""
     # First attempt to find user via email
     query = gql(
@@ -187,7 +187,7 @@ def get_current_or_next_semester() -> Optional[Dict[str, Any]]:
     pass
 
 
-def get_project(project_id: str) -> Dict[str, Any] | None:
+def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     """
     Fetches the project with the given ID.
     Returns project name, participants, description, tags and relevant repos.
