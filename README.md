@@ -27,7 +27,8 @@ Mocked for being easy-to-use and generic, that's exactly the reason to use it he
 Setup is very straightforward.
 
 ### Requirements
-1. Python 3.10.x
+1. Python 3.8+
+2. `venv` (might need to run `sudo apt install sudo apt install python3.8-venv` or similar)
 
 ### Setup
 
