@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template
 import rcos_io.services.db
 from rcos_io.settings import SECRET_KEY
