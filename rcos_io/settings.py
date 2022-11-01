@@ -2,7 +2,7 @@ import os
 
 
 def env_get(env_var: str) -> str:
-    """Gets the value of an environment variable or throws a `KeyError` if it is not set."""
+    """Returns the value of an environment variable or throws a `KeyError` if it is not set."""
     val = os.environ.get(env_var)
     # fetches value from .env file in root directory with "env_var" as the key
     if not val:
@@ -12,44 +12,51 @@ def env_get(env_var: str) -> str:
 
 
 GQL_API_URL = env_get("GQL_API_URL")
-# url for querying rcos database with graphql
+"""URL to RCOS Hasura API for GraphQL requests"""
 
 HASURA_ADMIN_SECRET = env_get("HASURA_ADMIN_SECRET")
-# admin password for database access
+"""Admin password for full access to RCOS Hasura"""
 
 DISCORD_REDIRECT_URL = env_get("DISCORD_REDIRECT_URL")
+"""URL to that Discord redirects to at the end of its OAuth2 flow"""
 # url for discord oauth
 
 DISCORD_CLIENT_ID = env_get("DISCORD_CLIENT_ID")
-# discord bot id
-# example: https://discord.com/developers/docs/resources/user#user-object-example-user
+"""
+Client ID for Discord application
+
+See https://discord.com/developers/docs/resources/user#user-object-example-user
+"""
 
 DISCORD_CLIENT_SECRET = env_get("DISCORD_CLIENT_SECRET")
-# discord bot password
+"""Secret token of the Discord application"""
 
 DISCORD_BOT_TOKEN = env_get("DISCORD_BOT_TOKEN")
-# discord bot token
+"""Unique token that identifies the Discord application bot"""
 
 DISCORD_SERVER_ID = env_get("DISCORD_SERVER_ID")
-# discord server id
-# example: https://discord.com/developers/docs/resources/guild#guild-object-guild-structure
+"""
+The ID of the RCOS Discord server
+
+See https://discord.com/developers/docs/resources/guild#guild-object-guild-structure
+"""
 
 ENV = env_get("ENV")
-# development/production
+"""The environment the server is running in. Expected to be either `'development'` or `'production'`"""
 
 SECRET_KEY = env_get("SECRET_KEY")
-# used for securing flask server
+"""Secret random value used by Flask to secure cookies to store session data"""
 
 # discord id reference: https://discord.com/developers/docs/reference#snowflakes
 # discord bot platform: https://discord.com/developers/applications
 
 GITHUB_APP_CLIENT_ID = env_get("GITHUB_APP_CLIENT_ID")
-# github app id
+"""Client ID for the GitHub App"""
 
 GITHUB_APP_CLIENT_SECRET = env_get("GITHUB_APP_CLIENT_SECRET")
-# github app password
+"""Client secret for the GitHub App used to authorize requests"""
 
 GITHUB_APP_REDIRECT_URL = env_get("GITHUB_APP_REDIRECT_URL")
-# github app oauth link
+"""URL GitHub redirects to after the OAuth2 flow"""
 
 # github app docs: https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps

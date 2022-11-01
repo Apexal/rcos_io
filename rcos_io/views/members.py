@@ -1,9 +1,8 @@
 from typing import Any, Dict
 from flask import Blueprint, render_template, redirect, url_for, flash, g
 
-from rcos_io.db import find_user_by_id
-from rcos_io.discord import generate_nickname
-from rcos_io import discord, github
+from rcos_io.services.db import find_user_by_id
+from rcos_io.services import discord
 
 bp = Blueprint("members", __name__, url_prefix="/members")
 

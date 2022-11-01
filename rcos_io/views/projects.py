@@ -3,7 +3,7 @@ from flask import Blueprint, request, render_template, g, redirect
 from datetime import date
 from typing import Any, Dict, List
 
-import rcos_io.db as db
+import rcos_io.services.db as db
 import rcos_io.views.auth as auth
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")

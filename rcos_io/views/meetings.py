@@ -3,7 +3,7 @@ from typing import Any, Dict
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from pytz import timezone
 
-from rcos_io.db import get_meeting_by_id, get_meetings
+from rcos_io.services.db import get_meeting_by_id, get_meetings
 from rcos_io.views.auth import login_required, rpi_required
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
