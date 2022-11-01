@@ -182,6 +182,7 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     )["update_users"]["returning"][0]
     return user
 
+
 def get_unverified_users() -> List[Dict[str, Any]]:
     query = gql(
         """
@@ -198,6 +199,7 @@ def get_unverified_users() -> List[Dict[str, Any]]:
     )
     users = client.execute(query)["users"]
     return users
+
 
 def get_current_or_next_semester() -> Optional[Dict[str, Any]]:
     pass

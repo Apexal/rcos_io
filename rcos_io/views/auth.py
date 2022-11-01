@@ -165,6 +165,7 @@ def mentor_or_above_required(view):
 
     return wrapped_view
 
+
 def coordinator_or_above_required(view):
     """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
 
@@ -189,6 +190,7 @@ def coordinator_or_above_required(view):
         return view(**kwargs)
 
     return wrapped_view
+
 
 @bp.route("/login", methods=("GET", "POST"))
 def login():
@@ -399,9 +401,13 @@ def profile():
     else:
         # Store in database
         updates: Dict[str, Union[str, int]] = dict()
-        
+
         def handle_update(input_name: str) -> str:
-            if input_name in request.form and request.form[input_name].strip() and len(request.form[input_name].strip()) > 0:
+            if (
+                input_name in request.form
+                and request.form[input_name].strip()
+                and len(request.form[input_name].strip()) > 0
+            ):
                 updates[input_name] = request.form[input_name].strip()
 
         handle_update("first_name")

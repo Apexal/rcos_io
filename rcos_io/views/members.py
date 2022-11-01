@@ -27,11 +27,15 @@ def verify():
     else:
         target_user_id = request.form["user_id"]
         target_user_action = request.form["action"]
-        
-        if not target_user_id or not target_user_action or target_user_action not in ("verify", "delete"):
+
+        if (
+            not target_user_id
+            or not target_user_action
+            or target_user_action not in ("verify", "delete")
+        ):
             flash("Invalid action.", "danger")
             return redirect(url_for("members.verify"))
-        
+
         # Apply action
         if target_user_action == "verify":
             flash(f"Verified user {target_user_id}", "success")
