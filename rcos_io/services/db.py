@@ -328,6 +328,7 @@ def get_meetings() -> List[Dict[str, Any]]:
     result = client.execute(query)
     return result["meetings"]
 
+
 def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
     query = gql(
         """
@@ -349,8 +350,11 @@ def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
         }
         """
     )
-    meeting = client.execute(query, variable_values={ "meeting_id": meeting_id })["meeting"]
+    meeting = client.execute(query, variable_values={"meeting_id": meeting_id})[
+        "meeting"
+    ]
     return meeting
+
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     """

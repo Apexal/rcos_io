@@ -85,13 +85,13 @@ def verified_required(view):
     return wrapped_view
 
 
-def full_profile_required(view):
+def setup_required(view):
     """Flask decorator to require that the logged in user is has Discord, GitHub, and a secondary email set.
 
     ```
     # Example
     @app.route('/secret')
-    @full_profile_required
+    @setup_required
     def secret():
         return 'Hello fully setup users!'
     ```
@@ -222,7 +222,7 @@ def otp():
         flash("Wrong one-time password!", "danger")
         return redirect(url_for("auth.login"))
 
-    # Correct OTP, time to login!
+    ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
     session["user"], is_new_user = find_or_create_user_by_email(
@@ -359,13 +359,14 @@ def github_callback():
 @login_required
 def profile():
     """Renders the profile form on GET request and updates it on POST."""
-    if request.method == "GET":
-        if g.user["discord_user_id"]:
-            discord_user = discord.get_user(g.user["discord_user_id"])
-        else:
-            discord_user = None
 
-        return render_template("auth/profile.html", discord_user=discord_user)
+    if request.method == "GET":
+        # Fetch Discord user profile if linked
+        context = dict()
+        if g.user["discord_user_id"]:
+            context["discord_user"] = discord.get_user(g.user["discord_user_id"])
+
+        return render_template("auth/profile.html", **context)
     else:
         # Store in database
         updates: Dict[str, Union[str, int]] = dict()
@@ -425,7 +426,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
 
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:
-    """Randomly generates an alphabetic one-time password for a user to be sent and login with."""
+    """Randomly generates an alphabetic one-time password of the specified length in all caps."""
 
     otp = ""
     for _ in range(length):

@@ -33,10 +33,16 @@ def member(user_id: str):
         else:
             discord_user = None
 
-        return render_template("members/member.html", user=user, display_name=display_name, discord_user=discord_user)
+        return render_template(
+            "members/member.html",
+            user=user,
+            display_name=display_name,
+            discord_user=discord_user,
+        )
     else:
         flash("No user exists with that ID!", "warning")
         return redirect(url_for("index"))
+
 
 def generate_display_name(user: Dict[str, Any], is_logged_in: bool) -> str:
     if is_logged_in:

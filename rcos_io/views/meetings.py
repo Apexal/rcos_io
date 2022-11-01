@@ -38,6 +38,7 @@ def add_meeting():
         # TODO: persist to database
         return request.form
 
+
 @bp.route("/<meeting_id>")
 def meeting_detail(meeting_id: str):
     try:
@@ -46,13 +47,18 @@ def meeting_detail(meeting_id: str):
     except:
         flash("Invalid meeting ID!", "warning")
         return redirect(url_for("meetings.meetings"))
-    
+
     if meeting:
-        return render_template("meetings/meeting.html", meeting=meeting, format_date=lambda date, format: datetime.fromisoformat(date).strftime(format))
+        return render_template(
+            "meetings/meeting.html",
+            meeting=meeting,
+            format_date=lambda date, format: datetime.fromisoformat(date).strftime(
+                format
+            ),
+        )
     else:
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.meetings"))
-
 
 
 @bp.route("/api/events")
