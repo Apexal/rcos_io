@@ -1,10 +1,11 @@
+from datetime import date
 import functools
 import random
 import string
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
-from rcos_io.services.db import find_or_create_user_by_email, update_user_by_id
+from rcos_io.services.db import find_or_create_user_by_email, get_current_or_next_semester, update_user_by_id
 from rcos_io.services.github import GITHUB_AUTH_URL
 from rcos_io.services import github
 from rcos_io.settings import ENV
@@ -30,6 +31,10 @@ bp = Blueprint("auth", __name__, url_prefix="/")
 def load_logged_in_user():
     """Set global user variables `is_logged_in`, `user`, and `logged_in_user_nickname` for access in views and templates."""
     user: Optional[Dict[str, Any]] = session.get("user")
+
+    # Fetch and store semester in session if not there or if it's changed
+    if "semester" not in session or session["semester"]["end_date"] < str(date.today()):
+        session["semester"] = get_current_or_next_semester(date.today())
 
     g.is_logged_in = user is not None
     if user is None:

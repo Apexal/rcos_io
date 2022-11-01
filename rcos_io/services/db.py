@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple, Union
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
@@ -201,8 +201,26 @@ def get_unverified_users() -> List[Dict[str, Any]]:
     return users
 
 
-def get_current_or_next_semester() -> Optional[Dict[str, Any]]:
-    pass
+def get_current_or_next_semester(search_date: date) -> Optional[Dict[str, Any]]:
+    query = gql(
+        """
+        query current_or_next_semester($date: date!) {
+            semesters(limit: 1, order_by: {start_date: asc_nulls_last}, where: {_or: [{_and: [{start_date: {_lte: $date}}, {end_date: {_gte: $date}}]}, {start_date: {_gt: $date}}]}) {
+                id
+                name
+                type
+                start_date
+                end_date
+            }
+        }
+        """
+    )
+
+    result = client.execute(query, variable_values={"date": search_date.strftime("%Y-%m-%d")})["semesters"]
+    if len(result) == 0:
+        return None
+    else:
+        return result[0]
 
 
 def get_project(project_id: str) -> Optional[Dict[str, Any]]:
