@@ -430,6 +430,18 @@ def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
     ]
     return meeting
 
+def insert_meeting(meeting_data: Dict[str, Any]) -> Dict[str, Any]:
+    query = gql(
+        """
+        mutation add_meeting($meeting_data: meetings_insert_input!) {
+            insert_meetings_one(object: $meeting_data) {
+                id
+            }
+        }
+        """
+    )
+    new_meeting = client.execute(query, variable_values={"meeting_data": meeting_data})["insert_meetings_one"]
+    return new_meeting
 
 def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
     """

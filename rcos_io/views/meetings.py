@@ -1,9 +1,9 @@
 from datetime import datetime
 from typing import Any, Dict
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from pytz import timezone
 
-from rcos_io.services.db import get_meeting_by_id, get_meetings
+from rcos_io.services.db import get_meeting_by_id, get_meetings, insert_meeting
 from rcos_io.views.auth import coordinator_or_above_required, login_required, rpi_required
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
@@ -24,8 +24,8 @@ def add_meeting():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":
         meeting_types = [
-            "small_group",
-            "large_group",
+            "small group",
+            "large group",
             "workshop",
             "bonus",
             "mentors",
@@ -35,8 +35,19 @@ def add_meeting():
 
         return render_template("meetings/add_meeting.html", meeting_types=meeting_types)
     else:
-        # TODO: persist to database
-        return request.form
+
+
+        # Add to database
+        meeting_data = {
+            "semester_id": session["semester"]["id"],
+            "name": request.form["name"].strip(),
+            "type": request.form["type"],
+            "start_date_time": request.form["start_date_time"],
+            "end_date_time": request.form["end_date_time"],
+            "location": request.form["location"].strip()
+        }
+        new_meeting = insert_meeting(meeting_data)
+        return redirect(url_for("meetings.meeting_detail", meeting_id=new_meeting["id"]))
 
 
 @bp.route("/<meeting_id>")
@@ -89,7 +100,7 @@ def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     """Creates a Fullcalendar event object from a meeting."""
     return {
         "id": meeting["id"],
-        "title": meeting["name"],
+        "title": meeting["name"] or f"{meeting['type']} Meeting",
         "start": meeting["start_date_time"],
         "end": meeting["end_date_time"],
         "url": f"/meetings/{meeting['id']}",

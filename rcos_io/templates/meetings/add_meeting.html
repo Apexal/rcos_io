@@ -12,7 +12,7 @@
 
         <div class="mb-3">
             <label for="type" class="form-label">Type</label>
-            <select class="form-select" id="type">
+            <select class="form-select" id="type" name="type" required>
                 <option selected>Select type</option>
                 {% for meeting_type in meeting_types %}
                 <option value="{{ meeting_type }}">{{ meeting_type }}</option>
@@ -24,13 +24,13 @@
             <div class="col">
                 <div class="mb-3">
                     <label for="start_date_time" class="form-label">Start</label>
-                    <input class="form-control" type="datetime-local" name="start_date_time" id="start_date_time">
+                    <input class="form-control" type="datetime-local" name="start_date_time" id="start_date_time" required>
                 </div>
             </div>
             <div class="col">
                 <div class="mb-3">
                     <label for="end_date_time" class="form-label">End</label>
-                    <input class="form-control" type="datetime-local" name="end_date_time" id="end_date_time">
+                    <input class="form-control" type="datetime-local" name="end_date_time" id="end_date_time" required>
                 </div>
             </div>  
         </div>
