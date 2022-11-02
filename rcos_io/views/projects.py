@@ -8,7 +8,7 @@ from flask import (
     flash,
     url_for,
     Markup,
-    current_app
+    current_app,
 )
 from datetime import date
 from typing import Any, Dict, List
@@ -88,7 +88,9 @@ def add_project():
         )
 
         if len(inserted_project) > 0:
-            return redirect(url_for("projects.project_detail", project_id=inserted_project[0]["id"]))
+            return redirect(
+                url_for("projects.project_detail", project_id=inserted_project[0]["id"])
+            )
 
     return render_template("projects/add_project.html")
 
@@ -114,9 +116,33 @@ def project_detail(project_id: str):
         )
     )
 
-    compiled_md = markdown.markdown(project["description_markdown"])    
-    sanitized_md = Markup(bleach.clean(compiled_md, tags=[ 
-        'b', 'i', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'a', 'code', 'ul', 'li', 'ol', 'em', 'strong'
-    ]))
+    compiled_md = markdown.markdown(project["description_markdown"])
+    sanitized_md = Markup(
+        bleach.clean(
+            compiled_md,
+            tags=[
+                "b",
+                "i",
+                "p",
+                "h1",
+                "h2",
+                "h3",
+                "h4",
+                "h5",
+                "a",
+                "code",
+                "ul",
+                "li",
+                "ol",
+                "em",
+                "strong",
+            ],
+        )
+    )
 
-    return render_template("projects/project_detail.html", project=project, full_description=sanitized_md, semester=session["semester"])
+    return render_template(
+        "projects/project_detail.html",
+        project=project,
+        full_description=sanitized_md,
+        semester=session["semester"],
+    )

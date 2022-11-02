@@ -75,7 +75,6 @@ def add_meeting():
 def meeting_detail(meeting_id: str):
     try:
         meeting = get_meeting_by_id(meeting_id)
-        print(meeting)
     except:
         flash("Invalid meeting ID!", "warning")
         return redirect(url_for("meetings.meetings"))
@@ -84,9 +83,6 @@ def meeting_detail(meeting_id: str):
         return render_template(
             "meetings/meeting_detail.html",
             meeting=meeting,
-            format_date=lambda date, format: datetime.fromisoformat(date).strftime(
-                format
-            ),
         )
     else:
         flash("No meeting with that ID found!", "danger")

@@ -5,7 +5,7 @@
 <div class="card my-3">
   <!-- <img src="" alt="Project " class="card-img-top"> -->
   <div class="card-body">
-    <h5 class="card-title fs-2">{{ project["name"] }}</h5>
+    <h5 class="card-title fs-2"><a href="{{ url_for('projects.project_detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
     <p class="card-text">{{ project["short_description"] }}</p>
   </div>
   <ul class="list-group list-group-flush">
@@ -33,11 +33,9 @@
     {% endif %}
   </ul>
   <div class="card-footer text-muted d-flex">
-    <div class="me-auto">
-      <a href="{{ url_for('projects.project_detail', project_id=project['id']) }}">View</a>
-      
-    </div>
-    <div>Created {{ project["created_at"] }}</div>
+    {% if project["created_at"] %}
+    <div>Created {{ project["created_at"]|format_datetime("date") }}</div>
+    {% endif %}
   </div>
 </div>
 {%- endmacro %}
@@ -96,7 +94,8 @@
   <nav class="my-3">
     {% if g.is_logged_in and g.user["role"] == "rpi" %}
     <a href="{{ url_for('projects.add_project') }}" class="btn btn-success"
-      >➕ Propose New Project</a
+      ><i class="bi bi-plus-lg"></i>
+      Propose New Project</a
     >
     {% endif %}
 

@@ -11,14 +11,13 @@
       </nav>
       <div class="row align-items-center">
         <div class="col">
-            <h1 class="display-1">{{ meeting["name"] or (meeting["type"] + " Meeting") }}</h1>
-
+            <h1 class="display-1 text-capitalize">{{ meeting["name"] or (meeting["type"] + " Meeting") }}</h1>
         </div>
         <div class="col-xs-12 col-sm-3">
-            <h3>{{format_date(meeting["start_date_time"], '%A, %B %-d') }}</h3>
+            <h3>{{meeting["start_date_time"]|format_datetime('%A, %B %-d') }}</h3>
             <div>
-                <strong>{{ format_date(meeting["start_date_time"], "%-I:%M %p") }}</strong>
-                to <strong>{{ format_date(meeting["end_date_time"], '%-I:%M %p') }}</strong>
+                <strong>{{ meeting["start_date_time"]|format_datetime('%-I:%M %p') }}</strong>
+                to <strong>{{ meeting["end_date_time"]|format_datetime('%-I:%M %p') }}</strong>
             </div>
             </div>
         </div>

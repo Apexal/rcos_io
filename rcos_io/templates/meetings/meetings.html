@@ -17,7 +17,9 @@
 	{% include '/includes/flashed_messages.html' %}
 
 	{% if session["is_coordinator_or_above"] %}
-	<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">➕ Add Meeting</a>
+	<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">
+		<i class="bi bi-plus-lg"></i>
+		Add Meeting</a>
 	{% endif %}
 
 	<div id='calendar'></div>
