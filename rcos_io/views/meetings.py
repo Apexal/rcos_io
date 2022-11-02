@@ -1,6 +1,15 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+    current_app,
+)
 from pytz import timezone
 
 from rcos_io.services.db import get_meeting_by_id, get_meetings, insert_meeting
@@ -49,7 +58,14 @@ def add_meeting():
             "end_date_time": request.form["end_date_time"],
             "location": request.form["location"].strip(),
         }
-        new_meeting = insert_meeting(meeting_data)
+
+        try:
+            new_meeting = insert_meeting(meeting_data)
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("Yikes! Failed to add meeting. Check logs.", "danger")
+            return redirect(url_for("meetings.meetings"))
+
         return redirect(
             url_for("meetings.meeting_detail", meeting_id=new_meeting["id"])
         )

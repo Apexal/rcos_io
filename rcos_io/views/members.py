@@ -48,7 +48,7 @@ def verify():
 
 
 @bp.route("/<user_id>")
-def member(user_id: str):
+def member_detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:

@@ -241,11 +241,12 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
                 short_description
                 description_markdown
                 enrollments {
+                    user_id
                     is_project_lead
                     user {
+                        id
                         rcs_id
-                        first_name
-                        last_name
+                        full_name
                     }
                     semester {
                         id

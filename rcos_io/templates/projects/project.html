@@ -5,6 +5,9 @@
 {% block content %}
 <div class="container">
 	<h1 class="display-2">{{ project['name'] }}</h1>
+
+	{% include '/includes/flashed_messages.html' %}
+
 	<blockquote class="blockquote">
 		<p>{{ project["short_description"] }}</p>
 	</blockquote>
@@ -26,7 +29,7 @@
 	<h3>Members</h3>
 	{% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
 		{% for user in project['enrollments'] %}
-			<li>{{ user['user']['first_name'] }} {{ user['user']['last_name'] }} {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
+			<li><a href="{{ url_for('members.member_detail', user_id=user['user_id']) }}">{{ user['user']['full_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
 		{% endfor %}
 	{% else %}
 		<i>None yet!</i>
