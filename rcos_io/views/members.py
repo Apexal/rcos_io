@@ -1,8 +1,17 @@
 from typing import Any, Dict
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g, session
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    g,
+    session,
+    current_app,
+)
 
-from rcos_io.services.db import find_user_by_id, get_unverified_users, update_user_by_id
-from rcos_io.services import discord
+from rcos_io.services import db, discord
 from rcos_io.views.auth import coordinator_or_above_required, login_required
 
 bp = Blueprint("members", __name__, url_prefix="/members")
@@ -12,7 +21,22 @@ bp = Blueprint("members", __name__, url_prefix="/members")
 def members():
     """Renders the lists of members (users)."""
 
-    return render_template("members/members.html")
+    # Grab desired semester from the URL or default to current/next semester
+    semester_id = request.args.get("semester_id", session["semester"]["id"])
+
+    try:
+        # Grab the users who were enrolled in that semester, and the semester object
+        users, semester = db.get_semester_users(semester_id)
+
+        # Might've been passed an invalid semester id
+        if semester is None:
+            return redirect(url_for("members.members"))
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("Failed to fetch members...", "danger")
+        return redirect(url_for("members.members"))
+
+    return render_template("members/members.html", users=users, semester=semester)
 
 
 @bp.route("/verify", methods=("GET", "POST"))
@@ -21,7 +45,7 @@ def members():
 def verify():
     """Renders the list of **unverified** members and handles verifying them."""
     if request.method == "GET":
-        unverified_users = get_unverified_users()
+        unverified_users = db.get_unverified_users()
 
         return render_template("members/verify.html", unverified_users=unverified_users)
     else:
@@ -39,7 +63,7 @@ def verify():
         # Apply action
         if target_user_action == "verify":
             flash(f"Verified user {target_user_id}", "success")
-            update_user_by_id(target_user_id, {"is_verified": True})
+            db.update_user_by_id(target_user_id, {"is_verified": True})
         else:
             # TODO
             flash(f"Deleted user {target_user_id}", "info")
@@ -52,7 +76,7 @@ def member_detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
-        user = find_user_by_id(user_id, True)
+        user = db.find_user_by_id(user_id, True)
     except:
         flash("That is not a valid user ID!", "warning")
         return redirect(url_for("index"))

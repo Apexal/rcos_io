@@ -12,6 +12,7 @@ def index():
     return render_template("index.html")
 
 
+from rcos_io import filters
 from .views import auth
 from .views import projects
 from .views import meetings

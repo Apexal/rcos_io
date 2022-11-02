@@ -201,6 +201,36 @@ def get_unverified_users() -> List[Dict[str, Any]]:
     return users
 
 
+def get_semester_users(semester_id: str) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    query = gql(
+        """
+        query semester_users($semester_id: String!) {
+            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: {is_verified: {_eq: true}, enrollments: {semester_id: {_eq: $semester_id}}}) {
+                id
+                full_name
+                role
+                email
+                created_at
+                rcs_id
+                graduation_year
+                github_username
+                enrollments_aggregate {
+                    aggregate {
+                        count
+                    }
+                }
+            }
+            semester: semesters_by_pk(id: $semester_id) {
+                id
+                name
+            }
+        }
+        """
+    )
+    result = client.execute(query, variable_values={"semester_id": semester_id})
+    return result["users"], result["semester"]
+
+
 def get_current_or_next_semester(search_date: date) -> Optional[Dict[str, Any]]:
     query = gql(
         """
