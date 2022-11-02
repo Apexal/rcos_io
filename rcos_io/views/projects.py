@@ -7,10 +7,13 @@ from flask import (
     session,
     flash,
     url_for,
+    Markup,
     current_app
 )
 from datetime import date
 from typing import Any, Dict, List
+import bleach
+import markdown
 
 import rcos_io.services.db as db
 import rcos_io.views.auth as auth
@@ -111,6 +114,9 @@ def project_detail(project_id: str):
         )
     )
 
-    return render_template(
-        "projects/project.html", project=project, semester=session["semester"]
-    )
+    compiled_md = markdown.markdown(project["description_markdown"])    
+    sanitized_md = Markup(bleach.clean(compiled_md, tags=[ 
+        'b', 'i', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'a', 'code', 'ul', 'li', 'ol', 'em', 'strong'
+    ]))
+
+    return render_template("projects/project.html", project=project, full_description=sanitized_md, semester=session["semester"])
