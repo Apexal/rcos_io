@@ -181,6 +181,8 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     )["update_users"]["returning"][0]
     return user
 
+def get_all_users() -> List[Dict[str, Any]]:
+    return []
 
 def get_unverified_users() -> List[Dict[str, Any]]:
     query = gql(
@@ -219,15 +221,11 @@ def get_semester_users(semester_id: str) -> Tuple[List[Dict[str, Any]], Dict[str
                     }
                 }
             }
-            semester: semesters_by_pk(id: $semester_id) {
-                id
-                name
-            }
         }
         """
     )
     result = client.execute(query, variable_values={"semester_id": semester_id})
-    return result["users"], result["semester"]
+    return result["users"]
 
 
 def get_semesters() -> List[Dict[str, Any]]:

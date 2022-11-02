@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from flask import (
     Blueprint,
     render_template,
@@ -10,6 +10,7 @@ from flask import (
     session,
     current_app,
 )
+from rcos_io import utils
 
 from rcos_io.services import db, discord
 from rcos_io.views.auth import coordinator_or_above_required, login_required
@@ -18,25 +19,52 @@ bp = Blueprint("members", __name__, url_prefix="/members")
 
 
 @bp.route("/")
-def members():
-    """Renders the lists of members (users)."""
+def members_list():
+    """
+    Get all users enrolled for a specific semester OR for all semesters.
+    """
+    
+    # Search term to filter users on
+    # TODO: use it!
+    search = request.args.get("search")
 
-    # Grab desired semester from the URL or default to current/next semester
-    semester_id = request.args.get("semester_id", session["semester"]["id"])
+    # Fetch target semester ID from url or default to current active one (which might not exist)
+    semester_id: Optional[str] = request.args.get("semester_id") or (session["semester"]["id"] if "semester" in session else "all")
 
-    try:
-        # Grab the users who were enrolled in that semester, and the semester object
-        users, semester = db.get_semester_users(semester_id)
+    # Values passed to template
+    context: Dict[str, Any] = {
+        "search": search,
+        "semester_id": semester_id
+    }
 
-        # Might've been passed an invalid semester id
-        if semester is None:
-            return redirect(url_for("members.members"))
-    except Exception as e:
-        current_app.logger.exception(e)
-        flash("Failed to fetch members...", "danger")
-        return redirect(url_for("members.members"))
+    # If there is a desired semester id, attempt to fetch users enrolled for that semester 
+    if semester_id and semester_id != "all":
+        semester = utils.get_semester_by_id(session["semesters"], semester_id)
+        context["semester"] = semester
 
-    return render_template("members/members.html", users=users, semester=semester)
+        # Check that it is a valid semester
+        if not semester:
+            flash("No such semester found!", "warning")
+            return redirect(url_for("members.members_list", semester_id="all"))
+
+
+        try:
+            # Grab the users who were enrolled in that semester, and the semester object
+            context["users"] = db.get_semester_users(semester_id)
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("Failed to fetch members...", "danger")
+            return redirect(url_for("members.members_list"))
+    else:
+        # Attempt to fetch users across all semesters
+        try:
+            context["users"] = db.get_all_users()
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("Oops! There was an error while fetching members.", "danger")
+            return redirect(url_for("index"))
+
+    return render_template("members/members.html", **context)
 
 
 @bp.route("/verify", methods=("GET", "POST"))
