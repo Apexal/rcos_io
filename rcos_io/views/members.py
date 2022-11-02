@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, session
 
 from rcos_io.services.db import find_user_by_id, get_unverified_users, update_user_by_id
 from rcos_io.services import discord
@@ -58,7 +58,8 @@ def member_detail(user_id: str):
         return redirect(url_for("index"))
 
     # User might be found or not found
-    if user and user["is_verified"]:
+    # Also, only show unverified users to admins so they can approve or deny them
+    if user and (user["is_verified"] or session.get("is_coordinator_or_above")):
         display_name = generate_display_name(user, g.is_logged_in)
 
         if user["discord_user_id"]:

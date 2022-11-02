@@ -22,7 +22,7 @@
     <tbody>
       {% for user in unverified_users %}
       <tr>
-        <td>{{ user["email"] }}</td>
+        <td><a href="{{ url_for('members.member_detail', user_id=user['id']) }}">{{ user["email"] }}</a></td>
         <td>{{ user["first_name" ]}}</td>
         <td>{{ user["last_name"] }}</td>
         <td>
@@ -34,7 +34,7 @@
         </td>
         <td>—</td>
         <td>{{ user["created_at"] }}</td>
-        <td>
+        <td class="d-flex">
           <form method="post" onsubmit="return confirm('Are you sure you want to VERIFY {{ user['email'] }}?')">
             <input type="hidden" name="action" value="verify">
             <input type="hidden" name="user_id" value="{{ user['id'] }}">

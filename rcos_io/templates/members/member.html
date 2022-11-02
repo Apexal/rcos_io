@@ -9,9 +9,31 @@
     {% if user["graduation_year"] %}
     <span class="badge bg-info">Class of {{ user["graduation_year"] }}</span>
     {% endif %}
+
+    {% if not user["is_verified"] %}
+    <span class="badge bg-danger">UNVERIFIED</span>
+    {% endif %}
   </p>
 
 	{% include '/includes/flashed_messages.html' %}
+
+  {% if not user["is_verified"] %}
+  <div class="alert alert-danger">
+    <p>This <strong class="text-uppercase">{{ user["role"] }}</strong> user is <strong>UNVERIFIED</strong> and will not be visible on the site until you choose to verify them. Only verify them if they have confirmed their identity.
+    </p>
+
+    <form action="{{ url_for('members.verify') }}" method="post" onsubmit="return confirm('Are you sure you want to VERIFY {{ user['email'] }}?')">
+      <input type="hidden" name="action" value="verify">
+      <input type="hidden" name="user_id" value="{{ user['id'] }}">
+      <button class="btn btn-link">Verify User</button>
+    </form>
+    <form action="{{ url_for('members.verify') }}" method="post" onsubmit="return confirm('Are you sure you want to DELETE {{ user['email'] }}?')">
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="user_id" value="{{ user['id'] }}">
+      <button class="btn btn-link">Delete User</button>
+    </form>
+  </div>
+  {% endif %}
 
   <div class="row">
     <div class="col">
