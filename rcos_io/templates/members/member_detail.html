@@ -43,12 +43,26 @@
         <li class="list-group-item d-flex align-items-center">
           
           <div class="me-auto">
-            <div class="fs-3 fw-bold">
-              <a class="text-decoration-none" href="{{ url_for('projects.project_detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
+            <div class="fs-3">
+              {% if enrollment["project"] %}
+              <a class="fw-bold text-decoration-none" href="{{ url_for('projects.project_detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
+              {% else %}
+              <span class="text-muted">No Project</span>
+              {% endif %}
             </div>
-            {% if enrollment["is_project_lead"] %}
-            <span class="badge bg-warning">Project Lead</span>
-            {% endif %}
+            <div>
+              {% if enrollment["is_project_lead"] %}
+              <span class="badge bg-info">Project Lead</span>
+              {% endif %}
+
+              {% if enrollment["is_coordinator"] %}
+              <span class="badge bg-warning">Coordinator</span>
+              {% endif %}
+
+              {% if enrollment["is_faculty_advisor"] %}
+              <span class="badge bg-dark">Faculty Advisor</span>
+              {% endif %}
+            </div>
           </div>
           <div class="fw-bold text-capitalize me-3">{{ enrollment["semester"]["name"] }}</div>
         </li>
