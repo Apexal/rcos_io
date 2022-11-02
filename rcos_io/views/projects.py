@@ -42,7 +42,7 @@ def current_projects():
     Get all projects for the current semester.
     """
     if "semester" in session:
-        semester_projects = db.get_semester_projects(session["semester"]["id"], True)
+        semester_projects = db.get_semester_projects(session["semester"]["id"], False)
         return render_template(
             "projects/projects.html",
             semester=session["semester"],

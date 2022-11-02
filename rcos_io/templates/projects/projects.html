@@ -5,38 +5,31 @@
 <div class="card my-3">
   <!-- <img src="" alt="Project " class="card-img-top"> -->
   <div class="card-body">
-    <h5 class="card-title fs-2"><a href="{{ url_for('projects.project_detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
+    <h5 class="card-title fs-2 fw-bold"><a href="{{ url_for('projects.project_detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
     <p class="card-text">{{ project["short_description"] }}</p>
-  </div>
-  <ul class="list-group list-group-flush">
-    {% if project["enrollments_aggregate"] and project["project_leads"] %}
-    <li class="list-group-item">
-      Team of <strong>{{ project["enrollments_aggregate"]["aggregate"]["count"] }}</strong> lead by
-      {% for enrollment in project["project_leads"] %}
-      <a href="{{ url_for('members.member_detail', user_id=enrollment['user_id']) }}">{{ enrollment["user"]["full_name"] }}</a>
-      {% endfor %}
-    </li>
-    {% endif %}
-    {% if project["github_repos"] %}
-    <li class="list-group-item">
-      {% for repo_url in project["github_repos"] %}
-      <a href="{{ repo_url }}" target="_blank">{{ repo_url|replace("https://github.com/", "") }}</a>
+    <div>
+      {% if project["enrollments_aggregate"] %}
+      <span class="badge bg-primary">{{ project["enrollments_aggregate"]["aggregate"]["count"] }} members</span>
+      {% endif %}
+
+      {% for repo_url in project["github_repos"] or [] %}
+      <a class="text-decoration-none badge bg-secondary" href="{{ repo_url }}" target="_blank">
+        <i class="bi-github"></i>
+        {{ repo_url|replace("https://github.com/", "") }}</a>
       {% endfor%}
-    </li>
-    {% endif %}
-    {% if project["tags"] %}
-    <li class="list-group-item">
-      {% for tag in project["tags"] %}
-      <a href="?search={{ tag }}" class="badge bg-secondary">{{ tag }}</a>
-      {% endfor %}
-    </li>
-    {% endif %}
-  </ul>
-  <div class="card-footer text-muted d-flex">
+
+      {% if project["tags"] %}
+        {% for tag in project["tags"] %}
+        <a class="text-decoration-none badge bg-info" href="?search={{ tag }}" >{{ tag }}</a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+  <!-- <div class="card-footer text-muted d-flex">
     {% if project["created_at"] %}
     <div>Created {{ project["created_at"]|format_datetime("date") }}</div>
     {% endif %}
-  </div>
+  </div> -->
 </div>
 {%- endmacro %}
 
