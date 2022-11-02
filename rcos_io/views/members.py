@@ -68,7 +68,7 @@ def member_detail(user_id: str):
             discord_user = None
 
         return render_template(
-            "members/member.html",
+            "members/member_detail.html",
             user=user,
             display_name=display_name,
             discord_user=discord_user,

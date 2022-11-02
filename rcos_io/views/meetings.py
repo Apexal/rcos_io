@@ -82,7 +82,7 @@ def meeting_detail(meeting_id: str):
 
     if meeting:
         return render_template(
-            "meetings/meeting.html",
+            "meetings/meeting_detail.html",
             meeting=meeting,
             format_date=lambda date, format: datetime.fromisoformat(date).strftime(
                 format

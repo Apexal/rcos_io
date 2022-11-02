@@ -119,4 +119,4 @@ def project_detail(project_id: str):
         'b', 'i', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'a', 'code', 'ul', 'li', 'ol', 'em', 'strong'
     ]))
 
-    return render_template("projects/project.html", project=project, full_description=sanitized_md, semester=session["semester"])
+    return render_template("projects/project_detail.html", project=project, full_description=sanitized_md, semester=session["semester"])
