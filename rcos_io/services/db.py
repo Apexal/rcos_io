@@ -141,8 +141,7 @@ def find_user_by_id(
                     }
                     semester {
                         id
-                        type
-                        start_date
+                        name
                     }
                     is_project_lead
                     is_coordinator

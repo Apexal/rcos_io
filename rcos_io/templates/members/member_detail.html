@@ -40,10 +40,17 @@
 
       <ol class="list-group">
         {% for enrollment in user["enrollments"] %}
-        <li class="list-group-item">
-          <div class="fw-bold fs-4 text-capitalize">{{ enrollment["semester"]["type"] }} {{ enrollment["semester"]["start_date"][:4] }}</div>
-          <div class="fs-5">{{ enrollment["project"]["name"] }}</div>
-          <div></div>
+        <li class="list-group-item d-flex align-items-center">
+          
+          <div class="me-auto">
+            <div class="fs-3 fw-bold">
+              <a class="text-decoration-none" href="{{ url_for('projects.project_detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
+            </div>
+            {% if enrollment["is_project_lead"] %}
+            <span class="badge bg-warning">Project Lead</span>
+            {% endif %}
+          </div>
+          <div class="fw-bold text-capitalize me-3">{{ enrollment["semester"]["name"] }}</div>
         </li>
         {% endfor %}
       </ol>
