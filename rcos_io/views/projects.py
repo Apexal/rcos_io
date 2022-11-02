@@ -7,7 +7,8 @@ from flask import (
     session,
     flash,
     url_for,
-    Markup
+    Markup,
+    current_app
 )
 from datetime import date
 from typing import Any, Dict, List
@@ -33,6 +34,7 @@ def get_current_semester():
         start_month = "08"
 
     return "%d%s" % (current_date.year, start_month)
+
 
 @bp.route("/")
 def current_projects():
@@ -71,7 +73,7 @@ def add_project():
 
         # separate each technology in the list string
         # into separate strings and then trim extra whitespace
-        stack = [s.strip() for s in stack.split(",")]
+        stack = list(set([s.strip().lower() for s in stack.split(",")]))
 
         user: Dict[str, Any] = g.user
         inserted_project = db.add_project(user["id"], name, desc)["returning"]
@@ -86,14 +88,23 @@ def add_project():
         )
 
         if len(inserted_project) > 0:
-            return redirect("/projects/%s" % (inserted_project[0]["id"]))
+            return redirect(url_for("projects.project_detail", project_id=inserted_project[0]["id"]))
 
     return render_template("projects/add_project.html")
 
 
 @bp.route("/<project_id>")
-def project(project_id: str):
-    project = db.get_project(project_id)
+def project_detail(project_id: str):
+    try:
+        project = db.get_project(project_id)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("Invalid project ID!", "danger")
+        return redirect(url_for("projects.current_projects"))
+
+    if project is None:
+        flash("No such project with that ID exists!", "warning")
+        return redirect(url_for("projects.current_projects"))
 
     # parse out any project members that are *not* in the project this semester
     project["enrollments"] = list(

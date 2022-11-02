@@ -13,7 +13,7 @@
     <li class="list-group-item">
       Team of <strong>{{ project["enrollments_aggregate"]["aggregate"]["count"] }}</strong> lead by
       {% for enrollment in project["project_leads"] %}
-      <a href="{{ url_for('members.member', user_id=enrollment['user_id']) }}">{{ enrollment["user"]["full_name"] }}</a>
+      <a href="{{ url_for('members.member_detail', user_id=enrollment['user_id']) }}">{{ enrollment["user"]["full_name"] }}</a>
       {% endfor %}
     </li>
     {% endif %}
@@ -34,7 +34,7 @@
   </ul>
   <div class="card-footer text-muted d-flex">
     <div class="me-auto">
-      <a href="{{ url_for('projects.project', project_id=project['id']) }}">View</a>
+      <a href="{{ url_for('projects.project_detail', project_id=project['id']) }}">View</a>
       
     </div>
     <div>Created {{ project["created_at"] }}</div>
@@ -54,6 +54,8 @@
     
     <span class="badge bg-secondary">{{ projects | length }}</span>
   </h1>
+
+  {% include '/includes/flashed_messages.html' %}
 
   <form class="my-3">
     <div class="row">

@@ -46,12 +46,18 @@ def load_logged_in_user():
         g.user = None
     else:
         g.user = user
-        
-        if "is_mentor_or_above" not in session or "is_coordinator_or_above" not in session or "is_faculty_advisor" not in session:
+
+        if (
+            "is_mentor_or_above" not in session
+            or "is_coordinator_or_above" not in session
+            or "is_faculty_advisor" not in session
+        ):
             enrollment = get_enrollment(g.user["id"], session["semester"]["id"])
             if enrollment:
                 session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
-                session["is_coordinator_or_above"] = enrollment["is_coordinator"] or session["is_faculty_advisor"]
+                session["is_coordinator_or_above"] = (
+                    enrollment["is_coordinator"] or session["is_faculty_advisor"]
+                )
                 # TODO
                 session["is_mentor_or_above"] = False
 
