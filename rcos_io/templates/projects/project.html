@@ -8,7 +8,9 @@
 	<blockquote class="blockquote">
 		<p>{{ project["short_description"] }}</p>
 	</blockquote>
-	<p>{{ project['description_markdown'] }}</p>
+	<div>
+		{{ full_description | safe }}
+	</div>
 
 	<h3>Stack</h3>
 	{% if project['tags'] is defined and project['tags'] is not none and project['tags']|length > 0 %}
