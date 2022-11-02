@@ -5,16 +5,8 @@ import string
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
-from rcos_io.services.db import (
-    find_or_create_user_by_email,
-    get_current_or_next_semester,
-    get_enrollment,
-    update_user_by_id,
-)
-from rcos_io.services.github import GITHUB_AUTH_URL
-from rcos_io.services import github
-from rcos_io.settings import ENV
-from rcos_io.services import discord
+from rcos_io.services import github, db, discord
+from rcos_io import settings, utils
 
 from flask import (
     current_app,
@@ -29,6 +21,7 @@ from flask import (
 )
 
 
+
 bp = Blueprint("auth", __name__, url_prefix="/")
 
 
@@ -38,8 +31,9 @@ def load_logged_in_user():
     user: Optional[Dict[str, Any]] = session.get("user")
 
     # Fetch and store semester in session if not there or if it's changed
-    if "semester" not in session or session["semester"]["end_date"] < str(date.today()):
-        session["semester"] = get_current_or_next_semester(date.today())
+    if "semesters" not in session or session["semester"]["end_date"] < str(date.today()):
+        session["semesters"] = db.get_semesters()
+        session["semester"] = utils.active_semester(session["semesters"])
 
     g.is_logged_in = user is not None
     if user is None:
@@ -52,7 +46,7 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
-            enrollment = get_enrollment(g.user["id"], session["semester"]["id"])
+            enrollment = db.get_enrollment(g.user["id"], session["semester"]["id"])
             if enrollment:
                 session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
                 session["is_coordinator_or_above"] = (
@@ -235,7 +229,7 @@ def login():
         otp = generate_otp()
         session["user_otp"] = otp
 
-        if ENV == "production":
+        if settings.ENV == "production":
             # Send it to the user via email
             # send_otp_to_email(user_email, otp)
             pass
@@ -277,7 +271,7 @@ def otp():
     ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
-    session["user"], is_new_user = find_or_create_user_by_email(
+    session["user"], is_new_user = db.find_or_create_user_by_email(
         user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
@@ -367,7 +361,7 @@ def discord_callback():
 @bp.route("/github")
 def github_auth():
     """Redirect to GitHub's OAuth2 flow for linking accounts."""
-    return redirect(GITHUB_AUTH_URL)
+    return redirect(github.GITHUB_AUTH_URL)
 
 
 @bp.route("/github/callback")
@@ -418,7 +412,7 @@ def profile():
 
     if request.method == "GET":
         # Fetch Discord user profile if linked
-        context = dict()
+        context: Dict[str, Any] = dict()
         if g.user["discord_user_id"]:
             context["discord_user"] = discord.get_user(g.user["discord_user_id"])
 
@@ -427,7 +421,7 @@ def profile():
         # Store in database
         updates: Dict[str, Union[str, int]] = dict()
 
-        def handle_update(input_name: str) -> str:
+        def handle_update(input_name: str):
             if (
                 input_name in request.form
                 and request.form[input_name].strip()
@@ -468,7 +462,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = update_user_by_id(g.user["id"], updates)
+    session["user"] = db.update_user_by_id(g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname

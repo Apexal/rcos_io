@@ -13,7 +13,7 @@
       {% endif %}
 
       {% for repo_url in project["github_repos"] or [] %}
-      <a class="text-decoration-none badge bg-secondary" href="{{ repo_url }}" target="_blank">
+      <a class="text-decoration-none badge bg-dark" href="{{ repo_url }}" target="_blank">
         <i class="bi-github"></i>
         {{ repo_url|replace("https://github.com/", "") }}</a>
       {% endfor%}
@@ -53,25 +53,21 @@
       <div class="col-auto">
         <label for="search" class="col-form-label">Search</label>
       </div>
+      <div class="col-auto">
+        {% include "/includes/semester_select.html" %}
+      </div>
       <div class="col">
         <input
           type="search"
           id="search"
           name="search"
           class="form-control"
+          value="{{ search if search }}"
           placeholder="By name, project lead, tech stack"
         />
       </div>
       <div class="col-auto">
-        <nav aria-label="Page navigation example">
-          <ul class="pagination">
-            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
-            <li class="page-item"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">Next</a></li>
-          </ul>
-        </nav>
+        <button type="submit" class="btn btn-dark">Search</button>
       </div>
     </div>
   </form>
@@ -91,9 +87,6 @@
       Propose New Project</a
     >
     {% endif %}
-
-    <a href="{{ url_for('projects.current_projects') }}">Current Projects</a>
-    <a href="{{ url_for('projects.all_projects') }}">Past Projects</a>
   </nav>
 </div>
 {% endblock %}

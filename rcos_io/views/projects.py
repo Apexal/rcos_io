@@ -11,9 +11,10 @@ from flask import (
     current_app,
 )
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 import bleach
 import markdown
+from rcos_io import utils
 
 import rcos_io.services.db as db
 import rcos_io.views.auth as auth
@@ -37,30 +38,55 @@ def get_current_semester():
 
 
 @bp.route("/")
-def current_projects():
+def semester_projects():
     """
-    Get all projects for the current semester.
+    Get all projects for a specific semester OR for all semesters.
     """
-    if "semester" in session:
-        semester_projects = db.get_semester_projects(session["semester"]["id"], False)
-        return render_template(
-            "projects/projects.html",
-            semester=session["semester"],
-            projects=semester_projects,
-        )
+    
+
+    # Search term to filter projects on
+    # TODO: use it!
+    search = request.args.get("search")
+
+    # Fetch target semester ID from url or default to current active one (which might not exist)
+    semester_id: Optional[str] = request.args.get("semester_id") or (session["semester"]["id"] if "semester" in session else "all")
+
+    # Values passed to template
+    context: Dict[str, Any] = {
+        "search": search,
+        "semester_id": semester_id
+    }
+
+    # If there is a desired semester id, attempt to fetch projects for that semester 
+    if semester_id and semester_id != "all":
+        semester = utils.get_semester_by_id(session["semesters"], semester_id)
+        context["semester"] = semester
+
+        # Check that it is a valid semester
+        if not semester:
+            flash("No such semester found!", "warning")
+            return redirect(url_for("projects.semester_projects", semester_id="all"))
+
+        # Attempt to fetch projects
+        try:
+            context["projects"] = db.get_semester_projects(semester_id, False)
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("Yikes! There was an error while fetching the projects.", "danger")
+            return redirect(url_for("index"))
     else:
-        flash("There's no active semester of RCOS right now!", "warning")
-        return redirect(url_for("index"))
+        # Attempt to fetch projects across all semesters
+        try:
+            context["projects"] = db.get_all_projects()
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash("Oops! There was an error while fetching the projects.", "danger")
+            return redirect(url_for("index"))
 
-
-@bp.route("/all")
-def all_projects():
-    """
-    Get all projects for all semesters, current semester included.
-    """
-    projects = db.get_all_projects()
-    return render_template("projects/projects.html", projects=projects)
-
+    return render_template(
+        "projects/projects.html",
+        **context
+    )
 
 @bp.route("/add", methods=("GET", "POST"))
 @auth.login_required
@@ -102,11 +128,11 @@ def project_detail(project_id: str):
     except Exception as e:
         current_app.logger.exception(e)
         flash("Invalid project ID!", "danger")
-        return redirect(url_for("projects.current_projects"))
+        return redirect(url_for("projects.semester_projects"))
 
     if project is None:
         flash("No such project with that ID exists!", "warning")
-        return redirect(url_for("projects.current_projects"))
+        return redirect(url_for("projects.semester_projects"))
 
     # parse out any project members that are *not* in the project this semester
     project["enrollments"] = list(

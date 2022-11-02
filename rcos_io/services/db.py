@@ -230,11 +230,11 @@ def get_semester_users(semester_id: str) -> Tuple[List[Dict[str, Any]], Dict[str
     return result["users"], result["semester"]
 
 
-def get_current_or_next_semester(search_date: date) -> Optional[Dict[str, Any]]:
+def get_semesters() -> List[Dict[str, Any]]:
     query = gql(
         """
-        query current_or_next_semester($date: date!) {
-            semesters(limit: 1, order_by: {start_date: asc_nulls_last}, where: {_or: [{_and: [{start_date: {_lte: $date}}, {end_date: {_gte: $date}}]}, {start_date: {_gt: $date}}]}) {
+        query semesters {
+            semesters(order_by: {start_date: asc_nulls_last}) {
                 id
                 name
                 type
@@ -245,13 +245,8 @@ def get_current_or_next_semester(search_date: date) -> Optional[Dict[str, Any]]:
         """
     )
 
-    result = client.execute(
-        query, variable_values={"date": search_date.strftime("%Y-%m-%d")}
-    )["semesters"]
-    if len(result) == 0:
-        return None
-    else:
-        return result[0]
+    semesters = client.execute(query)["semesters"]
+    return semesters
 
 
 def get_project(project_id: str) -> Optional[Dict[str, Any]]:
@@ -338,15 +333,15 @@ def get_all_projects() -> List[Dict[str, Any]]:
 
 def get_semester_projects(
     semester_id: str, with_enrollments: bool
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Fetches all projects in the current semester.
     Returns project name.
     """
     query = gql(
         """
-        query SemesterProjects($semesterId: String!, $withEnrollments: Boolean!) {
-          projects(order_by: {name: asc}, where: {enrollments: {_or: [{semester_id: {_eq: $semesterId}}]}}) {
+        query SemesterProjects($semester_id: String!, $withEnrollments: Boolean!) {
+          projects(order_by: {name: asc}, where: {enrollments: {_or: [{semester_id: {_eq: $semester_id}}]}}) {
             id
             name
             tags
@@ -359,7 +354,7 @@ def get_semester_projects(
                     full_name
                 }
             }
-            enrollments_aggregate(where: {semester_id: {_eq:$semesterId}}) {
+            enrollments_aggregate(where: {semester_id: {_eq:$semester_id}}) {
                 aggregate {
                     count
                 }
@@ -382,7 +377,7 @@ def get_semester_projects(
     result = client.execute(
         query,
         variable_values={
-            "semesterId": semester_id,
+            "semester_id": semester_id,
             "withEnrollments": with_enrollments,
         },
     )
