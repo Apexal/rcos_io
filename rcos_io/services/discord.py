@@ -19,6 +19,12 @@ DISCORD_AUTH_URL = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD
 HEADERS = {
     "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
 }
+"""
+Base headers to send along with Discord API requests.
+
+Most important is the `Authorization` header with the Discord bot's secret token
+which authenticates requests and gives us permission to do things as the bot.
+"""
 
 
 class DiscordTokens(TypedDict):
@@ -31,9 +37,16 @@ class DiscordTokens(TypedDict):
 
 def get_tokens(code: str) -> DiscordTokens:
     """
-    Given an authorization code, request the access and refresh tokens for a Discord user. Returns the tokens. Throws an error if invalid request.
+    Given an authorization code, requests the access and refresh tokens for a Discord user. Returns the tokens. Throws an error if invalid request.
 
     See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
+
+    Args:
+        code: the authorization code returned from Discord
+    Returns:
+        a DiscordTokens dict containing access token, expiration, etc.
+    Raises:
+        HTTPError: if HTTP request fails
     """
     response = requests.post(
         f"{DISCORD_API_ENDPOINT}/oauth2/token",

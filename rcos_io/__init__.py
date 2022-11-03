@@ -10,7 +10,12 @@ app.config["SECRET_KEY"] = SECRET_KEY
 def index():
     return render_template("index.html")
 
+
+# Import filters file to register them in Jinja
 from . import filters
+
+# Import and register blueprints
+# See https://flask.palletsprojects.com/en/2.2.x/blueprints/
 from .views import auth
 from .views import projects
 from .views import meetings

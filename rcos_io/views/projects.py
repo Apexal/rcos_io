@@ -21,22 +21,6 @@ import rcos_io.views.auth as auth
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
 
-
-def get_current_semester():
-    """
-    Calculate which semester we are in given today's date.
-    """
-    current_date = date.today()
-    start_month = "01"
-
-    if current_date.month >= 5 and current_date.month < 8:
-        start_month = "05"
-    elif current_date.month >= 8:
-        start_month = "08"
-
-    return "%d%s" % (current_date.year, start_month)
-
-
 @bp.route("/")
 def semester_projects():
     """
@@ -66,7 +50,9 @@ def semester_projects():
 
         # Attempt to fetch projects
         try:
-            context["projects"] = db.get_semester_projects(g.db_client, semester_id, False)
+            context["projects"] = db.get_semester_projects(
+                g.db_client, semester_id, False
+            )
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! There was an error while fetching the projects.", "danger")
@@ -87,7 +73,10 @@ def semester_projects():
 @auth.login_required
 @auth.rpi_required
 def add_project():
-    if request.method == "POST":
+    if request.method == "GET":
+        return render_template("projects/add_project.html")
+    else:
+        # Extract form values
         name = request.form["project_name"]
         desc = request.form["project_desc"]
         stack = request.form["project_stack"]
@@ -97,27 +86,36 @@ def add_project():
         stack = list(set([s.strip().lower() for s in stack.split(",")]))
 
         user: Dict[str, Any] = g.user
-        inserted_project = db.add_project(g.db_client, user["id"], name, desc)["returning"]
+        inserted_project = db.add_project(g.db_client, user["id"], name, desc)[
+            "returning"
+        ]
 
         #
         #   TODO: send validation to Discord, validation panel in site
         #
 
         # mark the creator of the project as the project lead
-        db.add_project_lead(g.db_client, 
-            inserted_project[0]["id"], user["id"], get_current_semester(), 4
+        db.add_project_lead(
+            g.db_client,
+            inserted_project[0]["id"],
+            user["id"],
+            session["semester"]["id"],
+            4, # TODO: determine
         )
 
+        # TODO: handle more gracefully
         if len(inserted_project) > 0:
             return redirect(
                 url_for("projects.project_detail", project_id=inserted_project[0]["id"])
             )
 
-    return render_template("projects/add_project.html")
 
 
 @bp.route("/<project_id>")
 def project_detail(project_id: str):
+    """Renders the detail page for a specific project."""
+
+    # Attempt to fetch project
     try:
         project = db.get_project(g.db_client, project_id)
     except Exception as e:
@@ -125,10 +123,12 @@ def project_detail(project_id: str):
         flash("Invalid project ID!", "danger")
         return redirect(url_for("projects.semester_projects"))
 
+    # Handle project not found
     if project is None:
         flash("No such project with that ID exists!", "warning")
         return redirect(url_for("projects.semester_projects"))
 
+    # TODO: semester-specific project pages via ?semester_id
     # parse out any project members that are *not* in the project this semester
     project["enrollments"] = list(
         filter(
@@ -137,6 +137,8 @@ def project_detail(project_id: str):
         )
     )
 
+    # Sanitize the project's markdown description to remove any sketchy HTML
+    # This prevents Cross-Site Scripting (XSS) attacks (hopefully...)
     compiled_md = markdown.markdown(project["description_markdown"])
     sanitized_md = Markup(
         bleach.clean(

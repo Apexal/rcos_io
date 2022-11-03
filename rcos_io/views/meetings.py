@@ -9,7 +9,7 @@ from flask import (
     flash,
     session,
     current_app,
-    g
+    g,
 )
 from pytz import timezone
 
@@ -17,7 +17,6 @@ from rcos_io.services import db
 from rcos_io.views.auth import (
     coordinator_or_above_required,
     login_required,
-    rpi_required,
 )
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
@@ -37,6 +36,8 @@ def meetings():
 def add_meeting():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":
+
+        # This list must match the meeting_types enum in the database!
         meeting_types = [
             "small group",
             "large group",
@@ -50,7 +51,7 @@ def add_meeting():
         return render_template("meetings/add_meeting.html", meeting_types=meeting_types)
     else:
 
-        # Add to database
+        # Form new meeting dictionary for insert
         meeting_data: dict[str, Optional[str]] = {
             "semester_id": session["semester"]["id"],
             "name": request.form["name"].strip(),
@@ -60,6 +61,7 @@ def add_meeting():
             "location": request.form["location"].strip(),
         }
 
+        # Attempt to insert meeting into database
         try:
             new_meeting = db.insert_meeting(g.db_client, meeting_data)
         except Exception as e:
@@ -67,6 +69,7 @@ def add_meeting():
             flash("Yikes! Failed to add meeting. Check logs.", "danger")
             return redirect(url_for("meetings.meetings"))
 
+        # Redirect to the new meeting's detail page
         return redirect(
             url_for("meetings.meeting_detail", meeting_id=new_meeting["id"])
         )
@@ -74,10 +77,14 @@ def add_meeting():
 
 @bp.route("/<meeting_id>")
 def meeting_detail(meeting_id: str):
+    """Renders the detail page for a particular meeting."""
+
+    # Attempt to fetch meeting
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
-    except:
-        flash("Invalid meeting ID!", "warning")
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.meetings"))
 
     if meeting:
@@ -108,6 +115,7 @@ def events_api():
 
     # Fetch meetings
     meetings = db.get_meetings(g.db_client)
+
     # Convert them to objects that Fullcalendar can understand
     events = list(map(meeting_to_event, meetings))
 

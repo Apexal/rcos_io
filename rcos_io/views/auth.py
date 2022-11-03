@@ -47,7 +47,9 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
-            enrollment = db.get_enrollment(g.db_client, g.user["id"], session["semester"]["id"])
+            enrollment = db.get_enrollment(
+                g.db_client, g.user["id"], session["semester"]["id"]
+            )
             if enrollment:
                 session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
                 session["is_coordinator_or_above"] = (

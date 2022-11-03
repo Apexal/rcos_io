@@ -94,12 +94,4 @@ def get_repo_commits(
 ) -> List[CommitInfo]:
     repo_short = repo_url.removeprefix("https://github.com/")
 
-    response = requests.get(
-        f"{GITHUB_API_ENDPOINT}/repos/{repo_short}/commits",
-        headers={
-            "Content-Type": "application/vnd.github+json",
-        },
-    )
-    response.raise_for_status()
-    commits = response.json()
-    return commits
+    return []

@@ -9,6 +9,15 @@ from rcos_io import app
 
 
 def client_factory():
+    """
+    Creates a new GQL client pointing to the Hasura API.
+
+    Instead of using one client across the app, one client should be made per request
+    to avoid threading errors.
+
+    Returns
+        new GQL client
+    """
     t = RequestsHTTPTransport(
         url=GQL_API_URL,
         verify=True,
@@ -20,7 +29,7 @@ def client_factory():
 
 @app.before_request
 def attach_db_client():
-    print("here")
+    """Creates a new GQL client and attach it to the every reqest as `g.db_client`."""
     g.db_client = client_factory()
 
 
@@ -65,7 +74,9 @@ def find_or_create_user_by_email(
     Given an email and a role (to be used only when creating new user) tries to find the user
     and create them if they don't exist yet.
 
-    Returns (user, is_new)
+    Returns:
+        found or created user
+        whether the user was newly created or not
     """
     user = find_user_by_email(client, email)
     if user is not None:
@@ -75,7 +86,15 @@ def find_or_create_user_by_email(
 
 
 def find_user_by_email(client: Client, email: str) -> Optional[Dict[str, Any]]:
-    """Given an email, finds the user with that email. Returns `None` if not found. Returns basic user data if found."""
+    """
+    Given an email, finds the user with that email.
+
+    Args:
+        client: GQL client
+        email: the email to search on
+    Returns:
+        found/created user or `None`
+    """
     # First attempt to find user via email
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
@@ -97,7 +116,18 @@ def find_user_by_email(client: Client, email: str) -> Optional[Dict[str, Any]]:
 
 
 def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, Any]:
-    """Creates a new user with the given email and role. Returns basic user data."""
+    """
+    Creates a new user with the given email and role.
+
+    Marks user as verified and extracts RCS ID if email ends in @rpi.edu.
+
+    Args:
+        client: GQL client
+        email: email to create user with
+        role: role to create user with (e.g. "rpi", "external")
+    Returns:
+        newly created user
+    """
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
@@ -130,7 +160,16 @@ def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, A
 def find_user_by_id(
     client: Client, user_id: str, include_enrollments: bool = False
 ) -> Optional[Dict[str, Any]]:
-    """Fetches a user with the given user_id UUID. Optionally includes their enrollments."""
+    """
+    Fetches a user with the given user_id UUID. Optionally includes their enrollments.
+
+    Args:
+        client: GQL client
+        user_id: the UUID of the user to fetch
+        include_enrollments: whether to also fetch the user's semester enrollments
+    Returns:
+        found user data or `None`
+    """
     query = gql(
         """
         query find_user_by_id($user_id: uuid!, $include_enrollments: Boolean!) {
@@ -176,18 +215,27 @@ def find_user_by_id(
 def update_user_by_id(
     client: Client, user_id: str, updates: Dict[str, Any]
 ) -> Dict[str, Any]:
-    """Updates a user with the given ID and the given updates. Returns basic user data."""
+    """
+    Updates a user with the given ID and the given updates.
+
+    Args:
+        client: GQL client
+        user_id: UUID of user to update
+        updates: dict containing fields and new values to update
+    Returns:
+        updated user data
+    """
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
-    mutation update_user($user_id: uuid!, $updates: users_set_input!) {
-      update_users(_set: $updates, where: { id :{_eq: $user_id}}) {
-        returning {
-          ...basicUser
+        mutation update_user($user_id: uuid!, $updates: users_set_input!) {
+            update_users(_set: $updates, where: { id :{_eq: $user_id}}) {
+                returning {
+                ...basicUser
+                }
+            }
         }
-      }
-    }
-    """
+        """
     )
 
     user = client.execute(

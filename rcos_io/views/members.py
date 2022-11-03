@@ -20,9 +20,7 @@ bp = Blueprint("members", __name__, url_prefix="/members")
 
 @bp.route("/")
 def members_list():
-    """
-    Get all users enrolled for a specific semester OR for all semesters.
-    """
+    """Gets all users enrolled for a specific semester OR for all semesters."""
 
     # Search term to filter users on
     # TODO: use it!
@@ -74,9 +72,11 @@ def verify():
 
         return render_template("members/verify.html", unverified_users=unverified_users)
     else:
+        # Extract form values
         target_user_id = request.form["user_id"]
         target_user_action = request.form["action"]
 
+        # Confirm that the desired action is valid
         if (
             not target_user_id
             or not target_user_action
@@ -90,7 +90,7 @@ def verify():
             flash(f"Verified user {target_user_id}", "success")
             db.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
         else:
-            # TODO
+            # TODO: actually delete user
             flash(f"Deleted user {target_user_id}", "info")
 
         return redirect(url_for("members.verify"))
