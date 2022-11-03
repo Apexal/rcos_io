@@ -20,6 +20,9 @@ GQL_API_URL = env_get("GQL_API_URL")
 HASURA_ADMIN_SECRET = env_get("HASURA_ADMIN_SECRET")
 """Admin password for full access to RCOS Hasura"""
 
+HASURA_PROJECT_URL = env_get("HASURA_PROJECT_URL")
+"""URL to the Hasura console for the database"""
+
 DISCORD_REDIRECT_URL = env_get("DISCORD_REDIRECT_URL")
 """URL to that Discord redirects to at the end of its OAuth2 flow"""
 # url for discord oauth

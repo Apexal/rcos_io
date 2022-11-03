@@ -16,12 +16,6 @@
 	<h1>Meetings</h1>
 	{% include '/includes/flashed_messages.html' %}
 
-	{% if session["is_coordinator_or_above"] %}
-	<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">
-		<i class="bi bi-plus-lg"></i>
-		Add Meeting</a>
-	{% endif %}
-
 	<div id='calendar'></div>
 
 	<script>
@@ -35,5 +29,20 @@
 		calendar.render();
 	});
 	</script>
+
+	{% if session.get("is_coordinator_or_above") %}
+	<div class="card my-2">
+		<div class="card-header">
+			Administrator Controls
+		</div>
+		<div class="card-body">
+			<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">
+				<i class="bi bi-plus-lg"></i>
+				Add Meeting
+			</a>
+			<a href="https://cloud.hasura.io/project/7ddf071f-39c2-4891-8657-97e550b6c473/console/data/default/schema/public/tables/meetings/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
+		</div>
+	</div>
+	{% endif %}
 </div>
 {% endblock %}

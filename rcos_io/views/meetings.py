@@ -28,7 +28,7 @@ eastern = timezone("US/Eastern")
 @bp.route("/")
 def meetings():
     """Renders the main meetings template which shows a calendar that fetches events from the API route."""
-    return render_template("meetings/meetings.html")
+    return render_template("meetings/meetings_list.html")
 
 
 @bp.route("/add", methods=("GET", "POST"))
