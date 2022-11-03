@@ -47,6 +47,8 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
+            # get users "rcos role" for granting permissions
+            # faculty advisor, coordinator, mentor
             enrollment = db.get_enrollment(g.db_client, g.user["id"], session["semester"]["id"])
             if enrollment:
                 session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
@@ -92,6 +94,8 @@ def verified_required(view):
     def secret():
         return 'Hello verified users!'
     ```
+
+    verified meaning OTP was confirmed in primary email
     """
 
     @functools.wraps(view)

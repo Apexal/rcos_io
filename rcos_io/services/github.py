@@ -100,6 +100,9 @@ def get_repo_commits(
             "Content-Type": "application/vnd.github+json",
         },
     )
+
     response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
     commits = response.json()
     return commits

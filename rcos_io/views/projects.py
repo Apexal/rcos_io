@@ -137,6 +137,7 @@ def project_detail(project_id: str):
         )
     )
 
+    # sanitize markdown
     compiled_md = markdown.markdown(project["description_markdown"])
     sanitized_md = Markup(
         bleach.clean(

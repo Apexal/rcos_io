@@ -25,6 +25,9 @@ def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
 def get_semester_by_id(
     semesters: List[Dict[str, Any]], semester_id: str
 ) -> Optional[Dict[str, Any]]:
+    """
+    Returns selected semester (semester_id) from list of all semesters
+    """
     for semester in semesters:
         if semester["id"] == semester_id:
             return semester
@@ -34,6 +37,9 @@ def get_semester_by_id(
 def get_target_semester(
     request: Request, session: SessionMixin
 ) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+    """
+    Returns selected semester (semester_id) from list of all semesters based on session and request
+    """
     semester_id: Optional[str] = request.args.get("semester_id") or (
         session["semester"]["id"] if "semester" in session else "all"
     )

@@ -35,7 +35,11 @@ def meetings():
 @login_required
 @coordinator_or_above_required
 def add_meeting():
-    """Renders the add meeting form and handles form submissions."""
+    """
+    Renders the add meeting form and handles form submissions.
+    
+    See handbook.rcos.io for more info on meeting types
+    """
     if request.method == "GET":
         meeting_types = [
             "small group",
