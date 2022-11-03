@@ -21,7 +21,6 @@ from flask import (
 )
 
 
-
 bp = Blueprint("auth", __name__, url_prefix="/")
 
 
@@ -31,7 +30,9 @@ def load_logged_in_user():
     user: Optional[Dict[str, Any]] = session.get("user")
 
     # Fetch and store semester in session if not there or if it's changed
-    if "semesters" not in session or session["semester"]["end_date"] < str(date.today()):
+    if "semesters" not in session or session["semester"]["end_date"] < str(
+        date.today()
+    ):
         session["semesters"] = db.get_semesters()
         session["semester"] = utils.active_semester(session["semesters"])
 

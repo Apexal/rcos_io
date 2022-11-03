@@ -17,9 +17,6 @@
   <form class="my-3">
     <div class="row">
       <div class="col-auto">
-        <label for="search" class="col-form-label">Search</label>
-      </div>
-      <div class="col-auto">
         {% include "/includes/semester_select.html" %}
       </div>
       <div class="col">
@@ -32,15 +29,7 @@
         />
       </div>
       <div class="col-auto">
-        <nav aria-label="Page navigation example">
-          <ul class="pagination">
-            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
-            <li class="page-item"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">Next</a></li>
-          </ul>
-        </nav>
+        <button type="submit" class="btn btn-dark">Search</button>
       </div>
     </div>
   </form>
@@ -68,7 +57,7 @@
               </span>
               {% endif %}
               {% if user["github_username"] %}
-              <a class="badge bg-secondary text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
+              <a class="badge bg-dark text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
                 <i class="bi-github"></i>
                 {{ user["github_username"] }}
               </a>

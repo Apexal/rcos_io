@@ -181,8 +181,36 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     )["update_users"]["returning"][0]
     return user
 
-def get_all_users() -> List[Dict[str, Any]]:
-    return []
+
+def get_all_users(only_verified: bool = True) -> List[Dict[str, Any]]:
+    query = gql(
+        """
+        query all_users($where: users_bool_exp!) {
+            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
+                id
+                full_name
+                role
+                email
+                created_at
+                rcs_id
+                graduation_year
+                github_username
+                enrollments_aggregate {
+                    aggregate {
+                        count
+                    }
+                }
+            }
+        }
+        """
+    )
+    where_clause = dict()
+    if only_verified:
+        where_clause["is_verified"] = {"_eq": True}
+
+    result = client.execute(query, variable_values={"where": where_clause})
+    return result["users"]
+
 
 def get_unverified_users() -> List[Dict[str, Any]]:
     query = gql(
@@ -202,11 +230,13 @@ def get_unverified_users() -> List[Dict[str, Any]]:
     return users
 
 
-def get_semester_users(semester_id: str) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def get_semester_users(
+    semester_id: str, only_verified: bool = True
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     query = gql(
         """
-        query semester_users($semester_id: String!) {
-            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: {is_verified: {_eq: true}, enrollments: {semester_id: {_eq: $semester_id}}}) {
+        query semester_users($where: users_bool_exp!) {
+            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
                 id
                 full_name
                 role
@@ -224,7 +254,17 @@ def get_semester_users(semester_id: str) -> Tuple[List[Dict[str, Any]], Dict[str
         }
         """
     )
-    result = client.execute(query, variable_values={"semester_id": semester_id})
+
+    where_clause: Dict[str, Any] = {
+        "enrollments": {"semester_id": {"_eq": "$semester_id"}}
+    }
+
+    if only_verified:
+        where_clause["is_verified"] = {"_eq": True}
+
+    result = client.execute(
+        query, variable_values={"semester_id": semester_id, "where": where_clause}
+    )
     return result["users"]
 
 
