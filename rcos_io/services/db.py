@@ -1,3 +1,19 @@
+"""
+This module contains all database-related functionality.
+
+Instead of manually connecting to a relational database and writing long SQL queries, we use Hasura
+to get a nice, automatic GraphQL API for our relational database. This means we can just write GQL
+queries asking for exactly the data we want without every writing code to explain how to actually
+fetch that data from the database!
+
+We use a simple Python package called `gql` to help us make authenticated requests to our Hasura API.
+We make a new connection to Hasura for every request that comes to the Flask webserver instead of sharing
+a connection across threads because that crashes.
+
+Learn how to write Hasura GQL queries (fetch data): https://hasura.io/docs/latest/queries/postgres/index/
+Learn how to write Hasura GQL mutations (update data): https://hasura.io/docs/latest/mutations/postgres/index/
+"""
+
 from flask import g
 from typing import Any, Dict, List, Optional, Tuple, Union
 from gql import Client, gql

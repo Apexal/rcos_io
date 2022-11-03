@@ -1,3 +1,14 @@
+"""
+This module reads the environment variables needed to run the site and stores them as constants for easy use in other modules.
+
+If any of these are missing a value (they are not set in the environment), `env_get` throws a `KeyError` and the program will crash on startup.
+Every environment variable constant should have a docstring describing what it is used for. When developing locally, `load_dotenv()` will look
+for a `.env` file in the top-level folder with these environment variables set. When in production, there's no `.env` file and environment variables
+are just set in the environment.
+
+See https://12factor.net/config
+"""
+
 import os
 from dotenv import load_dotenv
 

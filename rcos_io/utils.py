@@ -1,3 +1,5 @@
+"""This module contains utility functions used across the codebase."""
+
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import date
 from flask.wrappers import Request
