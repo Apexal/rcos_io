@@ -33,7 +33,7 @@ def load_logged_in_user():
     if "semesters" not in session or session["semester"]["end_date"] < str(
         date.today()
     ):
-        session["semesters"] = db.get_semesters()
+        session["semesters"] = db.get_semesters(g.db_client)
         session["semester"] = utils.active_semester(session["semesters"])
 
     g.is_logged_in = user is not None
@@ -47,7 +47,7 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
-            enrollment = db.get_enrollment(g.user["id"], session["semester"]["id"])
+            enrollment = db.get_enrollment(g.db_client, g.user["id"], session["semester"]["id"])
             if enrollment:
                 session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
                 session["is_coordinator_or_above"] = (
@@ -273,7 +273,7 @@ def otp():
 
     # Find or create the user from the email entered
     session["user"], is_new_user = db.find_or_create_user_by_email(
-        user_email, "rpi" if "@rpi.edu" in user_email else "external"
+        g.db_client, user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
 
@@ -463,7 +463,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = db.update_user_by_id(g.user["id"], updates)
+    session["user"] = db.update_user_by_id(g.db_client, g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname

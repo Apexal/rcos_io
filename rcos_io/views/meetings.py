@@ -9,10 +9,11 @@ from flask import (
     flash,
     session,
     current_app,
+    g
 )
 from pytz import timezone
 
-from rcos_io.services.db import get_meeting_by_id, get_meetings, insert_meeting
+from rcos_io.services import db
 from rcos_io.views.auth import (
     coordinator_or_above_required,
     login_required,
@@ -60,7 +61,7 @@ def add_meeting():
         }
 
         try:
-            new_meeting = insert_meeting(meeting_data)
+            new_meeting = db.insert_meeting(g.db_client, meeting_data)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! Failed to add meeting. Check logs.", "danger")
@@ -74,7 +75,7 @@ def add_meeting():
 @bp.route("/<meeting_id>")
 def meeting_detail(meeting_id: str):
     try:
-        meeting = get_meeting_by_id(meeting_id)
+        meeting = db.get_meeting_by_id(g.db_client, meeting_id)
     except:
         flash("Invalid meeting ID!", "warning")
         return redirect(url_for("meetings.meetings"))
@@ -106,7 +107,7 @@ def events_api():
     )
 
     # Fetch meetings
-    meetings = get_meetings()
+    meetings = db.get_meetings(g.db_client)
     # Convert them to objects that Fullcalendar can understand
     events = list(map(meeting_to_event, meetings))
 

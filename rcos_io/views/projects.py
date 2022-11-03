@@ -66,7 +66,7 @@ def semester_projects():
 
         # Attempt to fetch projects
         try:
-            context["projects"] = db.get_semester_projects(semester_id, False)
+            context["projects"] = db.get_semester_projects(g.db_client, semester_id, False)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! There was an error while fetching the projects.", "danger")
@@ -74,7 +74,7 @@ def semester_projects():
     else:
         # Attempt to fetch projects across all semesters
         try:
-            context["projects"] = db.get_all_projects()
+            context["projects"] = db.get_all_projects(g.db_client)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Oops! There was an error while fetching the projects.", "danger")
@@ -97,14 +97,14 @@ def add_project():
         stack = list(set([s.strip().lower() for s in stack.split(",")]))
 
         user: Dict[str, Any] = g.user
-        inserted_project = db.add_project(user["id"], name, desc)["returning"]
+        inserted_project = db.add_project(g.db_client, user["id"], name, desc)["returning"]
 
         #
         #   TODO: send validation to Discord, validation panel in site
         #
 
         # mark the creator of the project as the project lead
-        db.add_project_lead(
+        db.add_project_lead(g.db_client, 
             inserted_project[0]["id"], user["id"], get_current_semester(), 4
         )
 
@@ -119,7 +119,7 @@ def add_project():
 @bp.route("/<project_id>")
 def project_detail(project_id: str):
     try:
-        project = db.get_project(project_id)
+        project = db.get_project(g.db_client, project_id)
     except Exception as e:
         current_app.logger.exception(e)
         flash("Invalid project ID!", "danger")

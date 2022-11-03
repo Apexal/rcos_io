@@ -47,7 +47,7 @@ def members_list():
 
         try:
             # Grab the users who were enrolled in that semester, and the semester object
-            context["users"] = db.get_semester_users(semester_id)
+            context["users"] = db.get_semester_users(g.db_client, semester_id)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Failed to fetch members...", "danger")
@@ -55,7 +55,7 @@ def members_list():
     else:
         # Attempt to fetch users across all semesters
         try:
-            context["users"] = db.get_all_users()
+            context["users"] = db.get_all_users(g.db_client)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Oops! There was an error while fetching members.", "danger")
@@ -70,7 +70,7 @@ def members_list():
 def verify():
     """Renders the list of **unverified** members and handles verifying them."""
     if request.method == "GET":
-        unverified_users = db.get_unverified_users()
+        unverified_users = db.get_unverified_users(g.db_client)
 
         return render_template("members/verify.html", unverified_users=unverified_users)
     else:
@@ -88,7 +88,7 @@ def verify():
         # Apply action
         if target_user_action == "verify":
             flash(f"Verified user {target_user_id}", "success")
-            db.update_user_by_id(target_user_id, {"is_verified": True})
+            db.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
         else:
             # TODO
             flash(f"Deleted user {target_user_id}", "info")
@@ -101,7 +101,7 @@ def member_detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
-        user = db.find_user_by_id(user_id, True)
+        user = db.find_user_by_id(g.db_client, user_id, True)
     except:
         flash("That is not a valid user ID!", "warning")
         return redirect(url_for("index"))

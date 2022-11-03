@@ -1,18 +1,28 @@
-from datetime import date, datetime
+from flask import g
 from typing import Any, Dict, List, Optional, Tuple, Union
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
 
-transport = RequestsHTTPTransport(
-    url=GQL_API_URL,
-    verify=True,
-    retries=3,
-    headers={"x-hasura-admin-secret": HASURA_ADMIN_SECRET},
-)
+from rcos_io import app
 
-client = Client(transport=transport, fetch_schema_from_transport=True)
+
+def client_factory():
+    t = RequestsHTTPTransport(
+        url=GQL_API_URL,
+        verify=True,
+        retries=3,
+        headers={"x-hasura-admin-secret": HASURA_ADMIN_SECRET},
+    )
+    return Client(transport=t, fetch_schema_from_transport=False)
+
+
+@app.before_request
+def attach_db_client():
+    print("here")
+    g.db_client = client_factory()
+
 
 BASIC_USER_DATA_FRAGMENT_INLINE = """
 fragment basicUser on users {
@@ -48,21 +58,23 @@ is_secondary_email_verified -> default: false
 """
 
 
-def find_or_create_user_by_email(email: str, role: str) -> Tuple[Dict[str, Any], bool]:
+def find_or_create_user_by_email(
+    client: Client, email: str, role: str
+) -> Tuple[Dict[str, Any], bool]:
     """
     Given an email and a role (to be used only when creating new user) tries to find the user
     and create them if they don't exist yet.
 
     Returns (user, is_new)
     """
-    user = find_user_by_email(email)
+    user = find_user_by_email(client, email)
     if user is not None:
         return user, False
     else:
-        return create_user_with_email(email, role), True
+        return create_user_with_email(client, email, role), True
 
 
-def find_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+def find_user_by_email(client: Client, email: str) -> Optional[Dict[str, Any]]:
     """Given an email, finds the user with that email. Returns `None` if not found. Returns basic user data if found."""
     # First attempt to find user via email
     query = gql(
@@ -84,7 +96,7 @@ def find_user_by_email(email: str) -> Optional[Dict[str, Any]]:
     return users[0]
 
 
-def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
+def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, Any]:
     """Creates a new user with the given email and role. Returns basic user data."""
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
@@ -116,7 +128,7 @@ def create_user_with_email(email: str, role: str) -> Dict[str, Any]:
 
 
 def find_user_by_id(
-    user_id: str, include_enrollments: bool = False
+    client: Client, user_id: str, include_enrollments: bool = False
 ) -> Optional[Dict[str, Any]]:
     """Fetches a user with the given user_id UUID. Optionally includes their enrollments."""
     query = gql(
@@ -161,7 +173,9 @@ def find_user_by_id(
     return user
 
 
-def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+def update_user_by_id(
+    client: Client, user_id: str, updates: Dict[str, Any]
+) -> Dict[str, Any]:
     """Updates a user with the given ID and the given updates. Returns basic user data."""
     query = gql(
         BASIC_USER_DATA_FRAGMENT_INLINE
@@ -182,7 +196,7 @@ def update_user_by_id(user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
     return user
 
 
-def get_all_users(only_verified: bool = True) -> List[Dict[str, Any]]:
+def get_all_users(client: Client, only_verified: bool = True) -> List[Dict[str, Any]]:
     query = gql(
         """
         query all_users($where: users_bool_exp!) {
@@ -212,7 +226,7 @@ def get_all_users(only_verified: bool = True) -> List[Dict[str, Any]]:
     return result["users"]
 
 
-def get_unverified_users() -> List[Dict[str, Any]]:
+def get_unverified_users(client: Client) -> List[Dict[str, Any]]:
     query = gql(
         """
         {
@@ -231,7 +245,7 @@ def get_unverified_users() -> List[Dict[str, Any]]:
 
 
 def get_semester_users(
-    semester_id: str, only_verified: bool = True
+    client: Client, semester_id: str, only_verified: bool = True
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     query = gql(
         """
@@ -256,19 +270,17 @@ def get_semester_users(
     )
 
     where_clause: Dict[str, Any] = {
-        "enrollments": {"semester_id": {"_eq": "$semester_id"}}
+        "enrollments": {"semester_id": {"_eq": semester_id}}
     }
 
     if only_verified:
         where_clause["is_verified"] = {"_eq": True}
 
-    result = client.execute(
-        query, variable_values={"semester_id": semester_id, "where": where_clause}
-    )
+    result = client.execute(query, variable_values={"where": where_clause})
     return result["users"]
 
 
-def get_semesters() -> List[Dict[str, Any]]:
+def get_semesters(client: Client) -> List[Dict[str, Any]]:
     query = gql(
         """
         query semesters {
@@ -287,7 +299,7 @@ def get_semesters() -> List[Dict[str, Any]]:
     return semesters
 
 
-def get_project(project_id: str) -> Optional[Dict[str, Any]]:
+def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
     """
     Fetches the project with the given ID.
     Returns project name, participants, description, tags and relevant repos.
@@ -323,7 +335,9 @@ def get_project(project_id: str) -> Optional[Dict[str, Any]]:
     return result["project"]
 
 
-def get_enrollment(user_id: str, semester_id: str) -> Optional[Dict[str, Any]]:
+def get_enrollment(
+    client: Client, user_id: str, semester_id: str
+) -> Optional[Dict[str, Any]]:
     query = gql(
         """
         query get_enrollment($user_id: uuid!, $semester_id: String!) {
@@ -345,7 +359,7 @@ def get_enrollment(user_id: str, semester_id: str) -> Optional[Dict[str, Any]]:
         return enrollments[0]
 
 
-def get_all_projects() -> List[Dict[str, Any]]:
+def get_all_projects(client: Client) -> List[Dict[str, Any]]:
     """
     Fetches all projects.
     Returns project name, and relevant repos.
@@ -370,7 +384,7 @@ def get_all_projects() -> List[Dict[str, Any]]:
 
 
 def get_semester_projects(
-    semester_id: str, with_enrollments: bool
+    client: Client, semester_id: str, with_enrollments: bool
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Fetches all projects in the current semester.
@@ -423,7 +437,7 @@ def get_semester_projects(
     return result["projects"]
 
 
-def add_project(owner_id: str, name: str, desc: str):
+def add_project(client: Client, owner_id: str, name: str, desc: str):
     """
     Creates new project with name=name and description=desc where owner is user that has id=owner_id
     """
@@ -449,7 +463,7 @@ def add_project(owner_id: str, name: str, desc: str):
     return result["insert_projects"]
 
 
-def get_meetings() -> List[Dict[str, Any]]:
+def get_meetings(client: Client) -> List[Dict[str, Any]]:
     """
     Fetches all meetings.
     Returns meeting name, type, start and end timestamps.
@@ -471,7 +485,7 @@ def get_meetings() -> List[Dict[str, Any]]:
     return result["meetings"]
 
 
-def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
+def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any]]:
     query = gql(
         """
         query find_meeting_by_id($meeting_id: uuid!) {
@@ -498,7 +512,7 @@ def get_meeting_by_id(meeting_id: str) -> Optional[Dict[str, Any]]:
     return meeting
 
 
-def insert_meeting(meeting_data: Dict[str, Any]) -> Dict[str, Any]:
+def insert_meeting(client: Client, meeting_data: Dict[str, Any]) -> Dict[str, Any]:
     query = gql(
         """
         mutation add_meeting($meeting_data: meetings_insert_input!) {
@@ -514,7 +528,9 @@ def insert_meeting(meeting_data: Dict[str, Any]) -> Dict[str, Any]:
     return new_meeting
 
 
-def add_project_lead(project_id: str, user_id: str, semester_id: str, credits: int):
+def add_project_lead(
+    client: Client, project_id: str, user_id: str, semester_id: str, credits: int
+):
     """
     Adds user with id=user_id as project lead of project with id=project_id.
     Also adds corresponding enrollment to current semester.

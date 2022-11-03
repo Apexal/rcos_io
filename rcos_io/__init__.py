@@ -1,5 +1,4 @@
 from flask import Flask, render_template
-import rcos_io.services.db
 from rcos_io.settings import SECRET_KEY
 
 # Create and configure the app
@@ -11,8 +10,7 @@ app.config["SECRET_KEY"] = SECRET_KEY
 def index():
     return render_template("index.html")
 
-
-from rcos_io import filters
+from . import filters
 from .views import auth
 from .views import projects
 from .views import meetings
