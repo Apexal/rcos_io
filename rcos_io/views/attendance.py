@@ -3,8 +3,8 @@ import functools
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
-from rcos_io.services import db, attendance, auth
-from rcos_io import settings, utils
+from rcos_io.services import db, attendance
+from rcos_io import settings, utils, auth
 
 from flask import (
     current_app,
@@ -23,7 +23,7 @@ bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
 @bp.route("/host")
 @auth.login_required
-@auth.mentor_or_above_required
+#@auth.mentor_or_above_required
 def new_attendance():
     code = attendance.register_room()
 
@@ -32,14 +32,14 @@ def new_attendance():
 
 @bp.route("/verify")
 @auth.login_required
-@auth.mentor_or_above_required
+#@auth.mentor_or_above_required
 def verify_attendance():
     attendance.verify_user("...")
 
     return render_template("attendance/host.html")
 
 
-@bp.route("/attend")
+@bp.route("/attend", methods=("GET", "POST"))
 @auth.login_required
 @auth.rpi_required
 def attend():
@@ -52,13 +52,12 @@ def attend():
         valid_code, needs_verification = attendance.validate_code(code, user["id"])
 
         if valid_code and not needs_verification:
-            flash("Your attendance has been recorded!")
-            return redirect(url_for(""))
+            flash("Your attendance has been recorded!", "primary")
         elif valid_code and needs_verification:
             flash(
-                "You have been randomly selected to be verified by a Mentor!", "warning"
+                "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.", "warning"
             )
-            return redirect(url_for(""))
+        else:
+            flash("Invalid attendance code.", "danger")
 
-        flash("Invalid attendance code.", "warning")
-        return redirect(url_for(""))
+        return render_template("attendance/attend.html")

@@ -1,7 +1,6 @@
 import datetime
 import random
 import string
-from types import Tuple
 from dataclasses import dataclass
 
 ATTENDANCE_CODE_LENGTH = 6
@@ -48,7 +47,7 @@ def close_room(id):
     rooms.pop(id)
 
 
-def validate_code(code, id) -> Tuple[bool, bool]:
+def validate_code(code, id) -> tuple[bool, bool]:
     """
     Attempt to verify if an attendance code is correct. Randomly selects some
     users to be manually verified based on a per-room percentage.
