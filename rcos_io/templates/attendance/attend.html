@@ -1,0 +1,22 @@
+{% extends "/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Attend</h1>
+
+    <form method="post">
+        <div class="form-group">
+          <label for="project_name">Attendance Code</label>
+          <input
+            type="text"
+            class="form-control"
+            id="attendance_code"
+            name="attendance_code"
+            required
+          />
+        </div>
+        <br/>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+{% endblock %}

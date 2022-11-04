@@ -20,8 +20,10 @@ from .views import auth
 from .views import projects
 from .views import meetings
 from .views import members
+from .views import attendance
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(projects.bp)
 app.register_blueprint(meetings.bp)
 app.register_blueprint(members.bp)
+app.register_blueprint(attendance.bp)
