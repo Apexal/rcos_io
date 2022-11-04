@@ -29,6 +29,7 @@ Setup is very straightforward.
 ### Requirements
 1. Python 3.8+
 2. `venv` (might need to run `sudo apt install sudo apt install python3.8-venv` or similar)
+3. Read the [Flask Quickstart](https://flask.palletsprojects.com/en/2.2.x/quickstart/)
 
 ### Setup
 

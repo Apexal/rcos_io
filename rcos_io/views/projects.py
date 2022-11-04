@@ -21,6 +21,7 @@ import rcos_io.views.auth as auth
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
 
+
 @bp.route("/")
 def semester_projects():
     """
@@ -100,7 +101,7 @@ def add_project():
             inserted_project[0]["id"],
             user["id"],
             session["semester"]["id"],
-            4, # TODO: determine
+            4,  # TODO: determine
         )
 
         # TODO: handle more gracefully
@@ -108,7 +109,6 @@ def add_project():
             return redirect(
                 url_for("projects.project_detail", project_id=inserted_project[0]["id"])
             )
-
 
 
 @bp.route("/<project_id>")

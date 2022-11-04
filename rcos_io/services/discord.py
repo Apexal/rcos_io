@@ -1,3 +1,7 @@
+"""
+This module contains constants and functions for interacting with the Discord API.
+"""
+
 from typing import Any, Dict, Optional, TypedDict, Union
 from typing_extensions import NotRequired
 import requests
@@ -80,6 +84,11 @@ def get_user_info(access_token: str) -> DiscordUser:
     """
     Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error on failed request.
 
+    Args:
+        access_token: Discord access token for a user
+    Raises:
+        HTTPError on request failure
+
     See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
     """
     response = requests.get(
@@ -98,7 +107,13 @@ def get_user_info(access_token: str) -> DiscordUser:
 
 def add_user_to_server(access_token: str, user_id: str):
     """
-    Given a Discord user's id, add them to the RCOS server with the given nickname. Throws an error on failed request.
+    Given a Discord user's id, add them to the RCOS server with the given nickname.
+
+    Args:
+        access_token: Discord user's access token
+        user_id: Discord user's account ID
+    Raises:
+        HTTPError on failed request
 
     See https://discord.com/developers/docs/resources/guild#add-guild-member
     """
@@ -116,14 +131,21 @@ def add_user_to_server(access_token: str, user_id: str):
     return response
 
 
-def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
+def get_user(user_id: str) -> Union[DiscordUser, None]:
     """
-    Given a Discord user's id, get their user info. Throws an error on failed request.
+    Given a Discord user's id, gets their user info.
+
+    Args:
+        user_id: Discord user's unique account ID
+    Returns:
+        DiscordUser
+    Raises:
+        HTTPError on failed request (e.g. not found)
 
     See https://discord.com/developers/docs/resources/user#get-user
     """
     response = requests.get(
-        f"{DISCORD_API_ENDPOINT}/users/{discord_user_id}",
+        f"{DISCORD_API_ENDPOINT}/users/{user_id}",
         headers=HEADERS,
     )
     response.raise_for_status()
@@ -135,7 +157,13 @@ def get_user(discord_user_id: str) -> Union[DiscordUser, None]:
 
 def add_role_to_member(user_id: str, role_id: str):
     """
-    Add a role (identified by its id) to a server member. Throws an error on failed request.
+    Adds a role to a server member.
+
+    Args:
+        user_id: Discord user's unique account ID (same as member ID)
+        role_id: ID of Discord role to add to member
+    Raises:
+        HTTPError on failed request (will not fail if role is already set)
 
     See https://discord.com/developers/docs/resources/guild#modify-guild-member
     """
@@ -151,7 +179,12 @@ def add_role_to_member(user_id: str, role_id: str):
 
 def kick_user_from_server(user_id: str):
     """
-    Given a Discord user's id, kick them from the RCOS server. Throws an error on failed request.
+    Given a Discord user's id, kicks them from the RCOS server.
+
+    Args:
+        user_id: Discord user's unique account ID
+    Raises:
+        HTTPError on failed request (e.g. missing permission to kick member)
 
     See https://discord.com/developers/docs/resources/guild#remove-guild-member
     """
@@ -167,7 +200,13 @@ def kick_user_from_server(user_id: str):
 
 def set_member_nickname(user_id: str, nickname: str):
     """
-    Given a Discord user's id, set their nickname on the server. Throws an error on failed request.
+    Given a Discord user's id, sets their nickname on the server. Throws an error on failed request.
+
+    Args:
+        user_id: Discord user's unique account ID
+        nickname: the nickname to give the user, must be <= 32 characters
+    Raises:
+        HTTPError on failed request
 
     See https://discord.com/developers/docs/resources/guild#modify-current-member
     """
