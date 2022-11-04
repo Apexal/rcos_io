@@ -40,14 +40,14 @@ def register_room() -> str:
     return code
 
 
-def close_room(id):
+def close_room(user_id: str):
     """
     Closes a room for attendance.
     """
-    rooms.pop(id)
+    rooms.pop(user_id)
 
 
-def validate_code(code, id) -> tuple[bool, bool]:
+def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
     """
     Attempt to verify if an attendance code is correct. Randomly selects some
     users to be manually verified based on a per-room percentage.
@@ -58,22 +58,22 @@ def validate_code(code, id) -> tuple[bool, bool]:
     room = rooms.get(code)
 
     # invalid code; there does not exist a room with that code
-    if room == None:
-        return (False, False)
+    if room is None:
+        return False, False
 
     # in case the user tries to resubmit, return the same result
-    if id in to_be_verified:
-        return (True, True)
+    if user_id in to_be_verified:
+        return True, True
 
     # the user has the correct code, however they were selected to be manually verified
     if random.random() <= room.verification_percent:
         to_be_verified.add(id)
 
-        return (True, True)
+        return True, True
 
     # TODO: add attendane to database
 
-    return (True, False)
+    return True, False
 
 
 def verify_user(id):
