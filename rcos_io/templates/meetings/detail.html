@@ -4,7 +4,7 @@
 <div class="container">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-          <li class="breadcrumb-item active" aria-current="page"><a href="{{ url_for('meetings.meetings') }}">Meetings</a></li>
+          <li class="breadcrumb-item active" aria-current="page"><a href="{{ url_for('meetings.index') }}">Meetings</a></li>
           <li class="breadcrumb-item active" aria-current="page"><a href="#">Fall 2022</a></li>
           <li class="breadcrumb-item active text-capitalize" aria-current="page"><a href="#">{{ meeting["type"] }}s</a></li>
         </ol>
@@ -26,7 +26,7 @@
         <span class="badge bg-secondary text-capitalize">{{ meeting['location'] }}</span>
     </h3>
 
-	{% include '/includes/flashed_messages.html' %}
+	{% include '/_includes/flashed_messages.html' %}
 
     {% if meeting["host"] %}
     <p>Hosted by <a href="{{ url_for('members.detail', user_id=meeting['host']['id']) }}">{{ meeting["host"]["display_name"] }}</a></p>

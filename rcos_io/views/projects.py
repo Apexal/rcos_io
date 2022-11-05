@@ -23,7 +23,7 @@ bp = Blueprint("projects", __name__, url_prefix="/projects")
 
 
 @bp.route("/")
-def list():
+def index():
     """
     Get all projects for a specific semester OR for all semesters.
     """
@@ -47,7 +47,7 @@ def list():
         # Check that it is a valid semester
         if not semester:
             flash("No such semester found!", "warning")
-            return redirect(url_for("projects.list", semester_id="all"))
+            return redirect(url_for("projects.index", semester_id="all"))
 
         # Attempt to fetch projects
         try:
@@ -106,7 +106,7 @@ def add():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Oops! There was en error while submitting the project.", "danger")
-            return redirect(url_for("projects.list"))
+            return redirect(url_for("projects.index"))
         #
         #   TODO: send validation to Discord, validation panel in site
         #
@@ -130,7 +130,7 @@ def approve():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! There was an error while fetching the projects.", "danger")
-            return redirect(url_for("projects.list"))
+            return redirect(url_for("projects.index"))
 
         return render_template(
             "projects/approve.html", unapproved_projects=unapproved_projects
@@ -169,12 +169,12 @@ def detail(project_id: str):
     except Exception as e:
         current_app.logger.exception(e)
         flash("Invalid project ID!", "danger")
-        return redirect(url_for("projects.list"))
+        return redirect(url_for("projects.index"))
 
     # Handle project not found
     if project is None:
         flash("No such project with that ID exists!", "warning")
-        return redirect(url_for("projects.list"))
+        return redirect(url_for("projects.index"))
 
     # TODO: semester-specific project pages via ?semester_id
     # parse out any project members that are *not* in the project this semester

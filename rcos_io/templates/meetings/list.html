@@ -14,7 +14,7 @@
 {% block content %}
 <div class="container">
 	<h1>Meetings</h1>
-	{% include '/includes/flashed_messages.html' %}
+	{% include '/_includes/flashed_messages.html' %}
 
 	<div id='calendar'></div>
 
@@ -36,7 +36,7 @@
 			Administrator Controls
 		</div>
 		<div class="card-body">
-			<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">
+			<a href="{{ url_for('meetings.add') }}" class="btn btn-success">
 				<i class="bi bi-plus-lg"></i>
 				Add Meeting
 			</a>

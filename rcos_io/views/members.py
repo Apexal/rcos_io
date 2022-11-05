@@ -19,7 +19,7 @@ bp = Blueprint("members", __name__, url_prefix="/members")
 
 
 @bp.route("/")
-def list():
+def index():
     """Gets all users enrolled for a specific semester OR for all semesters."""
 
     # Search term to filter users on
@@ -41,7 +41,7 @@ def list():
         # Check that it is a valid semester
         if not semester:
             flash("No such semester found!", "warning")
-            return redirect(url_for("members.list", semester_id="all"))
+            return redirect(url_for("members.index", semester_id="all"))
 
         try:
             # Grab the users who were enrolled in that semester, and the semester object
@@ -49,7 +49,7 @@ def list():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Failed to fetch members...", "danger")
-            return redirect(url_for("members.list", semester_id="all"))
+            return redirect(url_for("members.index", semester_id="all"))
     else:
         # Attempt to fetch users across all semesters
         try:

@@ -25,15 +25,15 @@ eastern = timezone("US/Eastern")
 
 
 @bp.route("/")
-def meetings():
+def index():
     """Renders the main meetings template which shows a calendar that fetches events from the API route."""
-    return render_template("meetings/meetings_list.html")
+    return render_template("meetings/list.html")
 
 
 @bp.route("/add", methods=("GET", "POST"))
 @login_required
 @coordinator_or_above_required
-def add_meeting():
+def add():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":
 
@@ -48,7 +48,7 @@ def add_meeting():
             "other",
         ]
 
-        return render_template("meetings/add_meeting.html", meeting_types=meeting_types)
+        return render_template("meetings/add.html", meeting_types=meeting_types)
     else:
 
         # Form new meeting dictionary for insert
@@ -67,16 +67,16 @@ def add_meeting():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! Failed to add meeting. Check logs.", "danger")
-            return redirect(url_for("meetings.meetings"))
+            return redirect(url_for("meetings.index"))
 
         # Redirect to the new meeting's detail page
         return redirect(
-            url_for("meetings.meeting_detail", meeting_id=new_meeting["id"])
+            url_for("meetings.detail", meeting_id=new_meeting["id"])
         )
 
 
 @bp.route("/<meeting_id>")
-def meeting_detail(meeting_id: str):
+def detail(meeting_id: str):
     """Renders the detail page for a particular meeting."""
 
     # Attempt to fetch meeting
@@ -85,16 +85,16 @@ def meeting_detail(meeting_id: str):
     except Exception as e:
         current_app.logger.exception(e)
         flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.meetings"))
+        return redirect(url_for("meetings.index"))
 
     if meeting:
         return render_template(
-            "meetings/meeting_detail.html",
+            "meetings/detail.html",
             meeting=meeting,
         )
     else:
         flash("No meeting with that ID found!", "danger")
-        return redirect(url_for("meetings.meetings"))
+        return redirect(url_for("meetings.index"))
 
 
 @bp.route("/api/events")
