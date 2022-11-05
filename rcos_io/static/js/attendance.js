@@ -1,4 +1,5 @@
 let user_id_field = document.getElementById("unverified_user");
+let verification_status = document.getElementById("verification_status");
 
 /**
  * Called on "Verify" button click. Sends a message to verify an
@@ -20,5 +21,9 @@ let onVerify = () => {
         body: JSON.stringify({
             user_id
         })
+    })
+    .then(response => response.text())
+    .then(data => {
+        verification_status.innerText = data
     });
 }

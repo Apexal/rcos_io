@@ -3,11 +3,13 @@ import random
 import string
 import json
 import dataclasses
+import math
 
 from dataclasses import dataclass
 from rcos_io.services import cache
 
 ATTENDANCE_CODE_LENGTH = 6
+
 
 @dataclass
 class AttendanceSession:
@@ -21,7 +23,7 @@ def generate_code(code_length: int = ATTENDANCE_CODE_LENGTH):
     """
     Generates & returns a new attendance code.
     """
-    
+
     code = ""
 
     for _ in range(code_length):
@@ -36,7 +38,12 @@ def register_room(room_id: str, meeting_id: str) -> str:
     """
     code = generate_code()
 
-    session = AttendanceSession(room_id, meeting_id, 0.2, datetime.datetime.now().timestamp())
+    session = AttendanceSession(
+        room_id,
+        meeting_id,
+        min(random.random(), 0.2),
+        datetime.datetime.now().timestamp(),
+    )
     cache.get_cache().set(code, json.dumps(dataclasses.asdict(session)))
 
     return code
@@ -73,13 +80,21 @@ def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
 
         return True, True
 
-    # TODO: add attendane to database
+    # TODO: add attendance to database
 
     return True, False
 
 
-def verify_user(id):
+def verify_user(user_id: str):
     """
-    Remvoe a user from the verification queue.
+    Remove a user from the verification queue. Returns if
+    the operation was successful; True indicates the user
+    was removed while False indicates that the user did
+    not exist.
     """
-    cache.get_cache().srem("to_be_verified", id)
+    if not cache.get_cache().sismember("to_be_verified", user_id):
+        return False
+
+    cache.get_cache().srem("to_be_verified", user_id)
+
+    return True

@@ -92,9 +92,10 @@ def detail(meeting_id: str):
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.index"))
 
+
 @bp.route("/<meeting_id>/host")
 @login_required
-def host_meeting(meeting_id: str):
+def host(meeting_id: str):
     meeting = None
 
     try:
@@ -103,17 +104,19 @@ def host_meeting(meeting_id: str):
         current_app.logger.exception(e)
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.meetings"))
-    
+
     code = attendance.register_room(meeting["location"], meeting_id)
 
     return render_template("attendance/host.html", code=code)
 
+
 @bp.route("/<meeting_id>/close", methods=["POST"])
 @login_required
-def close_meeting(meeting_id: str):
+def close(meeting_id: str):
     attendance.close_room(meeting_id)
 
-    return 404
+    return "Room closed", 200
+
 
 @bp.route("/api/events")
 def events_api():

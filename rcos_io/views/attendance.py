@@ -1,5 +1,6 @@
 from datetime import date
 import functools
+import json
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
@@ -20,17 +21,18 @@ from flask import (
 
 bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
-@bp.route("/verify")
+
+@bp.route("/verify", methods=["POST"])
 @auth.login_required
-#@auth.mentor_or_above_required
+# @auth.mentor_or_above_required
 def verify_attendance():
-    user_id = request.data
+    payload = json.loads(request.data)
+    user_id = payload["user_id"]
 
-    print(user_id)
+    if not attendance.verify_user(user_id):
+        return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
 
-    #attendance.verify_user("...")
-
-    return "" #render_template("attendance/host.html")
+    return "Successfully verified!", 200
 
 
 @bp.route("/attend", methods=("GET", "POST"))
@@ -43,13 +45,14 @@ def attend():
         code = request.form["attendance_code"]
         user: Dict[str, Any] = g.user
 
-        valid_code, needs_verification = attendance.validate_code(code, user["id"])
+        valid_code, needs_verification = attendance.validate_code(code, user["rcs_id"])
 
         if valid_code and not needs_verification:
             flash("Your attendance has been recorded!", "primary")
         elif valid_code and needs_verification:
             flash(
-                "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.", "warning"
+                "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.",
+                "warning",
             )
         else:
             flash("Invalid attendance code.", "danger")
