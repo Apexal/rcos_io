@@ -11,8 +11,6 @@ from flask import (
     current_app,
     g,
 )
-from pytz import timezone
-
 from rcos_io.services import db
 from rcos_io.views.auth import (
     coordinator_or_above_required,
@@ -20,8 +18,6 @@ from rcos_io.views.auth import (
 )
 
 bp = Blueprint("meetings", __name__, url_prefix="/meetings")
-
-eastern = timezone("US/Eastern")
 
 
 @bp.route("/")
@@ -70,9 +66,7 @@ def add():
             return redirect(url_for("meetings.index"))
 
         # Redirect to the new meeting's detail page
-        return redirect(
-            url_for("meetings.detail", meeting_id=new_meeting["id"])
-        )
+        return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
 
 
 @bp.route("/<meeting_id>")

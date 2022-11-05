@@ -102,21 +102,16 @@
     {% endif %}
 
     {% if session.get("is_coordinator_or_above") %}
-    <div class="ms-auto dropdown is-light">
-      <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        Admin Actions
-      </button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="{{ url_for('projects.approve') }}">
-          Approve/Deny New Projects
+    <div class="btn-group ms-auto">
+      <a href="{{ url_for('projects.approve') }}" class="btn btn-light">
+        Approve Projects
           {% if unapproved_projects|length > 0 %}
           <span class="badge bg-danger">{{ unapproved_projects|length }}</span>
           {% endif %}
-        </a></li>
-        <li><a class="dropdown-item" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/projects/browse" target="_blank">Edit in Hasura Console
-          <i class="bi bi-box-arrow-up-right ms-2"></i>
-        </a></li>
-      </ul>
+      </a>
+      <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/projects/browse" target="_blank">Edit in Hasura Console
+        <i class="bi bi-box-arrow-up-right ms-2"></i>
+      </a>
     </div>
     {% endif %}
   </nav>

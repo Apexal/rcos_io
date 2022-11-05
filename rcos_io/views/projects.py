@@ -33,7 +33,12 @@ def index():
     search = request.args.get("search")
 
     # Fetch target semester ID from url or default to current active one (which might not exist)
-    semester_id, semester = utils.get_target_semester(request, session)
+    try:
+        semester_id, semester = utils.get_target_semester(request, session)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("No such semester found!", "warning")
+        return redirect(url_for("projects.index", semester_id="all"))
 
     # Values passed to template
     context: Dict[str, Any] = {
@@ -42,28 +47,13 @@ def index():
         "semester": semester,
     }
 
-    # If there is a desired semester id, attempt to fetch projects for that semester
-    if semester_id and semester_id != "all":
-        # Check that it is a valid semester
-        if not semester:
-            flash("No such semester found!", "warning")
-            return redirect(url_for("projects.index", semester_id="all"))
-
-        # Attempt to fetch projects
-        try:
-            all_projects = db.get_semester_projects(g.db_client, semester_id, False)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Yikes! There was an error while fetching the projects.", "danger")
-            return redirect(url_for("index"))
-    else:
-        # Attempt to fetch projects across all semesters
-        try:
-            all_projects = db.get_all_projects(g.db_client)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Oops! There was an error while fetching the projects.", "danger")
-            return redirect(url_for("index"))
+    # Attempt to fetch projects
+    try:
+        all_projects = db.get_projects(g.db_client, False, semester_id)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("Yikes! There was an error while fetching the projects.", "danger")
+        return redirect(url_for("index"))
 
     context["approved_projects"] = []
     context["unapproved_projects"] = []
@@ -123,7 +113,7 @@ def approve():
         try:
             unapproved_projects = [
                 project
-                for project in db.get_all_projects(g.db_client)
+                for project in db.get_projects(g.db_client, False, "all")
                 if not project["is_approved"]
             ]
 
@@ -162,6 +152,15 @@ def approve():
 @bp.route("/<project_id>")
 def detail(project_id: str):
     """Renders the detail page for a specific project."""
+
+    # Fetch target semester ID from url or default to current active one (which might not exist)
+    semester_id, semester = utils.get_target_semester(request, session)
+
+    # Values passed to template
+    context: Dict[str, Any] = {
+        "semester_id": semester_id,
+        "semester": semester,
+    }
 
     # Attempt to fetch project
     try:
@@ -211,9 +210,4 @@ def detail(project_id: str):
         )
     )
 
-    return render_template(
-        "projects/detail.html",
-        project=project,
-        full_description=sanitized_md,
-        semester=session["semester"],
-    )
+    return render_template("projects/detail.html", **context)

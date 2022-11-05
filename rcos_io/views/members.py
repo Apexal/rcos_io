@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from flask import (
     Blueprint,
     render_template,
@@ -27,7 +27,12 @@ def index():
     search = request.args.get("search")
 
     # Fetch target semester ID from url or default to current active one (which might not exist)
-    semester_id, semester = utils.get_target_semester(request, session)
+    try:
+        semester_id, semester = utils.get_target_semester(request, session)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("No such semester found!", "warning")
+        return redirect(url_for("members.index", semester_id="all"))
 
     # Values passed to template
     context: Dict[str, Any] = {
@@ -36,28 +41,21 @@ def index():
         "semester": semester,
     }
 
-    # If there is a desired semester id, attempt to fetch users enrolled for that semester
-    if semester_id and semester_id != "all":
-        # Check that it is a valid semester
-        if not semester:
-            flash("No such semester found!", "warning")
-            return redirect(url_for("members.index", semester_id="all"))
+    try:
+        all_users = db.get_users(g.db_client, semester_id)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("Failed to fetch members...", "danger")
+        return redirect(url_for("members.index", semester_id="all"))
 
-        try:
-            # Grab the users who were enrolled in that semester, and the semester object
-            context["users"] = db.get_semester_users(g.db_client, semester_id)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Failed to fetch members...", "danger")
-            return redirect(url_for("members.index", semester_id="all"))
-    else:
-        # Attempt to fetch users across all semesters
-        try:
-            context["users"] = db.get_all_users(g.db_client)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Oops! There was an error while fetching members.", "danger")
-            return redirect(url_for("index"))
+    context["verified_users"] = []
+    context["unverified_users"] = []
+
+    for user in all_users:
+        if user["is_verified"]:
+            context["verified_users"].append(user)
+        else:
+            context["unverified_users"].append(user)
 
     return render_template("members/index.html", **context)
 
@@ -68,7 +66,19 @@ def index():
 def verify():
     """Renders the list of **unverified** members and handles verifying them."""
     if request.method == "GET":
-        unverified_users = db.get_unverified_users(g.db_client)
+        try:
+            unverified_users: List[Dict[str, Any]] = list(
+                filter(
+                    lambda user: not user["is_verified"],
+                    db.get_users(g.db_client, "all", False),
+                )
+            )
+        except Exception as e:
+            current_app.logger.exception(e)
+            flash(
+                "Yikes! There was an error while fetching unverified users.", "danger"
+            )
+            return redirect(url_for("members.index"))
 
         return render_template("members/verify.html", unverified_users=unverified_users)
     else:

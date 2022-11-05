@@ -149,7 +149,7 @@ def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, A
         BASIC_USER_DATA_FRAGMENT_INLINE
         + """
         mutation insert_user($user: users_insert_input!) {
-            insert_users(objects: [$user], on_conflict: {
+            insert_users_one(object: $user, on_conflict: {
                 constraint: users_email_key,
                 update_columns: []
             }) {
@@ -167,9 +167,9 @@ def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, A
         rcs_id = email.replace("@rpi.edu", "")
         user_values["rcs_id"] = rcs_id
 
-    user = client.execute(query, variable_values={"user": user_values})["insert_users"][
-        "returning"
-    ][0]
+    user = client.execute(query, variable_values={"user": user_values})[
+        "insert_users_one"
+    ]
 
     return user
 
@@ -262,57 +262,7 @@ def update_user_by_id(
     return user
 
 
-def get_all_users(client: Client, only_verified: bool = True) -> List[Dict[str, Any]]:
-    query = gql(
-        """
-        query all_users($where: users_bool_exp!) {
-            users(order_by: [{ display_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
-                id
-                display_name
-                role
-                email
-                created_at
-                rcs_id
-                graduation_year
-                github_username
-                enrollments_aggregate {
-                    aggregate {
-                        count
-                    }
-                }
-            }
-        }
-        """
-    )
-    where_clause = dict()
-    if only_verified:
-        where_clause["is_verified"] = {"_eq": True}
-
-    result = client.execute(query, variable_values={"where": where_clause})
-    return result["users"]
-
-
-def get_unverified_users(client: Client) -> List[Dict[str, Any]]:
-    query = gql(
-        """
-        {
-            users(where: { is_verified: {_eq: false}}) {
-                id
-                email
-                first_name
-                last_name
-                created_at
-            }
-        }
-        """
-    )
-    users = client.execute(query)["users"]
-    return users
-
-
-def get_semester_users(
-    client: Client, semester_id: str, only_verified: bool = True
-) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]]:
     query = gql(
         """
         query semester_users($where: users_bool_exp!) {
@@ -325,6 +275,7 @@ def get_semester_users(
                 rcs_id
                 graduation_year
                 github_username
+                is_verified
                 enrollments_aggregate {
                     aggregate {
                         count
@@ -335,12 +286,10 @@ def get_semester_users(
         """
     )
 
-    where_clause: Dict[str, Any] = {
-        "enrollments": {"semester_id": {"_eq": semester_id}}
-    }
+    where_clause: Dict[str, Any] = dict()
 
-    if only_verified:
-        where_clause["is_verified"] = {"_eq": True}
+    if semester_id:
+        where_clause["enrollments"] = {"semester_id": {"_eq": semester_id}}
 
     result = client.execute(query, variable_values={"where": where_clause})
     return result["users"]
@@ -389,9 +338,7 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
                         rcs_id
                         display_name
                     }
-                    semester {
-                        id
-                    }
+                    semester_id
                 }
             }
         }
@@ -426,53 +373,28 @@ def get_enrollment(
         return enrollments[0]
 
 
-def get_all_projects(client: Client) -> List[Dict[str, Any]]:
-    """
-    Fetches all APPROVED projects.
-    Returns project name, and relevant repos.
-    """
-    query = gql(
-        """
-        {
-            projects(order_by: {name: asc}) {
-                id
-                name
-                tags
-                github_repos
-                short_description
-                description_markdown
-                homepage_url
-                is_approved
-                created_at
-                owner {
-                    id
-                    display_name
-                }
-                enrollments_aggregate {
-                    aggregate {
-                        count
-                    }
-                }
-            }
-        }
-        """
-    )
-
-    result = client.execute(query, variable_values={})
-    return result["projects"]
-
-
-def get_semester_projects(
-    client: Client, semester_id: str, with_enrollments: bool
+def get_projects(
+    client: Client,
+    with_enrollments: bool,
+    semester_id: Optional[str],
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Fetches all projects in the current semester.
     Returns project name.
     """
+
+    projects_where_exp = dict()
+    if semester_id:
+        projects_where_exp = {"enrollments": {"semester_id": {"_eq": semester_id}}}
+
+    enrollments_where_exp = dict()
+    if semester_id:
+        enrollments_where_exp = {"semester_id": {"_eq": semester_id}}
+
     query = gql(
         """
-        query SemesterProjects($semester_id: String!, $withEnrollments: Boolean!) {
-          projects(order_by: {name: asc}, where: {enrollments: {_or: [{semester_id: {_eq: $semester_id}}]}}) {
+        query SemesterProjects($projects_where_exp: projects_bool_exp, $enrollments_where_exp: enrollments_bool_exp, $withEnrollments: Boolean!) {
+          projects(order_by: {name: asc}, where: $projects_where_exp) {
             id
             name
             tags
@@ -480,22 +402,21 @@ def get_semester_projects(
             short_description
             created_at
             is_approved
-            project_leads: enrollments(limit: 1, where: {is_project_lead: {_eq:true}}) @include(if: $withEnrollments) {
+            project_leads: enrollments(where: {_and: [$enrollments_where_exp, {is_project_lead: {_eq:true}}] }) @include(if: $withEnrollments) {
                 user_id
                 user {
                     display_name
                 }
             }
-            enrollments_aggregate(where: {semester_id: {_eq:$semester_id}}) {
+            enrollments_aggregate(where: $enrollments_where_exp) {
                 aggregate {
                     count
                 }
             }
-            enrollments @include(if: $withEnrollments) {
+            enrollments(where: $enrollments_where_exp) @include(if: $withEnrollments) {
                 user {
                     id
-                    first_name
-                    last_name
+                    display_name
                     graduation_year
                 }
                 is_project_lead
@@ -509,7 +430,8 @@ def get_semester_projects(
     result = client.execute(
         query,
         variable_values={
-            "semester_id": semester_id,
+            "projects_where_exp": projects_where_exp,
+            "enrollments_where_exp": enrollments_where_exp,
             "withEnrollments": with_enrollments,
         },
     )

@@ -9,7 +9,7 @@
     Members Across All Semesters
     {% endif %}
     
-    <span class="badge bg-secondary">{{ users | length }}</span>
+    <span class="badge bg-secondary">{{ verified_users | length }}</span>
   </h1>
   {% include '/_includes/flashed_messages.html' %}
 
@@ -35,7 +35,7 @@
   </form>
 
   <div class="row">
-    {% for user in users %}
+    {% for user in verified_users %}
     <div class="col-xs-12 col-md-6 col-lg-4">
       <div class="card my-3">
         <div class="card-body">
@@ -71,15 +71,20 @@
     {% endfor %}
   </div>
 
-  {% if session.get("is_coordinator_or_above") %}
-  <div class="card my-2">
-    <div class="card-header">
-      Administrator Controls
+  <nav class="my-3 d-flex">
+    {% if session.get("is_coordinator_or_above") %}
+    <div class="btn-group ms-auto">
+      <a href="{{ url_for('members.verify') }}" class="btn btn-light">
+        Verify Users
+        {% if unverified_users|length > 0 %}
+        <span class="badge bg-danger">{{ unverified_users|length }}</span>
+        {% endif %}
+      </a>
+      <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/users/browse" target="_blank">Edit in Hasura Console
+        <i class="bi bi-box-arrow-up-right ms-2"></i>
+      </a>
     </div>
-    <div class="card-body">
-      <a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/users/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
+  </nav>
 </div>
 {% endblock %}
