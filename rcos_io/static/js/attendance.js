@@ -1,23 +1,24 @@
-let userIdField = document.getElementById("unverified_user");
+let user_id_field = document.getElementById("unverified_user");
 
 /**
  * Called on "Verify" button click. Sends a message to verify an
  * RCS ID for attendance.
  */
 let onVerify = () => {
-    const userId = userIdField.value;
+    const user_id = user_id_field.value;
     
-    if (userId === null) {
+    if (user_id === null || user_id.length == 0) {
         return;
     }
 
-    // verify user
-}
-
-/**
- * Called on "Close" button click. Sends a message to the server
- * to close the attendance room.
- */
-let onClose = () => {
-    
+    fetch('/attendance/verify', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            user_id
+        })
+    });
 }

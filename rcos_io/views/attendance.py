@@ -24,9 +24,13 @@ bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 @auth.login_required
 #@auth.mentor_or_above_required
 def verify_attendance():
-    attendance.verify_user("...")
+    user_id = request.data
 
-    return render_template("attendance/host.html")
+    print(user_id)
+
+    #attendance.verify_user("...")
+
+    return "" #render_template("attendance/host.html")
 
 
 @bp.route("/attend", methods=("GET", "POST"))
