@@ -51,9 +51,7 @@ def list():
 
         # Attempt to fetch projects
         try:
-            all_projects = db.get_semester_projects(
-                g.db_client, semester_id, False
-            )
+            all_projects = db.get_semester_projects(g.db_client, semester_id, False)
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! There was an error while fetching the projects.", "danger")
@@ -76,7 +74,7 @@ def list():
         else:
             context["unapproved_projects"].append(project)
 
-    return render_template("projects/projects_list.html", **context)
+    return render_template("projects/list.html", **context)
 
 
 @bp.route("/add", methods=("GET", "POST"))
@@ -84,7 +82,7 @@ def list():
 @auth.rpi_required
 def add():
     if request.method == "GET":
-        return render_template("projects/add_project.html")
+        return render_template("projects/add.html")
     else:
         # Extract form values
         name = request.form["project_name"]
@@ -100,7 +98,7 @@ def add():
             "owner_id": user["id"],
             "name": name,
             "description_markdown": desc,
-            "tags": stack
+            "tags": stack,
         }
 
         try:
@@ -108,14 +106,12 @@ def add():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Oops! There was en error while submitting the project.", "danger")
-            return redirect(url_for("projects.projects_list"))
+            return redirect(url_for("projects.list"))
         #
         #   TODO: send validation to Discord, validation panel in site
         #
 
-        return redirect(
-            url_for("projects.detail", project_id=inserted_project["id"])
-        )
+        return redirect(url_for("projects.detail", project_id=inserted_project["id"]))
 
 
 @bp.route("/approve", methods=("GET", "POST"))
@@ -125,14 +121,20 @@ def approve():
     """Renders the list of **unapproved** projects and handles verifying them."""
     if request.method == "GET":
         try:
-            unapproved_projects = [project for project in db.get_all_projects(g.db_client) if not project["is_approved"]]
+            unapproved_projects = [
+                project
+                for project in db.get_all_projects(g.db_client)
+                if not project["is_approved"]
+            ]
 
         except Exception as e:
             current_app.logger.exception(e)
             flash("Yikes! There was an error while fetching the projects.", "danger")
-            return redirect(url_for("projects.project_list"))
+            return redirect(url_for("projects.list"))
 
-        return render_template("projects/approve_projects.html", unapproved_projects=unapproved_projects)
+        return render_template(
+            "projects/approve.html", unapproved_projects=unapproved_projects
+        )
     else:
         # Extract form values
         target_project_id = request.form["project_id"]
@@ -210,7 +212,7 @@ def detail(project_id: str):
     )
 
     return render_template(
-        "projects/project_detail.html",
+        "projects/detail.html",
         project=project,
         full_description=sanitized_md,
         semester=session["semester"],

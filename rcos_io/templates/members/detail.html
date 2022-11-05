@@ -49,7 +49,7 @@
           <div class="me-auto">
             <div class="fs-3">
               {% if enrollment["project"] %}
-              <a class="fw-bold text-decoration-none" href="{{ url_for('projects.project_detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
+              <a class="fw-bold text-decoration-none" href="{{ url_for('projects.detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
               {% else %}
               <span class="text-muted">No Project</span>
               {% endif %}

@@ -456,6 +456,7 @@ def get_all_projects(client: Client) -> List[Dict[str, Any]]:
     result = client.execute(query, variable_values={})
     return result["projects"]
 
+
 def get_semester_projects(
     client: Client, semester_id: str, with_enrollments: bool
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:

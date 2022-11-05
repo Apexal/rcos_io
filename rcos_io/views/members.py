@@ -19,7 +19,7 @@ bp = Blueprint("members", __name__, url_prefix="/members")
 
 
 @bp.route("/")
-def members_list():
+def list():
     """Gets all users enrolled for a specific semester OR for all semesters."""
 
     # Search term to filter users on
@@ -41,7 +41,7 @@ def members_list():
         # Check that it is a valid semester
         if not semester:
             flash("No such semester found!", "warning")
-            return redirect(url_for("members.members_list", semester_id="all"))
+            return redirect(url_for("members.list", semester_id="all"))
 
         try:
             # Grab the users who were enrolled in that semester, and the semester object
@@ -49,7 +49,7 @@ def members_list():
         except Exception as e:
             current_app.logger.exception(e)
             flash("Failed to fetch members...", "danger")
-            return redirect(url_for("members.members_list", semester_id="all"))
+            return redirect(url_for("members.list", semester_id="all"))
     else:
         # Attempt to fetch users across all semesters
         try:
@@ -59,7 +59,7 @@ def members_list():
             flash("Oops! There was an error while fetching members.", "danger")
             return redirect(url_for("index"))
 
-    return render_template("members/members_list.html", **context)
+    return render_template("members/list.html", **context)
 
 
 @bp.route("/verify", methods=("GET", "POST"))
@@ -97,7 +97,7 @@ def verify():
 
 
 @bp.route("/<user_id>")
-def member_detail(user_id: str):
+def detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
@@ -115,7 +115,7 @@ def member_detail(user_id: str):
             discord_user = None
 
         return render_template(
-            "members/member_detail.html",
+            "members/detail.html",
             user=user,
             discord_user=discord_user,
         )

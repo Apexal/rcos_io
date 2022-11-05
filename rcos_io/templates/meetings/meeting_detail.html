@@ -29,7 +29,7 @@
 	{% include '/includes/flashed_messages.html' %}
 
     {% if meeting["host"] %}
-    <p>Hosted by <a href="{{ url_for('members.member_detail', user_id=meeting['host']['id']) }}">{{ meeting["host"]["display_name"] }}</a></p>
+    <p>Hosted by <a href="{{ url_for('members.detail', user_id=meeting['host']['id']) }}">{{ meeting["host"]["display_name"] }}</a></p>
     {% endif %}
 
     <div class="card" style="width: 18rem;">
