@@ -164,7 +164,7 @@ def create_user_with_email(client: Client, email: str, role: str) -> Dict[str, A
 
     # Extract RCS ID from RPI email
     if role == "rpi":
-        rcs_id = email.removesuffix("@rpi.edu")
+        rcs_id = email.replace("@rpi.edu", "")
         user_values["rcs_id"] = rcs_id
 
     user = client.execute(query, variable_values={"user": user_values})["insert_users"][
