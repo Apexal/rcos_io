@@ -36,7 +36,7 @@
 
   <div class="row">
     {% for user in users %}
-    <div class="col-xs-12 col-md-4">
+    <div class="col-xs-12 col-md-6 col-lg-4">
       <div class="card my-3">
         <div class="card-body">
           <div class="me-auto">
@@ -45,17 +45,18 @@
             </div>
             <div>
               <span class="badge bg-primary">{{ user["enrollments_aggregate"]["aggregate"]["count"] }} semesters</span>
-              <span class="badge bg-secondary text-uppercase">
-                {{ user["role"] }}
+              <span class="badge bg-danger">
+                <span class="text-uppercase">
+                  {{ user["role"] }}
+                </span>
+
                 {% if user["graduation_year"] %}
                 '{{ (user["graduation_year"]|string)[2:] }}
                 {% endif %}
+                {% if g.is_logged_in and g.user["role"] == "rpi" and user["rcs_id"] %}
+                {{ user["rcs_id"] }}
+                {% endif %}
               </span>
-              {% if g.is_logged_in and g.user["role"] == "rpi" and user["rcs_id"] %}
-              <span class="badge bg-secondary"><i class="bi bi-mortarboard-fill"></i>
-                {{ user["rcs_id"] }}@rpi.edu
-              </span>
-              {% endif %}
               {% if user["github_username"] %}
               <a class="badge bg-dark text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
                 <i class="bi-github"></i>

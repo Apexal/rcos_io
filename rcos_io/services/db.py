@@ -561,9 +561,8 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
                 start_date_time
                 end_date_time
                 location
-                is_remote
                 created_at
-                host: user {
+                host {
                     id
                     display_name
                 }
