@@ -20,16 +20,6 @@ from flask import (
 
 bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
-
-@bp.route("/host")
-@auth.login_required
-#@auth.mentor_or_above_required
-def new_attendance():
-    code = attendance.register_room()
-
-    return render_template("attendance/host.html", code=code)
-
-
 @bp.route("/verify")
 @auth.login_required
 #@auth.mentor_or_above_required

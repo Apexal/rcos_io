@@ -1,25 +1,27 @@
 import datetime
 import random
 import string
+import json
+import dataclasses
+
 from dataclasses import dataclass
+from rcos_io.services import cache
 
 ATTENDANCE_CODE_LENGTH = 6
 
-#
-#   TODO: replace this with something good and thread-safe
-#
-rooms = {}
-to_be_verified = set()
-
-
 @dataclass
 class AttendanceSession:
-    room: str
+    room_id: str
+    meeting_id: str
     verification_percent: float
-    opened_at: datetime.datetime
+    opened_at: float
 
 
 def generate_code(code_length: int = ATTENDANCE_CODE_LENGTH):
+    """
+    Generates & returns a new attendance code.
+    """
+    
     code = ""
 
     for _ in range(code_length):
@@ -28,23 +30,23 @@ def generate_code(code_length: int = ATTENDANCE_CODE_LENGTH):
     return code
 
 
-def register_room() -> str:
+def register_room(room_id: str, meeting_id: str) -> str:
     """
     Registers a new attendance room.
     """
     code = generate_code()
-    rooms[code] = AttendanceSession("null", 0.2, datetime.datetime.now())
 
-    print(rooms)
+    session = AttendanceSession(room_id, meeting_id, 0.2, datetime.datetime.now().timestamp())
+    cache.get_cache().set(code, json.dumps(dataclasses.asdict(session)))
 
     return code
 
 
-def close_room(user_id: str):
+def close_room(code: str):
     """
     Closes a room for attendance.
     """
-    rooms.pop(user_id)
+    cache.get_cache().delete(code)
 
 
 def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
@@ -55,19 +57,19 @@ def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
     Returns a tuple of booleans; the first of which is if the verification was successful,
     while the second is whether or not they were chosen to be manually verified.
     """
-    room = rooms.get(code)
+    room = json.loads(cache.get_cache().get(code))
 
     # invalid code; there does not exist a room with that code
     if room is None:
         return False, False
 
     # in case the user tries to resubmit, return the same result
-    if user_id in to_be_verified:
+    if cache.get_cache().sismember("to_be_verified", user_id):
         return True, True
 
     # the user has the correct code, however they were selected to be manually verified
-    if random.random() <= room.verification_percent:
-        to_be_verified.add(id)
+    if random.random() <= room["verification_percent"]:
+        cache.get_cache().sadd("to_be_verified", user_id)
 
         return True, True
 
@@ -80,4 +82,4 @@ def verify_user(id):
     """
     Remvoe a user from the verification queue.
     """
-    to_be_verified.discard(id)
+    cache.get_cache().srem("to_be_verified", id)

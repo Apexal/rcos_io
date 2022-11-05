@@ -29,9 +29,17 @@ Setup is very straightforward.
 ### Requirements
 1. Python 3.8+
 2. `venv` (might need to run `sudo apt install sudo apt install python3.8-venv` or similar)
-3. Read the [Flask Quickstart](https://flask.palletsprojects.com/en/2.2.x/quickstart/)
+3. Read the [Flask Quickstart](https://flask.palletsprojects.com/en/2.2.x/quickstart/) 
+4. Redis (running locally)
 
 ### Setup
+
+#### Setting up Redis
+
+We use Redis as a key-value store for temporary data such as attendance sessions. You
+can install Redis by following [the getting started guide.](https://redis.io/docs/getting-started/).
+
+#### Setting up the Flask server
 
 1. `python3 -m venv ./venv`
 2. `source ./venv/bin/activate`
@@ -41,8 +49,9 @@ Setup is very straightforward.
 
 ### Running
 
-1. `source ./venv/bin/activate`
-2. `flask run`
+1. `redis-server` (in a separate terminal window)
+2. `source ./venv/bin/activate`
+3. `flask run`
 
 ## Deploying
 

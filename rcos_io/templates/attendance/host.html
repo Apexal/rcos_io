@@ -2,22 +2,24 @@
 
 {% block content %}
 <div class="container">
-    <h1>Host</h1>
+    <h1>Attendance</h1>
+
+    <button class="btn btn-danger">Close</button>
 
     <h1><center>{{ code }}</center></h1>
 
-        <div class="form-group">
-          <label for="project_name">RCS ID</label>
-          <input
-            type="text"
-            class="form-control"
-            id="unverified_user"
-            name="unverified_user"
-            required
-          />
-        </div>
-        <br/>
-        <button onclick="onVerify()" class="btn btn-primary">Verify</button>
+    <div class="form-group">
+      <label for="project_name">RCS ID</label>
+      <input
+        type="text"
+        class="form-control"
+        id="unverified_user"
+        name="unverified_user"
+        required
+      />
+    </div>
+    <br/>
+    <button onclick="onVerify()" class="btn btn-primary">Verify</button>
 </div>
 <script src="/static/js/attendance.js"></script>
 {% endblock %}

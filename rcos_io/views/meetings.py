@@ -13,7 +13,7 @@ from flask import (
 )
 from pytz import timezone
 
-from rcos_io.services import db
+from rcos_io.services import db, attendance
 from rcos_io.views.auth import (
     coordinator_or_above_required,
     login_required,
@@ -96,6 +96,28 @@ def meeting_detail(meeting_id: str):
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.meetings"))
 
+@bp.route("/<meeting_id>/host")
+@login_required
+def host_meeting(meeting_id: str):
+    meeting = None
+
+    try:
+        meeting = db.get_meeting_by_id(g.db_client, meeting_id)
+    except Exception as e:
+        current_app.logger.exception(e)
+        flash("There was an error fetching the meeting.", "warning")
+        return redirect(url_for("meetings.meetings"))
+    
+    code = attendance.register_room(meeting["location"], meeting_id)
+
+    return render_template("attendance/host.html", code=code)
+
+@bp.route("/<meeting_id>/close", methods=["POST"])
+@login_required
+def close_meeting(meeting_id: str):
+    attendance.close_room(meeting_id)
+
+    return 404
 
 @bp.route("/api/events")
 def events_api():

@@ -77,3 +77,5 @@ GITHUB_APP_REDIRECT_URL = env_get("GITHUB_APP_REDIRECT_URL")
 """URL GitHub redirects to after the OAuth2 flow"""
 
 # github app docs: https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps
+
+REDIS_URL = env_get("REDIS_URL")
