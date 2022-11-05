@@ -195,6 +195,7 @@ def find_user_by_id(
                 email
                 first_name
                 last_name
+                display_name
                 is_verified
                 graduation_year
                 rcs_id

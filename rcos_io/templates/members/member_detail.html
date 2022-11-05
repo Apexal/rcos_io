@@ -1,13 +1,17 @@
 {% extends "base.html" %} {% block content %}
 <div class="container">
-  <h1 class="display-2">{{ display_name or "Unnamed Member" }}</h1>
+  <h1 class="display-2">{{ user['display_name'] or "Unnamed Member" }}</h1>
   <p class="fs-3">
     {% if g.is_logged_in %}
     <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
     {% endif %}
-    <span class="badge bg-primary text-uppercase">{{ user["role"] }}</span>
-    {% if user["graduation_year"] %}
-    <span class="badge bg-info">Class of {{ user["graduation_year"] }}</span>
+    {% if user["role"] == "rpi" %}
+    <span class="badge bg-primary">
+      RPI
+      {% if user["graduation_year"] %}Class of {{ user["graduation_year"] }}{% endif %}
+    </span>
+    {% else %}
+    <span class="badge bg-secondary">External User</span>
     {% endif %}
 
     {% if not user["is_verified"] %}
@@ -70,7 +74,6 @@
       </ol>
 
     </div>
-    {% if g.is_logged_in %}
     <div class="col-xs-12 col-md-4">
       {% if user["github_username"] %}
       <div
@@ -101,7 +104,7 @@
         </div>
       </div>
       {% endif %}
-      {% if discord_user %}
+      {% if g.is_logged_in and discord_user %}
       <div
         class="card mb-3"
         style="background-color: #5865f2; color: white; height: 95px"
@@ -126,7 +129,6 @@
           />
         </div>
       </div>
-      {% endif %}
       {% endif %}
     </div>
   </div>
