@@ -1,20 +1,24 @@
 <footer class="footer text-center bg-light text-dark py-5">
   <p>Created and maintained with <span id="footer-heart">❤️</span> by RCOS</p>
-  <p>
-    <a
-      href="https://github.com/Apexal/rcos_io"
-      target="_blank"
-      rel="noopener noreferrer"
-      >Source code</a
-    >
-  </p>
+
+  <ul class="nav justify-content-center">
+    <li class="nav-item"><a href="https://github.com/Apexal/rcos_io" class="nav-link"><i class="bi-github"></i> Source code</a></li>
+    {% if session.get("is_coordinator_or_above") %}
+    <li class="nav-item">
+      <a class="nav-link" href="{{ config['RAILWAY_PROJECT_URL'] }}" target="_blank">Railway Project</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="{{ config['HASURA_CONSOLE_URL'] }}" target="_blank">Hasura Console</a>
+    </li>
+    {% endif %}
+  </ul>
 
   <script>
     /* Silly easter egg. Clicking the heart causes it to rotate like a record and play a sample of Bill Ni's beautiful vocal stylings.  */
     const heart = document.getElementById("footer-heart");
 
-    const audio = new Audio("/static/audio/bill_viva_cut.mp3");
     heart.onclick = () => {
+      const audio = new Audio("/static/audio/bill_viva_cut.mp3");
       heart.classList.add("rotating");
       audio.play();
       audio.onended = () => {
