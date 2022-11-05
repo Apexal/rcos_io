@@ -55,6 +55,7 @@ fragment basicUser on users {
   is_verified
   first_name
   last_name
+  display_name
   graduation_year
   preferred_name
   role
@@ -264,9 +265,9 @@ def get_all_users(client: Client, only_verified: bool = True) -> List[Dict[str, 
     query = gql(
         """
         query all_users($where: users_bool_exp!) {
-            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
+            users(order_by: [{ display_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
                 id
-                full_name
+                display_name
                 role
                 email
                 created_at
@@ -314,9 +315,9 @@ def get_semester_users(
     query = gql(
         """
         query semester_users($where: users_bool_exp!) {
-            users(order_by: [{ full_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
+            users(order_by: [{ display_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
                 id
-                full_name
+                display_name
                 role
                 email
                 created_at
@@ -384,7 +385,7 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
                     user {
                         id
                         rcs_id
-                        full_name
+                        display_name
                     }
                     semester {
                         id
@@ -467,7 +468,7 @@ def get_semester_projects(
             project_leads: enrollments(limit: 1, where: {is_project_lead: {_eq:true}}) @include(if: $withEnrollments) {
                 user_id
                 user {
-                    full_name
+                    display_name
                 }
             }
             enrollments_aggregate(where: {semester_id: {_eq:$semester_id}}) {
@@ -564,7 +565,7 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
                 created_at
                 host: user {
                     id
-                    full_name
+                    display_name
                 }
             }
         }

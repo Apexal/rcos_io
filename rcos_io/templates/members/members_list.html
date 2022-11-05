@@ -41,7 +41,7 @@
         <div class="card-body">
           <div class="me-auto">
             <div class="fs-2 fw-bold">
-              <a href="{{ url_for('members.member_detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["full_name"] }}</a>
+              <a href="{{ url_for('members.member_detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["display_name"] }}</a>
             </div>
             <div>
               <span class="badge bg-primary">{{ user["enrollments_aggregate"]["aggregate"]["count"] }} semesters</span>
