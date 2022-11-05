@@ -1,9 +1,13 @@
 from flask import Flask, render_template
-from rcos_io.settings import SECRET_KEY
+from rcos_io import settings
 
 # Create and configure the app
 app = Flask(__name__)
-app.config["SECRET_KEY"] = SECRET_KEY
+app.config["SECRET_KEY"] = settings.SECRET_KEY
+
+# Add these environment variables to the config dictionary so we can access them in templates (config is accessible in all templates)
+app.config["HASURA_CONSOLE_URL"] = settings.HASURA_CONSOLE_URL
+app.config["RAILWAY_PROJECT_URL"] = settings.RAILWAY_PROJECT_URL
 
 # Temporary home route
 @app.route("/")

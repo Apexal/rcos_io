@@ -15,7 +15,7 @@
             <select class="form-select" id="type" name="type" required>
                 <option selected>Select type</option>
                 {% for meeting_type in meeting_types %}
-                <option value="{{ meeting_type }}">{{ meeting_type }}</option>
+                <option value="{{ meeting_type }}">{{ meeting_type|capitalize }}</option>
                 {% endfor %}
               </select>
         </div>

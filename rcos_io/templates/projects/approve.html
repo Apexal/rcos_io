@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <h1 class="text-capitalize">
+    Manage Unapproved Projects
+    <span class="badge bg-secondary">{{ unapproved_projects | length }}</span>
+  </h1>
+
+  {% include '/_includes/flashed_messages.html' %}
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Owner</th>
+        <th scope="col">Short Description</th>
+        <th scope="col">Stack</th>
+        <th scope="col">Proposed</th>
+        <th scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in unapproved_projects %}
+      <tr>
+        <td><a href="{{ url_for('projects.detail', project_id=project['id']) }}">{{ project["name"] }}</a></td>
+        <td><a href="{{ url_for('members.detail', user_id=project['owner']['id']) }}">{{ project["owner"]["display_name"] }}</a></td>
+        <td>{{ project["short_description"] }}</td>
+        <td>{% if project["tags"] %}{{ project["tags"]|join(", ") }}{% else %}-{% endif %}</td>
+        <td>{{ project["created_at"]|format_datetime("date") }}</td>
+        <td class="d-flex">
+          <form method="post" onsubmit="return confirm('Are you sure you want to APPROVE {{ project['name'] }}?')">
+            <input type="hidden" name="action" value="approve">
+            <input type="hidden" name="project_id" value="{{ project['id'] }}">
+            <button class="btn btn-link">✅</button>
+          </form>
+          <form method="post" onsubmit="return confirm('Are you sure you want to DELETE {{ project['email'] }}?')">
+            <input type="hidden" name="action" value="deny">
+            <input type="hidden" name="project_id" value="{{ project['id'] }}">
+            <button class="btn btn-link">❌</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <hr>
+  <a href="{{ url_for('projects.index') }}" class="btn btn-primary">Verified Projects</a>
+
+</div>
+{% endblock %}

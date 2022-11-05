@@ -38,9 +38,7 @@ def get_semester_by_id(
     return None
 
 
-def get_target_semester(
-    request: Request, session: SessionMixin
-) -> Tuple[Optional[str], Optional[Dict[str, Any]]]:
+def get_target_semester(request: Request, session: SessionMixin):
     """
     Determines the intended semester from the optional `semester_id` query parameter.
 
@@ -48,13 +46,22 @@ def get_target_semester(
         request: the current Flask request
         session: the current session object
     Returns:
-        the target semester's ID or `"all"`
-        the target semester data or `None`
+        the target semester's ID or None if all semesters are desired
+    Throws:
+        Exception when an unknown semester id is provided
     """
-    semester_id: Optional[str] = request.args.get("semester_id") or (
-        session["semester"]["id"] if "semester" in session else "all"
-    )
+    semester_id: Optional[str] = request.args.get("semester_id")
+
+    if not semester_id and "semester" in session:
+        semester_id = session["semester"]["id"]
+    elif not semester_id or semester_id == "all":
+        semester_id = None
+
     semester = None
     if semester_id:
         semester = get_semester_by_id(session["semesters"], semester_id)
+
+    if semester_id and not semester:
+        raise Exception(f"Semester {semester_id} not found")
+
     return semester_id, semester

@@ -5,11 +5,17 @@
 <div class="card my-3">
   <!-- <img src="" alt="Project " class="card-img-top"> -->
   <div class="card-body">
-    <h5 class="card-title fs-2 fw-bold"><a href="{{ url_for('projects.project_detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
+    <h5 class="card-title fs-2 fw-bold"><a href="{{ url_for('projects.detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
     <p class="card-text">{{ project["short_description"] }}</p>
     <div>
       {% if project["enrollments_aggregate"] %}
-      <span class="badge bg-primary">{{ project["enrollments_aggregate"]["aggregate"]["count"] }} members</span>
+      <span class="badge bg-primary">
+        {{ project["enrollments_aggregate"]["aggregate"]["count"] }}
+        members
+        {% if not semester %}
+        total
+        {% endif %}
+      </span>
       {% endif %}
 
       {% for repo_url in project["github_repos"] or [] %}
@@ -43,16 +49,26 @@
     Projects Across All Semesters
     {% endif %}
     
-    <span class="badge bg-secondary">{{ projects | length }}</span>
+    <span class="badge bg-secondary">{{ approved_projects | length }}</span>
   </h1>
 
-  {% include '/includes/flashed_messages.html' %}
+  {% include '/_includes/flashed_messages.html' %}
 
   <form class="my-3">
-    <div class="row">
+    <div class="row align-items-center">
       <div class="col-auto">
-        {% include "/includes/semester_select.html" %}
+        {% include "/_includes/semester_select.html" %}
       </div>
+      {% if g.is_logged_in and g.user["role"] == "rpi" and semester %}
+      <div class="col-auto">
+        <div class="form-check">
+          <input class="form-check-input" name="is_looking_for_members" value="true" type="checkbox" id="looking_for_members">
+          <label class="form-check-label" for="looking_for_members">
+            Looking for members
+          </label>
+        </div>
+      </div>
+      {% endif %}
       <div class="col">
         <input
           type="search"
@@ -70,31 +86,34 @@
   </form>
 
   <div class="row">
-    {% for project in projects %}
+    {% for project in approved_projects %}
     <div class="col-xs-12 col-md-6 col-lg-4">
       {{ project_card(project) }}
     </div>
     {% endfor %}
   </div>
 
-  <nav class="my-3">
-    {% if g.is_logged_in and g.user["role"] == "rpi" %}
-    <a href="{{ url_for('projects.add_project') }}" class="btn btn-success"
+  <nav class="my-3 d-flex">
+    {% if g.is_logged_in and g.user["role"] == "rpi" and semester and semester["is_open_to_new_projects"] %}
+    <a href="{{ url_for('projects.add') }}" class="btn btn-success"
       ><i class="bi bi-plus-lg"></i>
-      Propose New Project</a
+      Propose New Project for {{ semester["name"] }}</a
     >
     {% endif %}
-  </nav>
 
-  {% if session.get("is_coordinator_or_above") %}
-  <div class="card my-2">
-    <div class="card-header">
-      Administrator Controls
+    {% if session.get("is_coordinator_or_above") %}
+    <div class="btn-group ms-auto">
+      <a href="{{ url_for('projects.approve') }}" class="btn btn-light">
+        Approve Projects
+          {% if unapproved_projects|length > 0 %}
+          <span class="badge bg-danger">{{ unapproved_projects|length }}</span>
+          {% endif %}
+      </a>
+      <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/projects/browse" target="_blank">Edit in Hasura Console
+        <i class="bi bi-box-arrow-up-right ms-2"></i>
+      </a>
     </div>
-    <div class="card-body">
-      <a href="https://cloud.hasura.io/project/7ddf071f-39c2-4891-8657-97e550b6c473/console/data/default/schema/public/tables/projects/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
+  </nav>
 </div>
 {% endblock %}

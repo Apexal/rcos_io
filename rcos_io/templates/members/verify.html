@@ -4,7 +4,7 @@
 <div class="container">
   <h1>Manage Unverified Users <span class="badge bg-secondary">{{ unverified_users|length }}</span></h1>
   
-	{% include '/includes/flashed_messages.html' %}
+	{% include '/_includes/flashed_messages.html' %}
 
 
   <table class="table">
@@ -22,7 +22,7 @@
     <tbody>
       {% for user in unverified_users %}
       <tr>
-        <td><a href="{{ url_for('members.member_detail', user_id=user['id']) }}">{{ user["email"] }}</a></td>
+        <td><a href="{{ url_for('members.detail', user_id=user['id']) }}">{{ user["email"] }}</a></td>
         <td>{{ user["first_name" ]}}</td>
         <td>{{ user["last_name"] }}</td>
         <td>
@@ -52,7 +52,7 @@
   </table>
 
   <hr>
-  <a href="{{ url_for('members.members_list') }}" class="btn btn-primary">Verified Users</a>
+  <a href="{{ url_for('members.index') }}" class="btn btn-primary">Verified Users</a>
 
 </div>
 {% endblock %}

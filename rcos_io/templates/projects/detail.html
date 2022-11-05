@@ -6,7 +6,7 @@
 <div class="container">
 	<h1 class="display-2">{{ project['name'] }}</h1>
 
-	{% include '/includes/flashed_messages.html' %}
+	{% include '/_includes/flashed_messages.html' %}
 
 	<blockquote class="blockquote">
 		<p>{{ project["short_description"] }}</p>
@@ -31,7 +31,7 @@
 	<h3>Members</h3>
 	{% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
 		{% for user in project['enrollments'] %}
-			<li><a href="{{ url_for('members.member_detail', user_id=user['user_id']) }}">{{ user['user']['full_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
+			<li><a href="{{ url_for('members.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
 		{% endfor %}
 	{% else %}
 		<i>None yet!</i>
@@ -39,7 +39,7 @@
 
 	{% if session.get("is_coordinator_or_above") %}
 	<hr>
-	<a href="https://cloud.hasura.io/project/7ddf071f-39c2-4891-8657-97e550b6c473/console/data/default/schema/public/tables/projects/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
+	<a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/projects/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
 	{% endif %}
 </div>
 {% endblock %}

@@ -14,7 +14,7 @@
 {% block content %}
 <div class="container">
 	<h1>Meetings</h1>
-	{% include '/includes/flashed_messages.html' %}
+	{% include '/_includes/flashed_messages.html' %}
 
 	<div id='calendar'></div>
 
@@ -36,11 +36,11 @@
 			Administrator Controls
 		</div>
 		<div class="card-body">
-			<a href="{{ url_for('meetings.add_meeting') }}" class="btn btn-success">
+			<a href="{{ url_for('meetings.add') }}" class="btn btn-success">
 				<i class="bi bi-plus-lg"></i>
 				Add Meeting
 			</a>
-			<a href="https://cloud.hasura.io/project/7ddf071f-39c2-4891-8657-97e550b6c473/console/data/default/schema/public/tables/meetings/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
+			<a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/meetings/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
 		</div>
 	</div>
 	{% endif %}

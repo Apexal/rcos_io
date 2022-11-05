@@ -33,7 +33,8 @@
         {{ nav_item("Members", "/members") }}
         {{ nav_item("Meetings", "/meetings") }}
         <a class="nav-link" href="https://handbook.rcos.io" target="_blank"
-          >Handbook</a
+          >Handbook <i class="bi bi-box-arrow-up-right"></i>
+          </a
         >
       </div>
       <div class="navbar-nav">
@@ -46,7 +47,7 @@
             data-bs-toggle="dropdown"
             aria-expanded="false"
           >
-           Logged in as <strong>{{ g.logged_in_user_nickname }}</strong>
+           Logged in as <strong>{{ g.user["display_name"] }}</strong>
           </a>
           <ul class="dropdown-menu">
             <li>

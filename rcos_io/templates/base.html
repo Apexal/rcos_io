@@ -26,11 +26,11 @@
     {% block head %}{% endblock %}
   </head>
   <body>
-    {% include '/includes/navbar.html' %}
+    {% include '/_includes/navbar.html' %}
 
     <main class="my-5">{% block content %}{% endblock %}</main>
 
-    {% include '/includes/footer.html' %}
+    {% include '/_includes/footer.html' %}
 
     <!-- Bootstrap JS -->
     <script
@@ -38,5 +38,9 @@
       integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
       crossorigin="anonymous"
     ></script>
+    <script>
+      console.log("%cHey you!","color: red; font-size: 20px");
+      console.log("Interested in how RCOS works internally? Consider reaching out to any of the Coordinators or Mentors for steps on how to become a Mentor!");
+    </script>
   </body>
 </html>

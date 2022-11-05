@@ -9,15 +9,15 @@
     Members Across All Semesters
     {% endif %}
     
-    <span class="badge bg-secondary">{{ users | length }}</span>
+    <span class="badge bg-secondary">{{ verified_users | length }}</span>
   </h1>
-  {% include '/includes/flashed_messages.html' %}
+  {% include '/_includes/flashed_messages.html' %}
 
 
   <form class="my-3">
     <div class="row">
       <div class="col-auto">
-        {% include "/includes/semester_select.html" %}
+        {% include "/_includes/semester_select.html" %}
       </div>
       <div class="col">
         <input
@@ -35,27 +35,28 @@
   </form>
 
   <div class="row">
-    {% for user in users %}
-    <div class="col-xs-12 col-md-4">
+    {% for user in verified_users %}
+    <div class="col-xs-12 col-md-6 col-lg-4">
       <div class="card my-3">
         <div class="card-body">
           <div class="me-auto">
-            <div class="fs-2 fw-bold">
-              <a href="{{ url_for('members.member_detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["full_name"] }}</a>
-            </div>
+            <h5 class="card-title fs-2 fw-bold">
+              <a href="{{ url_for('members.detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["display_name"] }}</a>
+            </h5>
             <div>
               <span class="badge bg-primary">{{ user["enrollments_aggregate"]["aggregate"]["count"] }} semesters</span>
-              <span class="badge bg-secondary text-uppercase">
-                {{ user["role"] }}
+              <span class="badge bg-danger">
+                <span class="text-uppercase">
+                  {{ user["role"] }}
+                </span>
+
                 {% if user["graduation_year"] %}
                 '{{ (user["graduation_year"]|string)[2:] }}
                 {% endif %}
+                {% if g.is_logged_in and g.user["role"] == "rpi" and user["rcs_id"] %}
+                {{ user["rcs_id"] }}
+                {% endif %}
               </span>
-              {% if g.is_logged_in and g.user["role"] == "rpi" and user["rcs_id"] %}
-              <span class="badge bg-secondary"><i class="bi bi-mortarboard-fill"></i>
-                {{ user["rcs_id"] }}@rpi.edu
-              </span>
-              {% endif %}
               {% if user["github_username"] %}
               <a class="badge bg-dark text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
                 <i class="bi-github"></i>
@@ -70,15 +71,20 @@
     {% endfor %}
   </div>
 
-  {% if session.get("is_coordinator_or_above") %}
-  <div class="card my-2">
-    <div class="card-header">
-      Administrator Controls
+  <nav class="my-3 d-flex">
+    {% if session.get("is_coordinator_or_above") %}
+    <div class="btn-group ms-auto">
+      <a href="{{ url_for('members.verify') }}" class="btn btn-light">
+        Verify Users
+        {% if unverified_users|length > 0 %}
+        <span class="badge bg-danger">{{ unverified_users|length }}</span>
+        {% endif %}
+      </a>
+      <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/users/browse" target="_blank">Edit in Hasura Console
+        <i class="bi bi-box-arrow-up-right ms-2"></i>
+      </a>
     </div>
-    <div class="card-body">
-      <a href="https://cloud.hasura.io/project/7ddf071f-39c2-4891-8657-97e550b6c473/console/data/default/schema/public/tables/users/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
+  </nav>
 </div>
 {% endblock %}
