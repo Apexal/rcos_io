@@ -422,6 +422,10 @@ def get_projects(
                 is_project_lead
                 credits
             }
+            owner {
+                id
+                display_name
+            }
           }
         }
     """

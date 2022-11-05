@@ -70,7 +70,7 @@ def verify():
             unverified_users: List[Dict[str, Any]] = list(
                 filter(
                     lambda user: not user["is_verified"],
-                    db.get_users(g.db_client, "all", False),
+                    db.get_users(g.db_client, None),
                 )
             )
         except Exception as e:

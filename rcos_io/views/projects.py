@@ -113,7 +113,7 @@ def approve():
         try:
             unapproved_projects = [
                 project
-                for project in db.get_projects(g.db_client, False, "all")
+                for project in db.get_projects(g.db_client, False, semester_id=None)
                 if not project["is_approved"]
             ]
 
