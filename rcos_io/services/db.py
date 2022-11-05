@@ -356,6 +356,7 @@ def get_semesters(client: Client) -> List[Dict[str, Any]]:
                 type
                 start_date
                 end_date
+                is_open_to_new_projects
             }
         }
         """
@@ -427,7 +428,7 @@ def get_enrollment(
 
 def get_all_projects(client: Client) -> List[Dict[str, Any]]:
     """
-    Fetches all projects.
+    Fetches all APPROVED projects.
     Returns project name, and relevant repos.
     """
     query = gql(
@@ -439,7 +440,14 @@ def get_all_projects(client: Client) -> List[Dict[str, Any]]:
                 tags
                 github_repos
                 short_description
+                description_markdown
+                homepage_url
+                is_approved
                 created_at
+                owner {
+                    id
+                    display_name
+                }
             }
         }
         """
@@ -447,7 +455,6 @@ def get_all_projects(client: Client) -> List[Dict[str, Any]]:
 
     result = client.execute(query, variable_values={})
     return result["projects"]
-
 
 def get_semester_projects(
     client: Client, semester_id: str, with_enrollments: bool
@@ -466,6 +473,7 @@ def get_semester_projects(
             github_repos
             short_description
             created_at
+            is_approved
             project_leads: enrollments(limit: 1, where: {is_project_lead: {_eq:true}}) @include(if: $withEnrollments) {
                 user_id
                 user {
@@ -503,19 +511,15 @@ def get_semester_projects(
     return result["projects"]
 
 
-def add_project(client: Client, owner_id: str, name: str, desc: str):
+def add_project(client: Client, project_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Creates new project with name=name and description=desc where owner is user that has id=owner_id
     """
     query = gql(
         """
-        mutation AddProject($owner_id: uuid!, $name: String!, $desc: String!) {
-            insert_projects(objects: [
-                { owner_id: $owner_id, name: $name, description_markdown: $desc }
-            ]) {
-                returning {
-                    id
-                }
+        mutation AddProject($owner_id: uuid!, $project_data: projects_insert_input!) {
+            insert_projects_one(object: $project_data) {
+                id
             }
         }
     """
@@ -523,10 +527,10 @@ def add_project(client: Client, owner_id: str, name: str, desc: str):
 
     result = client.execute(
         query,
-        variable_values={"owner_id": owner_id, "name": name, "desc": desc},
+        variable_values={"project_data": project_data},
     )
 
-    return result["insert_projects"]
+    return result["insert_projects_one"]
 
 
 def get_meetings(client: Client) -> List[Dict[str, Any]]:

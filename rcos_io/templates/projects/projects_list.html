@@ -5,7 +5,7 @@
 <div class="card my-3">
   <!-- <img src="" alt="Project " class="card-img-top"> -->
   <div class="card-body">
-    <h5 class="card-title fs-2 fw-bold"><a href="{{ url_for('projects.project_detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
+    <h5 class="card-title fs-2 fw-bold"><a href="{{ url_for('projects.detail', project_id=project['id']) }}" class="text-decoration-none">{{ project["name"] }}</a></h5>
     <p class="card-text">{{ project["short_description"] }}</p>
     <div>
       {% if project["enrollments_aggregate"] %}
@@ -70,31 +70,39 @@
   </form>
 
   <div class="row">
-    {% for project in projects %}
+    {% for project in approved_projects %}
     <div class="col-xs-12 col-md-6 col-lg-4">
       {{ project_card(project) }}
     </div>
     {% endfor %}
   </div>
 
-  <nav class="my-3">
-    {% if g.is_logged_in and g.user["role"] == "rpi" %}
-    <a href="{{ url_for('projects.add_project') }}" class="btn btn-success"
+  <nav class="my-3 d-flex">
+    {% if g.is_logged_in and g.user["role"] == "rpi" and semester and semester["is_open_to_new_projects"] %}
+    <a href="{{ url_for('projects.add') }}" class="btn btn-success"
       ><i class="bi bi-plus-lg"></i>
-      Propose New Project</a
+      Propose New Project for {{ semester["name"] }}</a
     >
     {% endif %}
-  </nav>
 
-  {% if session.get("is_coordinator_or_above") %}
-  <div class="card my-2">
-    <div class="card-header">
-      Administrator Controls
+    {% if session.get("is_coordinator_or_above") %}
+    <div class="ms-auto dropdown is-light">
+      <button class="btn btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Admin Actions
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('projects.approve') }}">
+          Approve/Deny New Projects
+          {% if unapproved_projects|length > 0 %}
+          <span class="badge bg-danger">{{ unapproved_projects|length }}</span>
+          {% endif %}
+        </a></li>
+        <li><a class="dropdown-item" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/projects/browse" target="_blank">Edit in Hasura Console
+          <i class="bi bi-box-arrow-up-right ms-2"></i>
+        </a></li>
+      </ul>
     </div>
-    <div class="card-body">
-      <a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/projects/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-    </div>
-  </div>
-  {% endif %}
+    {% endif %}
+  </nav>
 </div>
 {% endblock %}
