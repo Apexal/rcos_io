@@ -74,7 +74,7 @@ def index():
         else:
             context["unapproved_projects"].append(project)
 
-    return render_template("projects/list.html", **context)
+    return render_template("projects/index.html", **context)
 
 
 @bp.route("/add", methods=("GET", "POST"))

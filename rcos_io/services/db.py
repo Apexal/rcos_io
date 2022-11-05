@@ -448,6 +448,11 @@ def get_all_projects(client: Client) -> List[Dict[str, Any]]:
                     id
                     display_name
                 }
+                enrollments_aggregate {
+                    aggregate {
+                        count
+                    }
+                }
             }
         }
         """

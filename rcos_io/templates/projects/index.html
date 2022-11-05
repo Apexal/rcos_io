@@ -9,7 +9,13 @@
     <p class="card-text">{{ project["short_description"] }}</p>
     <div>
       {% if project["enrollments_aggregate"] %}
-      <span class="badge bg-primary">{{ project["enrollments_aggregate"]["aggregate"]["count"] }} members</span>
+      <span class="badge bg-primary">
+        {{ project["enrollments_aggregate"]["aggregate"]["count"] }}
+        members
+        {% if not semester %}
+        total
+        {% endif %}
+      </span>
       {% endif %}
 
       {% for repo_url in project["github_repos"] or [] %}
@@ -43,16 +49,26 @@
     Projects Across All Semesters
     {% endif %}
     
-    <span class="badge bg-secondary">{{ projects | length }}</span>
+    <span class="badge bg-secondary">{{ approved_projects | length }}</span>
   </h1>
 
   {% include '/_includes/flashed_messages.html' %}
 
   <form class="my-3">
-    <div class="row">
+    <div class="row align-items-center">
       <div class="col-auto">
         {% include "/_includes/semester_select.html" %}
       </div>
+      {% if g.is_logged_in and g.user["role"] == "rpi" and semester %}
+      <div class="col-auto">
+        <div class="form-check">
+          <input class="form-check-input" name="is_looking_for_members" value="true" type="checkbox" id="looking_for_members">
+          <label class="form-check-label" for="looking_for_members">
+            Looking for members
+          </label>
+        </div>
+      </div>
+      {% endif %}
       <div class="col">
         <input
           type="search"

@@ -59,7 +59,7 @@ def index():
             flash("Oops! There was an error while fetching members.", "danger")
             return redirect(url_for("index"))
 
-    return render_template("members/list.html", **context)
+    return render_template("members/index.html", **context)
 
 
 @bp.route("/verify", methods=("GET", "POST"))
