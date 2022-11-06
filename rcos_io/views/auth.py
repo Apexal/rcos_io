@@ -5,7 +5,7 @@ import string
 from typing import Any, Dict, Optional, Union
 from urllib.error import HTTPError
 
-from rcos_io.services import github, db, discord
+from rcos_io.services import github, db, discord, email
 from rcos_io import settings, utils
 
 from flask import (
@@ -234,8 +234,7 @@ def login():
 
         if settings.ENV == "production":
             # Send it to the user via email
-            # send_otp_to_email(user_email, otp)
-            pass
+            email.send_otp_email(user_email, otp)
 
         current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
 

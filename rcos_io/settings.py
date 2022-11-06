@@ -80,3 +80,7 @@ GITHUB_APP_REDIRECT_URL = env_get("GITHUB_APP_REDIRECT_URL")
 """URL GitHub redirects to after the OAuth2 flow"""
 
 # github app docs: https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps
+
+MAILJET_API_KEY = env_get("MAILJET_API_KEY")
+
+MAILJET_API_SECRET = env_get("MAILJET_API_SECRET")
