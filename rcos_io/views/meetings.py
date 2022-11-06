@@ -2,7 +2,6 @@
 This module contains the meetings blueprint, which stores
 all meeting related views and functionality.
 """
-from datetime import datetime
 from typing import Any, Dict, Optional
 from flask import (
     Blueprint,
@@ -16,7 +15,7 @@ from flask import (
     g,
 )
 from graphql.error import GraphQLError
-from gql.transport.exceptions import TransportError
+from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import db
 from rcos_io.views.auth import (
     coordinator_or_above_required,
@@ -67,7 +66,7 @@ def add():
     # Attempt to insert meeting into database
     try:
         new_meeting = db.insert_meeting(g.db_client, meeting_data)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to add meeting. Check logs.", "danger")
         return redirect(url_for("meetings.index"))
@@ -83,36 +82,35 @@ def detail(meeting_id: str):
     # Attempt to fetch meeting
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.index"))
 
-    if meeting:
-        return render_template(
-            "meetings/detail.html",
-            meeting=meeting,
-        )
-    else:
+    # Handle meeting not found
+    if meeting is None:
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.index"))
+
+    return render_template(
+        "meetings/detail.html",
+        meeting=meeting,
+    )
 
 
 @bp.route("/api/events")
 def events_api():
     """Returns a JSON array of event objects that Fullcalendar can understand."""
-    # TODO: use this is filtering meetings
-    # TODO: filter based on logged in status and role
-    start = (
-        datetime.fromisoformat(request.args.get("start"))
-        if "start" in request.args
-        else None
-    )
-    end = (
-        datetime.fromisoformat(request.args.get("end"))
-        if "end" in request.args
-        else None
-    )
+    # start = (
+    #     datetime.fromisoformat(request.args.get("start"))
+    #     if "start" in request.args
+    #     else None
+    # )
+    # end = (
+    #     datetime.fromisoformat(request.args.get("end"))
+    #     if "end" in request.args
+    #     else None
+    # )
 
     # Fetch meetings
     meetings = db.get_meetings(g.db_client)

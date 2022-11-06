@@ -15,7 +15,7 @@ from flask import (
     current_app,
 )
 from graphql.error import GraphQLError
-from gql.transport.exceptions import TransportError
+from gql.transport.exceptions import TransportQueryError
 from rcos_io import utils
 from rcos_io.services import db, discord
 from rcos_io.views.auth import coordinator_or_above_required, login_required
@@ -47,7 +47,7 @@ def index():
 
     try:
         all_users = db.get_users(g.db_client, semester_id)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to fetch users.", "danger")
         return redirect(url_for("members.index", semester_id="all"))
@@ -77,7 +77,7 @@ def verify():
                     db.get_users(g.db_client, None),
                 )
             )
-        except (GraphQLError, TransportError) as error:
+        except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
                 "Yikes! There was an error while fetching unverified users.", "danger"
@@ -117,7 +117,7 @@ def detail(user_id: str):
 
     try:
         user = db.find_user_by_id(g.db_client, user_id, True)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("That is not a valid user ID!", "warning")
         return redirect(url_for("index"))

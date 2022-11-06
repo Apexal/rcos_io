@@ -1,3 +1,7 @@
+"""
+This module contains the authentication blueprint, which stores
+all auth related views and functionality.
+"""
 from datetime import date
 import functools
 import random
@@ -16,7 +20,8 @@ from flask import (
     url_for,
     flash,
 )
-
+from graphql.error import GraphQLError
+from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import github, db, discord, email
 from rcos_io import settings, utils
 
@@ -276,7 +281,7 @@ def login():
 
 
 @bp.route("/login/otp", methods=("POST",))
-def otp():
+def submit_otp():
     """
     Finish the login process by checking that the submitted OTP matches the OTP sent to the user.
 
@@ -361,9 +366,9 @@ def discord_callback():
         discord_user_tokens = discord.get_tokens(code)
         discord_access_token = discord_user_tokens["access_token"]
         discord_user_info = discord.get_user_info(discord_access_token)
-    except HTTPError as e:
+    except HTTPError as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to link your Discord.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     # Extract and store Discord user id on user in database
@@ -371,12 +376,15 @@ def discord_callback():
 
     try:
         update_logged_in_user({"discord_user_id": discord_user_id})
-    except Exception as e:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to save your Discord link.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
-    flash_message = f"Linked Discord account @{discord_user_info['username']}#{discord_user_info['discriminator']}"
+    flash_message = (
+        "Linked Discord account "
+        f"@{discord_user_info['username']}#{discord_user_info['discriminator']}"
+    )
 
     # Attempt to add them to the Discord server (will do nothing if already in the server)
     try:
@@ -390,10 +398,11 @@ def discord_callback():
         if new_nickname:
             try:
                 discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
-            except Exception as e:
-                current_app.logger.exception(e)
-    except HTTPError as e:
-        current_app.logger.exception(e)
+            except HTTPError as error:
+                current_app.logger.exception(error)
+    except HTTPError as error:
+        current_app.logger.exception(error)
+        flash("Failed to add you to the Discord server.", "warning")
 
     flash(flash_message, "primary")
 
@@ -421,14 +430,15 @@ def github_callback():
         flash("What are you trying to do...", "danger")
         return redirect("/")
 
-    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    # Attempt to complete OAuth2 flow and result in access token and user info
+    # (id, username, avatar, etc.)
     try:
         github_user_tokens = github.get_tokens(code)
         github_access_token = github_user_tokens["access_token"]
         github_user_info = github.get_user_info(github_access_token)
-    except HTTPError as e:
+    except HTTPError as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to link your GitHub.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     # All we really care about is their GitHub username
@@ -437,9 +447,9 @@ def github_callback():
     # Attempt to store GitHub username on user
     try:
         update_logged_in_user({"github_username": github_username})
-    except Exception as e:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to save your GitHub link.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     flash(f"Linked GitHub account @{github_username}", "primary")
@@ -459,36 +469,39 @@ def profile():
             context["discord_user"] = discord.get_user(g.user["discord_user_id"])
 
         return render_template("auth/profile.html", **context)
-    else:
-        # Store in database
-        updates: Dict[str, Union[str, int]] = {}
 
-        def handle_update(input_name: str):
-            if (
-                input_name in request.form
-                and request.form[input_name].strip()
-                and len(request.form[input_name].strip()) > 0
-            ):
-                updates[input_name] = request.form[input_name].strip()
+    # HANDLE FORM SUBMISSION
 
-        handle_update("first_name")
-        handle_update("last_name")
-        handle_update("graduation_year")
-        handle_update("secondary_email")
+    # Store in database
+    updates: Dict[str, Union[str, int]] = {}
 
-        # If changing secondary email, mark it as unverified
-        if "secondary_email" in updates:
-            updates["is_secondary_email_verified"] = False
+    def handle_update(input_name: str):
+        if (
+            input_name in request.form
+            and request.form[input_name].strip()
+            and len(request.form[input_name].strip()) > 0
+        ):
+            updates[input_name] = request.form[input_name].strip()
 
-        # Attempt to apply updates in DB. This will fail if constraints fails like secondary email is reused
-        try:
-            update_logged_in_user(updates)
-            flash("Updated your profile!", "success")
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("There was an error while updating your profile!", "danger")
+    handle_update("first_name")
+    handle_update("last_name")
+    handle_update("graduation_year")
+    handle_update("secondary_email")
 
-        return redirect(url_for("auth.profile"))
+    # If changing secondary email, mark it as unverified
+    if "secondary_email" in updates:
+        updates["is_secondary_email_verified"] = False
+
+    # Attempt to apply updates in DB.
+    # This will fail if constraints fails like secondary email is reused
+    try:
+        update_logged_in_user(updates)
+        flash("Updated your profile!", "success")
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("There was an error while updating your profile!", "danger")
+
+    return redirect(url_for("auth.profile"))
 
 
 ##################################################################
@@ -513,8 +526,8 @@ def update_logged_in_user(updates: Dict[str, Any]):
         if new_nickname:
             try:
                 discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
-            except Exception as e:
-                current_app.logger.exception(e)
+            except HTTPError as error:
+                current_app.logger.exception(error)
 
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:

@@ -7,7 +7,7 @@ from flask.sessions import SessionMixin
 
 
 class NotFoundError(Exception):
-    pass
+    """Custom exception for when expected data was not found."""
 
 
 def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:

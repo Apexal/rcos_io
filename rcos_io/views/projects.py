@@ -18,7 +18,7 @@ from flask import (
 import bleach
 import markdown
 from graphql.error import GraphQLError
-from gql.transport.exceptions import TransportError
+from gql.transport.exceptions import TransportQueryError
 from rcos_io import utils
 from rcos_io.services import db
 from rcos_io.views import auth
@@ -53,7 +53,7 @@ def index():
     # Attempt to fetch projects
     try:
         all_projects = db.get_projects(g.db_client, False, semester_id)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! There was an error while fetching the projects.", "danger")
         return redirect(url_for("index"))
@@ -102,7 +102,7 @@ def add():
 
     try:
         inserted_project = db.add_project(g.db_client, project_data)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Oops! There was en error while submitting the project.", "danger")
         return redirect(url_for("projects.index"))
@@ -126,7 +126,7 @@ def approve():
                 if not project["is_approved"]
             ]
 
-        except (GraphQLError, TransportError) as error:
+        except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("Yikes! There was an error while fetching the projects.", "danger")
             return redirect(url_for("projects.index"))
@@ -176,7 +176,7 @@ def detail(project_id: str):
     # Attempt to fetch project
     try:
         project = db.get_project(g.db_client, project_id)
-    except (GraphQLError, TransportError) as error:
+    except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Invalid project ID!", "danger")
         return redirect(url_for("projects.index"))

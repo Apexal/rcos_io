@@ -36,6 +36,10 @@ which authenticates requests and gives us permission to do things as the bot.
 
 
 class DiscordTokens(TypedDict):
+    """
+    https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-response
+    """
+
     access_token: str
     token_type: str
     expires_in: int
@@ -80,6 +84,7 @@ def get_tokens(code: str) -> DiscordTokens:
 
 class DiscordUser(TypedDict):
     """See https://discord.com/developers/docs/resources/user#user-object"""
+
     id: str
     username: str
     discriminator: str
