@@ -1,5 +1,5 @@
-import requests
 from typing import List, Optional, TypedDict
+import requests
 from rcos_io.settings import (
     GITHUB_APP_CLIENT_ID,
     GITHUB_APP_CLIENT_SECRET,
@@ -7,7 +7,8 @@ from rcos_io.settings import (
 )
 
 GITHUB_API_ENDPOINT = "https://api.github.com"
-GITHUB_AUTH_URL = f"https://github.com/login/oauth/authorize?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
+GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize" \
+    f"?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
 
 
 class GitHubTokens(TypedDict):
@@ -18,12 +19,17 @@ class GitHubTokens(TypedDict):
 
 def get_tokens(code: str) -> GitHubTokens:
     """
-    Given an authorization code, request an access token for a GitHub user. Returns the token data. Throws an error if invalid request.
+    Given an authorization code, request an access token for a GitHub user.
 
-    See https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
+    Returns:
+        GitHubTokens
+    Raises:
+        HTTPError on failed request
+
+    See https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
     """
     response = requests.post(
-        f"https://github.com//login/oauth/access_token",
+        "https://github.com//login/oauth/access_token",
         data={
             "client_id": GITHUB_APP_CLIENT_ID,
             "client_secret": GITHUB_APP_CLIENT_SECRET,
@@ -47,7 +53,8 @@ class User(TypedDict):
 
 def get_user_info(access_token: str) -> User:
     """
-    Given an access token, get a GitHub user's info including id, username (login), avatar_url, etc. Throws an error on failed request.
+    Given an access token, get a GitHub user's info including id, username (login), avatar_url, etc.
+    Throws an error on failed request.
 
     See https://docs.github.com/en/rest/users/users#get-the-authenticated-user
     """
@@ -92,6 +99,6 @@ class CommitInfo(TypedDict):
 def get_repo_commits(
     repo_url: str, author_github_username: Optional[str]
 ) -> List[CommitInfo]:
-    repo_short = repo_url.removeprefix("https://github.com/")
+    # repo_short = repo_url.removeprefix("https://github.com/")
 
     return []

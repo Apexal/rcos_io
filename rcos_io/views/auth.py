@@ -414,14 +414,14 @@ def profile():
 
     if request.method == "GET":
         # Fetch Discord user profile if linked
-        context: Dict[str, Any] = dict()
+        context: Dict[str, Any] = {}
         if g.user["discord_user_id"]:
             context["discord_user"] = discord.get_user(g.user["discord_user_id"])
 
         return render_template("auth/profile.html", **context)
     else:
         # Store in database
-        updates: Dict[str, Union[str, int]] = dict()
+        updates: Dict[str, Union[str, int]] = {}
 
         def handle_update(input_name: str):
             if (

@@ -1,3 +1,7 @@
+"""
+This module contains email-related functionality.
+"""
+
 from mailjet_rest import Client
 
 from rcos_io.settings import MAILJET_API_KEY, MAILJET_API_SECRET
@@ -6,6 +10,7 @@ mailjet = Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version="v3.1")
 
 
 def send_otp_email(email: str, otp: str):
+    """Send a one-time password to a particular email."""
     data = {
         "Messages": [
             {

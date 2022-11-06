@@ -1,3 +1,4 @@
+from typing import Any, Dict
 from flask import (
     Blueprint,
     request,
@@ -10,12 +11,10 @@ from flask import (
     Markup,
     current_app,
 )
-from datetime import date
-from typing import Any, Dict, List, Optional
 import bleach
 import markdown
-from rcos_io import utils
 
+from rcos_io import utils
 import rcos_io.services.db as db
 import rcos_io.views.auth as auth
 
