@@ -7,8 +7,10 @@ from rcos_io.settings import (
 )
 
 GITHUB_API_ENDPOINT = "https://api.github.com"
-GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize" \
+GITHUB_AUTH_URL = (
+    "https://github.com/login/oauth/authorize"
     f"?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
+)
 
 
 class GitHubTokens(TypedDict):

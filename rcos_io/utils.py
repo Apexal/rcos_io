@@ -6,6 +6,10 @@ from flask.wrappers import Request
 from flask.sessions import SessionMixin
 
 
+class NotFoundError(Exception):
+    pass
+
+
 def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """
     Returns the semester that's either in progress or next up.
@@ -63,6 +67,6 @@ def get_target_semester(request: Request, session: SessionMixin):
         semester = get_semester_by_id(session["semesters"], semester_id)
 
     if semester_id and not semester:
-        raise Exception(f"Semester {semester_id} not found")
+        raise NotFoundError(f"Semester {semester_id} not found")
 
     return semester_id, semester

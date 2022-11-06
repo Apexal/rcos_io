@@ -38,16 +38,16 @@ def client_factory():
     Instead of using one client across the app, one client should be made per request
     to avoid threading errors.
 
-    Returns
+    Returns:
         new GQL client
     """
-    t = RequestsHTTPTransport(
+    transport = RequestsHTTPTransport(
         url=GQL_API_URL,
         verify=True,
         retries=3,
         headers={"x-hasura-admin-secret": HASURA_ADMIN_SECRET},
     )
-    return Client(transport=t, fetch_schema_from_transport=False)
+    return Client(transport=transport, fetch_schema_from_transport=False)
 
 
 @bp.before_app_request
@@ -103,10 +103,13 @@ def find_or_create_user_by_email(
         whether the user was newly created or not
     """
     user = find_user_by_email(client, email)
-    if user is not None:
-        return user, False
-    else:
+
+    # Create if not found
+    if user is None:
         return create_user_with_email(client, email, role), True
+
+    # Return if found
+    return user, False
 
 
 def find_user_by_email(client: Client, email: str) -> Optional[Dict[str, Any]]:
@@ -270,6 +273,7 @@ def update_user_by_id(
 
 
 def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]]:
+    """Fetches users for a particular semester, or ALL users if semester_id is None."""
     query = gql(
         """
         query semester_users($where: users_bool_exp!) {
@@ -305,6 +309,7 @@ def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]
 
 
 def get_semesters(client: Client) -> List[Dict[str, Any]]:
+    """Fetches all semesters, ordered ascendingly by start date."""
     query = gql(
         """
         query semesters {
@@ -361,10 +366,14 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
 def get_enrollment(
     client: Client, user_id: str, semester_id: str
 ) -> Optional[Dict[str, Any]]:
+    """Fetches a particular enrollment by user and semester IDs."""
     query = gql(
         """
         query get_enrollment($user_id: uuid!, $semester_id: String!) {
-            enrollments(limit: 1, where: { user_id: { _eq: $user_id }, semester_id: { _eq: $semester_id } }) {
+            enrollments(
+                limit: 1,
+                where: { user_id: { _eq: $user_id }, semester_id: { _eq: $semester_id } }
+            ) {
                 is_project_lead
                 is_coordinator
                 is_faculty_advisor
@@ -378,8 +387,8 @@ def get_enrollment(
     )["enrollments"]
     if len(enrollments) == 0:
         return None
-    else:
-        return enrollments[0]
+
+    return enrollments[0]
 
 
 def get_projects(
@@ -402,7 +411,11 @@ def get_projects(
 
     query = gql(
         """
-        query SemesterProjects($projects_where_exp: projects_bool_exp, $enrollments_where_exp: enrollments_bool_exp, $withEnrollments: Boolean!) {
+        query SemesterProjects(
+            $projects_where_exp: projects_bool_exp,
+            $enrollments_where_exp: enrollments_bool_exp,
+            $withEnrollments: Boolean!
+        ) {
           projects(order_by: {name: asc}, where: $projects_where_exp) {
             id
             name
@@ -543,7 +556,7 @@ def insert_meeting(client: Client, meeting_data: Dict[str, Any]) -> Dict[str, An
 
 
 def add_project_lead(
-    client: Client, project_id: str, user_id: str, semester_id: str, credits: int
+    client: Client, project_id: str, user_id: str, semester_id: str, credit_count: int
 ):
     """
     Adds user with id=user_id as project lead of project with id=project_id.
@@ -582,7 +595,7 @@ def add_project_lead(
             "project_id": project_id,
             "user_id": user_id,
             "semester_id": semester_id,
-            "credits": credits,
+            "credits": credit_count,
         },
     )
 

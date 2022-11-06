@@ -1,3 +1,7 @@
+"""
+This module contains the meetings blueprint, which stores
+all meeting related views and functionality.
+"""
 from datetime import datetime
 from typing import Any, Dict, Optional
 from flask import (
@@ -11,6 +15,8 @@ from flask import (
     current_app,
     g,
 )
+from graphql.error import GraphQLError
+from gql.transport.exceptions import TransportError
 from rcos_io.services import db
 from rcos_io.views.auth import (
     coordinator_or_above_required,
@@ -22,7 +28,7 @@ bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
 @bp.route("/")
 def index():
-    """Renders the main meetings template which shows a calendar that fetches events from the API route."""
+    """Renders the main meetings template."""
     return render_template("meetings/index.html")
 
 
@@ -45,28 +51,29 @@ def add():
         ]
 
         return render_template("meetings/add.html", meeting_types=meeting_types)
-    else:
 
-        # Form new meeting dictionary for insert
-        meeting_data: dict[str, Optional[str]] = {
-            "semester_id": session["semester"]["id"],
-            "name": request.form["name"].strip(),
-            "type": request.form["type"],
-            "start_date_time": request.form["start_date_time"],
-            "end_date_time": request.form["end_date_time"],
-            "location": request.form["location"].strip(),
-        }
+    # HANDLE FORM SUBMISSION
 
-        # Attempt to insert meeting into database
-        try:
-            new_meeting = db.insert_meeting(g.db_client, meeting_data)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Yikes! Failed to add meeting. Check logs.", "danger")
-            return redirect(url_for("meetings.index"))
+    # Form new meeting dictionary for insert
+    meeting_data: dict[str, Optional[str]] = {
+        "semester_id": session["semester"]["id"],
+        "name": request.form["name"].strip(),
+        "type": request.form["type"],
+        "start_date_time": request.form["start_date_time"],
+        "end_date_time": request.form["end_date_time"],
+        "location": request.form["location"].strip(),
+    }
 
-        # Redirect to the new meeting's detail page
-        return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
+    # Attempt to insert meeting into database
+    try:
+        new_meeting = db.insert_meeting(g.db_client, meeting_data)
+    except (GraphQLError, TransportError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to add meeting. Check logs.", "danger")
+        return redirect(url_for("meetings.index"))
+
+    # Redirect to the new meeting's detail page
+    return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
 
 
 @bp.route("/<meeting_id>")
@@ -76,8 +83,8 @@ def detail(meeting_id: str):
     # Attempt to fetch meeting
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
-    except Exception as e:
-        current_app.logger.exception(e)
+    except (GraphQLError, TransportError) as error:
+        current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.index"))
 

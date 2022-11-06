@@ -2,11 +2,8 @@ from datetime import date
 import functools
 import random
 import string
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 from urllib.error import HTTPError
-
-from rcos_io.services import github, db, discord, email
-from rcos_io import settings, utils
 
 from flask import (
     current_app,
@@ -20,13 +17,29 @@ from flask import (
     flash,
 )
 
+from rcos_io.services import github, db, discord, email
+from rcos_io import settings, utils
+
+
+C = TypeVar("C", bound=Callable[..., Any])
+
 
 bp = Blueprint("auth", __name__, url_prefix="/")
 
 
 @bp.before_app_request
 def load_logged_in_user():
-    """Set global user variables `is_logged_in`, `user`, and `logged_in_user_nickname` for access in views and templates."""
+    """
+    Set global user variables
+    - is_logged_in
+    - user
+    - semesters
+    - semester
+    for access in views and templates.
+
+    You can access these in views OR in templates with `g.user`
+    """
+
     user: Optional[Dict[str, Any]] = session.get("user")
 
     # Fetch and store semester in session if not there or if it's changed
@@ -61,7 +74,7 @@ def load_logged_in_user():
         g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
 
 
-def login_required(view):
+def login_required(view: C) -> C:
     """Flask decorator to require that the user is logged in to access the view.
 
     ```
@@ -74,17 +87,17 @@ def login_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None:
             flash("You must login to view that page!", "danger")
             return redirect(url_for("auth.login", redirect_to=request.path))
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def verified_required(view):
+def verified_required(view: C) -> C:
     """Flask decorator to require that the logged in user is verified to access the view.
 
     ```
@@ -97,18 +110,23 @@ def verified_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None or not g.user["is_verified"]:
             flash("You must verified to view that page!", "danger")
             return redirect("/")
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def setup_required(view):
-    """Flask decorator to require that the logged in user is has Discord, GitHub, and a secondary email set.
+def setup_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user has
+    - Discord
+    - GitHub
+    - a secondary email
+    set.
 
     ```
     # Example
@@ -120,7 +138,7 @@ def setup_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if (
             g.user is None
             or not g.user["discord_user_id"]
@@ -133,10 +151,10 @@ def setup_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def rpi_required(view):
+def rpi_required(view: C) -> C:
     """Flask decorator to require that the logged in user is an RPI user to access the view.
 
     ```
@@ -149,7 +167,7 @@ def rpi_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None or g.user["role"] != "rpi":
             flash(
                 "You must be an RPI student, faculty, or alum to view that page!",
@@ -159,11 +177,16 @@ def rpi_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def mentor_or_above_required(view):
-    """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
+def mentor_or_above_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user is either currently a
+    - Mentor
+    - Coordinator
+    - Faculty Advisor
+    to access the view.
 
     ```
     # Example
@@ -175,7 +198,7 @@ def mentor_or_above_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if not session.get("is_mentor_or_above"):
             flash(
                 "You must be a Mentor or above to view this page!",
@@ -185,11 +208,16 @@ def mentor_or_above_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def coordinator_or_above_required(view):
-    """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
+def coordinator_or_above_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user is either currently a
+    - Mentor
+    - Coordinator
+    - Faculty Advisor
+    to access the view.
 
     ```
     # Example
@@ -201,7 +229,7 @@ def coordinator_or_above_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if not session.get("is_coordinator_or_above"):
             flash(
                 "You must be a Coordinator or above to view that page!",
@@ -211,11 +239,15 @@ def coordinator_or_above_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
 @bp.route("/login", methods=("GET", "POST"))
 def login():
+    """
+    Renders the email login form with email hints for either RPI or external users.
+    Handles login form submissions by generating OTPs and emailing them.
+    """
     if request.method == "GET":
         # Check if user tried to go to website that requires auth and was redirected to login
         if request.args.get("redirect_to"):
@@ -224,22 +256,23 @@ def login():
 
         # "role" could be "rpi" or "external" to determine what to show on login page
         return render_template("auth/login.html", role=request.args.get("role"))
-    elif request.method == "POST":
-        user_email = request.form["email"]
-        session["user_email"] = user_email
 
-        # Generate and store OTP
-        otp = generate_otp()
-        session["user_otp"] = otp
+    # Handle POST request form submission
+    user_email = request.form["email"]
+    session["user_email"] = user_email
 
-        if settings.ENV == "production":
-            # Send it to the user via email
-            email.send_otp_email(user_email, otp)
+    # Generate and store OTP
+    otp = generate_otp()
+    session["user_otp"] = otp
 
-        current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
+    if settings.ENV == "production":
+        # Send it to the user via email
+        email.send_otp_email(user_email, otp)
 
-        # Render OTP form for user to enter OTP
-        return render_template("auth/otp.html", user_email=user_email, otp=otp)
+    current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
+
+    # Render OTP form for user to enter OTP
+    return render_template("auth/otp.html", user_email=user_email, otp=otp)
 
 
 @bp.route("/login/otp", methods=("POST",))
@@ -247,7 +280,13 @@ def otp():
     """
     Finish the login process by checking that the submitted OTP matches the OTP sent to the user.
 
-    Sets `user` in the session on success, and flashes, resets session, and redirects to login on fail.
+    On correct:
+    - Sets `user` in the session
+    - and flashes
+
+    On incorrect:
+    - resets session
+    - redirects to login page
     """
 
     # Grab the OTP from the submitted form
@@ -263,7 +302,7 @@ def otp():
     # This better be set! If it isn't something fishy is up so abort!
     if user_otp is None or user_email is None:
         flash("There was an error logging you in. Please try again later.", "danger")
-        return
+        return redirect(url_for("auth.login"))
 
     # Check that OTP matches and flash error and go back to login if wrong OTP
     if submitted_otp != user_otp:
@@ -281,8 +320,8 @@ def otp():
     # Go home OR to the desired path the user tried going to before login
     if redirect_to:
         return redirect(redirect_to)
-    else:
-        return redirect(url_for("auth.profile" if is_new_user else "index"))
+
+    return redirect(url_for("auth.profile" if is_new_user else "index"))
 
 
 @bp.route("/logout")
@@ -316,7 +355,8 @@ def discord_callback():
     if code is None:
         return redirect("/")
 
-    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    # Attempt to complete OAuth2 flow and result in access token
+    # and user info (id, username, avatar, etc.)
     try:
         discord_user_tokens = discord.get_tokens(code)
         discord_access_token = discord_user_tokens["access_token"]
