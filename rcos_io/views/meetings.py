@@ -54,7 +54,7 @@ def add():
     # HANDLE FORM SUBMISSION
 
     # Form new meeting dictionary for insert
-    meeting_data: dict[str, Optional[str]] = {
+    meeting_data: Dict[str, Optional[str]] = {
         "semester_id": session["semester"]["id"],
         "name": request.form["name"].strip(),
         "type": request.form["type"],
