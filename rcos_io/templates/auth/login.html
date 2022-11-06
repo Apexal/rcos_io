@@ -24,17 +24,29 @@
         {% endif %}
       </label>
 
-      {# Set the proper attributes based on role #}
-      <input
-        class="form-control"
-        type="email"
-        name="email"
-        id="email"
-        placeholder="{% if role == 'rpi'%}user@rpi.edu{% else %}user@example.com{% endif %}"
-        {% if role=='rpi' %} pattern="^[A-Za-z0-9._%+-]+@rpi\.edu$" {% endif %}
-        title="{% if role == 'rpi' %}Use your @rpi.edu email address!{% endif %}"
-        required
-      />
+      <div class="row">   
+        <div class="col">   
+          {# Set the proper attributes based on role #}
+          <input
+            class="form-control"
+            type="email"
+            name="email"
+            id="email"
+            placeholder="{% if role == 'rpi'%}user@rpi.edu{% else %}user@example.com{% endif %}"
+            {% if role=='rpi' %} pattern="^[A-Za-z0-9._%+-]+@rpi\.edu$" {% endif %}
+            title="{% if role == 'rpi' %}Use your @rpi.edu email address!{% endif %}"
+            required
+          />
+        </div>
+        <div class="col-auto">   
+          <button 
+            type="submit" 
+            class="btn btn-success"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
     </div>
   </form>
 </div>
