@@ -49,6 +49,8 @@ def attend():
 
         if valid_code and not needs_verification:
             flash("Your attendance has been recorded!", "primary")
+
+            print("Attendance recorded for %s" % (user["rcs_id"]))
         elif valid_code and needs_verification:
             flash(
                 "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.",

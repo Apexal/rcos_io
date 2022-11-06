@@ -64,7 +64,12 @@ def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
     Returns a tuple of booleans; the first of which is if the verification was successful,
     while the second is whether or not they were chosen to be manually verified.
     """
-    room = json.loads(cache.get_cache().get(code))
+    attendance_session = cache.get_cache().get(code)
+
+    if attendance_session is None:
+        return False, False
+
+    room = json.loads(attendance_session)
 
     # invalid code; there does not exist a room with that code
     if room is None:

@@ -107,15 +107,16 @@ def host(meeting_id: str):
 
     code = attendance.register_room(meeting["location"], meeting_id)
 
-    return render_template("attendance/host.html", code=code)
+    return render_template("attendance/host.html", code=code, meeting_id=meeting_id)
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
 @login_required
 def close(meeting_id: str):
-    attendance.close_room(meeting_id)
+    code = request.args["code"]
+    attendance.close_room(code)
 
-    return "Room closed", 200
+    return url_for("meetings.detail", meeting_id=meeting_id), 200
 
 
 @bp.route("/api/events")

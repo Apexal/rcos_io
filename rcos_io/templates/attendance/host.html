@@ -4,12 +4,12 @@
 <div class="container">
     <h1>Attendance</h1>
 
-    <button class="btn btn-danger">Close</button>
+    <button onclick="onClose('{{ code }}', '{{ meeting_id }}')" class="btn btn-danger">Close</button>
 
     <h1><center>{{ code }}</center></h1>
 
     <hr/>
-    
+
     <div id="verification_status"></div>
     <div class="form-group">
       <label for="project_name">RCS ID</label>
