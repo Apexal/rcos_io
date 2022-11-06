@@ -14,14 +14,14 @@ Learn how to write Hasura GQL queries (fetch data): https://hasura.io/docs/lates
 Learn how to write Hasura GQL mutations (update data): https://hasura.io/docs/latest/mutations/postgres/index/
 """
 
-from flask import g
+from flask import g, Blueprint
 from typing import Any, Dict, List, Optional, Tuple, Union
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
 
-from rcos_io import app
+bp = Blueprint("db", __name__)
 
 
 def client_factory():
@@ -43,7 +43,7 @@ def client_factory():
     return Client(transport=t, fetch_schema_from_transport=False)
 
 
-@app.before_request
+@bp.before_app_request
 def attach_db_client():
     """Creates a new GQL client and attach it to the every reqest as `g.db_client`."""
     g.db_client = client_factory()
