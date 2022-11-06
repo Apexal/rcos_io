@@ -16,6 +16,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - uses: psf/black@stable
       with:
+        options: ""
         src: "./rcos_io"
     - name: Install dependencies
       run: |
