@@ -1,6 +1,6 @@
 """This module contains utility functions used across the codebase."""
 
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from datetime import date
 from flask.wrappers import Request
 from flask.sessions import SessionMixin
@@ -21,9 +21,9 @@ def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
     today = str(date.today())
 
     for semester in semesters:
-        if semester["start_date"] <= today and semester["end_date"] >= today:
+        if semester["start_date"] <= today <= semester["end_date"]:
             return semester
-        elif semester["start_date"] > today:
+        if semester["start_date"] > today:
             return semester
 
     return None
@@ -32,6 +32,7 @@ def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
 def get_semester_by_id(
     semesters: List[Dict[str, Any]], semester_id: str
 ) -> Optional[Dict[str, Any]]:
+    """Finds a semester from a list of semester dicts by ID."""
     for semester in semesters:
         if semester["id"] == semester_id:
             return semester
