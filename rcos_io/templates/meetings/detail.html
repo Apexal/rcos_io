@@ -41,5 +41,9 @@
             <li class="list-group-item">Presentation URL</li>
         </ul>
     </div>
+
+    <br/>
+
+    <a class="btn btn-primary" href="{{ url_for('meetings.host', meeting_id=meeting['id']) }}">Host Meeting</a>
 </div>
 {% endblock %}
