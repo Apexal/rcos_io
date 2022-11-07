@@ -1,5 +1,9 @@
+"""
+This module contains the meetings blueprint, which stores
+all meeting related views and functionality.
+"""
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 from flask import (
     Blueprint,
     render_template,
@@ -11,6 +15,8 @@ from flask import (
     current_app,
     g,
 )
+from graphql.error import GraphQLError
+from gql.transport.exceptions import TransportQueryError
 from pytz import timezone
 
 from rcos_io.services import db, attendance
@@ -24,7 +30,7 @@ bp = Blueprint("meetings", __name__, url_prefix="/meetings")
 
 @bp.route("/")
 def index():
-    """Renders the main meetings template which shows a calendar that fetches events from the API route."""
+    """Renders the main meetings template."""
     return render_template("meetings/index.html")
 
 
@@ -47,28 +53,29 @@ def add():
         ]
 
         return render_template("meetings/add.html", meeting_types=meeting_types)
-    else:
 
-        # Form new meeting dictionary for insert
-        meeting_data: dict[str, Optional[str]] = {
-            "semester_id": session["semester"]["id"],
-            "name": request.form["name"].strip(),
-            "type": request.form["type"],
-            "start_date_time": request.form["start_date_time"],
-            "end_date_time": request.form["end_date_time"],
-            "location": request.form["location"].strip(),
-        }
+    # HANDLE FORM SUBMISSION
 
-        # Attempt to insert meeting into database
-        try:
-            new_meeting = db.insert_meeting(g.db_client, meeting_data)
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("Yikes! Failed to add meeting. Check logs.", "danger")
-            return redirect(url_for("meetings.index"))
+    # Form new meeting dictionary for insert
+    meeting_data: Dict[str, Optional[str]] = {
+        "semester_id": session["semester"]["id"],
+        "name": request.form["name"].strip(),
+        "type": request.form["type"],
+        "start_date_time": request.form["start_date_time"],
+        "end_date_time": request.form["end_date_time"],
+        "location": request.form["location"].strip(),
+    }
 
-        # Redirect to the new meeting's detail page
-        return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
+    # Attempt to insert meeting into database
+    try:
+        new_meeting = db.insert_meeting(g.db_client, meeting_data)
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to add meeting. Check logs.", "danger")
+        return redirect(url_for("meetings.index"))
+
+    # Redirect to the new meeting's detail page
+    return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
 
 
 @bp.route("/<meeting_id>")
@@ -78,19 +85,20 @@ def detail(meeting_id: str):
     # Attempt to fetch meeting
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
-    except Exception as e:
-        current_app.logger.exception(e)
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.index"))
 
-    if meeting:
-        return render_template(
-            "meetings/detail.html",
-            meeting=meeting,
-        )
-    else:
+    # Handle meeting not found
+    if meeting is None:
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.index"))
+
+    return render_template(
+        "meetings/detail.html",
+        meeting=meeting,
+    )
 
 
 @bp.route("/<meeting_id>/host")
@@ -122,21 +130,21 @@ def close(meeting_id: str):
 @bp.route("/api/events")
 def events_api():
     """Returns a JSON array of event objects that Fullcalendar can understand."""
-    # TODO: use this is filtering meetings
-    # TODO: filter based on logged in status and role
     start = (
-        datetime.fromisoformat(request.args.get("start"))
+        datetime.fromisoformat(cast(str, request.args.get("start")))
         if "start" in request.args
         else None
     )
     end = (
-        datetime.fromisoformat(request.args.get("end"))
+        datetime.fromisoformat(cast(str, request.args.get("end")))
         if "end" in request.args
         else None
     )
 
     # Fetch meetings
-    meetings = db.get_meetings(g.db_client)
+    meetings = db.get_meetings(
+        g.db_client, only_published=True, start_at=start, end_at=end
+    )
 
     # Convert them to objects that Fullcalendar can understand
     events = list(map(meeting_to_event, meetings))
@@ -146,9 +154,10 @@ def events_api():
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     """Creates a Fullcalendar event object from a meeting."""
+    meeting_type = cast(str, meeting["type"]).title()
     return {
         "id": meeting["id"],
-        "title": meeting["name"] or f"{meeting['type']} Meeting",
+        "title": meeting["name"] or meeting_type,
         "start": meeting["start_date_time"],
         "end": meeting["end_date_time"],
         "url": f"/meetings/{meeting['id']}",

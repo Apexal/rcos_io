@@ -1,9 +1,15 @@
 """
-This module reads the environment variables needed to run the site and stores them as constants for easy use in other modules.
+This module reads the environment variables needed to run the site
+and stores them as constants for easy use in other modules.
 
-If any of these are missing a value (they are not set in the environment), `env_get` throws a `KeyError` and the program will crash on startup.
-Every environment variable constant should have a docstring describing what it is used for. When developing locally, `load_dotenv()` will look
-for a `.env` file in the top-level folder with these environment variables set. When in production, there's no `.env` file and environment variables
+If any of these are missing a value (they are not set in the environment),
+`env_get` throws a `KeyError` and the program will crash on startup.
+Every environment variable constant should have a docstring
+describing what it is used for. When developing locally,
+`load_dotenv()` will look for a `.env` file in the top-level folder
+with these environment variables set.
+
+When in production, there's no `.env` file and environment variables
 are just set in the environment.
 
 See https://12factor.net/config
@@ -62,7 +68,10 @@ See https://discord.com/developers/docs/resources/guild#guild-object-guild-struc
 """
 
 ENV = env_get("ENV")
-"""The environment the server is running in. Expected to be either `'development'` or `'production'`"""
+"""
+The environment the server is running in.
+Expected to be either `'development'` or `'production'`
+"""
 
 SECRET_KEY = env_get("SECRET_KEY")
 """Secret random value used by Flask to secure cookies to store session data"""
@@ -81,7 +90,6 @@ GITHUB_APP_REDIRECT_URL = env_get("GITHUB_APP_REDIRECT_URL")
 
 # github app docs: https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps
 
-
 REDISHOST = env_get("REDISHOST")
 """Address for the Redis cache"""
 
@@ -93,3 +101,7 @@ REDISUSER = env_get("REDISUSER")
 
 REDISPASSWORD = env_get("REDISPASSWORD")
 """Password for the RCOS I/O user in Redis"""
+
+MAILJET_API_KEY = env_get("MAILJET_API_KEY")
+
+MAILJET_API_SECRET = env_get("MAILJET_API_SECRET")

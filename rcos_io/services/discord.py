@@ -18,7 +18,11 @@ DISCORD_API_ENDPOINT = f"https://discord.com/api/v{DISCORD_VERSION_NUMBER}"
 
 
 # See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
-DISCORD_AUTH_URL = f"https://discord.com/api/oauth2/authorize?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URL}&response_type=code&scope=identify%20guilds.join&prompt=none"
+DISCORD_AUTH_URL = (
+    "https://discord.com/api/oauth2/authorize"
+    f"?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URL}"
+    "&response_type=code&scope=identify%20guilds.join&prompt=none"
+)
 
 HEADERS = {
     "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
@@ -32,6 +36,10 @@ which authenticates requests and gives us permission to do things as the bot.
 
 
 class DiscordTokens(TypedDict):
+    """
+    https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-response
+    """
+
     access_token: str
     token_type: str
     expires_in: int
@@ -41,9 +49,11 @@ class DiscordTokens(TypedDict):
 
 def get_tokens(code: str) -> DiscordTokens:
     """
-    Given an authorization code, requests the access and refresh tokens for a Discord user. Returns the tokens. Throws an error if invalid request.
+    Given an authorization code
+    - requests the access and refresh tokens for a Discord user
 
-    See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
+    See
+    https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
 
     Args:
         code: the authorization code returned from Discord
@@ -63,6 +73,7 @@ def get_tokens(code: str) -> DiscordTokens:
             "scope": "identity guilds.join",
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -72,6 +83,8 @@ def get_tokens(code: str) -> DiscordTokens:
 
 
 class DiscordUser(TypedDict):
+    """See https://discord.com/developers/docs/resources/user#user-object"""
+
     id: str
     username: str
     discriminator: str
@@ -82,14 +95,20 @@ class DiscordUser(TypedDict):
 
 def get_user_info(access_token: str) -> DiscordUser:
     """
-    Given an access token, get a Discord user's info including id, username, discriminator, avatar url, etc. Throws an error on failed request.
+    Given an access token get a Discord user's info including
+    - id
+    - username
+    - discriminator
+    - avatar url
+    - etc.
 
     Args:
         access_token: Discord access token for a user
     Raises:
         HTTPError on request failure
 
-    See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
+    See:
+    https://discord.com/developers/docs/topics/oauth2#authorization-code-grant-access-token-exchange-example
     """
     response = requests.get(
         f"{DISCORD_API_ENDPOINT}/users/@me",
@@ -97,6 +116,7 @@ def get_user_info(access_token: str) -> DiscordUser:
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         },
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -124,6 +144,7 @@ def add_user_to_server(access_token: str, user_id: str):
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         json=data,
         headers=HEADERS,
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -145,8 +166,7 @@ def get_user(user_id: str) -> Union[DiscordUser, None]:
     See https://discord.com/developers/docs/resources/user#get-user
     """
     response = requests.get(
-        f"{DISCORD_API_ENDPOINT}/users/{user_id}",
-        headers=HEADERS,
+        f"{DISCORD_API_ENDPOINT}/users/{user_id}", headers=HEADERS, timeout=3
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -170,6 +190,7 @@ def add_role_to_member(user_id: str, role_id: str):
     response = requests.put(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}/roles/{role_id}",
         headers=HEADERS,
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -191,6 +212,7 @@ def kick_user_from_server(user_id: str):
     response = requests.delete(
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         headers=HEADERS,
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -200,7 +222,7 @@ def kick_user_from_server(user_id: str):
 
 def set_member_nickname(user_id: str, nickname: str):
     """
-    Given a Discord user's id, sets their nickname on the server. Throws an error on failed request.
+    Given a Discord user's id, sets their nickname on the server.
 
     Args:
         user_id: Discord user's unique account ID
@@ -214,6 +236,7 @@ def set_member_nickname(user_id: str, nickname: str):
         f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
         json={"nick": nickname},
         headers=HEADERS,
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -222,8 +245,10 @@ def set_member_nickname(user_id: str, nickname: str):
 
 
 def generate_nickname(user: Dict[str, Any]) -> Optional[str]:
-    # Bill Ni, graduating 2022, nib@rpi.edu -> Bill N '22 (nib)
-    # Glen Darling, IBM, glendarling@us.ibm.com -> Glen D
+    """
+    Bill Ni, graduating 2022, nib@rpi.edu -> Bill N '22 (nib)
+    Glen Darling, IBM, glendarling@us.ibm.com -> Glen D
+    """
 
     name = ""
     if user["first_name"] and user["last_name"]:

@@ -12,15 +12,27 @@
 
   <!-- OTP for testing: {{ otp }} -->
 
-  <form action="{{ url_for('auth.otp') }}" method="POST">
-    <input
-      class="form-control"
-      type="text"
-      name="otp"
-      id="otp"
-      placeholder="OTP"
-      required
-    />
+  <form action="{{ url_for('auth.submit_otp') }}" method="POST">
+    <div class="row">   
+      <div class="col">   
+        <input
+          class="form-control"
+          type="text"
+          name="otp"
+          id="otp"
+          placeholder="OTP"
+          required
+        />
+      </div>
+      <div class="col-auto">   
+        <button 
+          type="submit" 
+          class="btn btn-success"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
   </form>
 </div>
 {% endblock %}

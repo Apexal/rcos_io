@@ -1,27 +1,35 @@
 """
 This module contains all database-related functionality.
 
-Instead of manually connecting to a relational database and writing long SQL queries, we use Hasura
-to get a nice, automatic GraphQL API for our relational database. This means we can just write GQL
-queries asking for exactly the data we want without every writing code to explain how to actually
-fetch that data from the database!
+Instead of manually connecting to a relational database
+and writing long SQL queries, we use Hasura to get a
+nice, automatic GraphQL API for our relational database.
+This means we can just write GQL queries asking for exactly
+the data we want without every writing code to explain how
+to actually fetch that data from the database!
 
-We use a simple Python package called `gql` to help us make authenticated requests to our Hasura API.
-We make a new connection to Hasura for every request that comes to the Flask webserver instead of sharing
-a connection across threads because that crashes.
+We use a simple Python package called `gql` to help us
+make authenticated requests to our Hasura API. We make
+a new connection to Hasura for every request that comes
+to the Flask webserver instead of sharing a connection
+across threads because that crashes.
 
-Learn how to write Hasura GQL queries (fetch data): https://hasura.io/docs/latest/queries/postgres/index/
-Learn how to write Hasura GQL mutations (update data): https://hasura.io/docs/latest/mutations/postgres/index/
+Learn how to write Hasura GQL queries (fetch data):
+https://hasura.io/docs/latest/queries/postgres/index/
+
+Learn how to write Hasura GQL mutations (update data):
+https://hasura.io/docs/latest/mutations/postgres/index/
 """
 
-from flask import g
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from flask import g, Blueprint
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
 
 from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
 
-from rcos_io import app
+bp = Blueprint("db", __name__)
 
 
 def client_factory():
@@ -31,19 +39,19 @@ def client_factory():
     Instead of using one client across the app, one client should be made per request
     to avoid threading errors.
 
-    Returns
+    Returns:
         new GQL client
     """
-    t = RequestsHTTPTransport(
+    transport = RequestsHTTPTransport(
         url=GQL_API_URL,
         verify=True,
         retries=3,
         headers={"x-hasura-admin-secret": HASURA_ADMIN_SECRET},
     )
-    return Client(transport=t, fetch_schema_from_transport=False)
+    return Client(transport=transport, fetch_schema_from_transport=False)
 
 
-@app.before_request
+@bp.before_app_request
 def attach_db_client():
     """Creates a new GQL client and attach it to the every reqest as `g.db_client`."""
     g.db_client = client_factory()
@@ -72,7 +80,7 @@ fragment basicUser on users {
                          id -> required -> uuid
                  first_name -> optional
                   last_name -> optional
-            graduation_year -> optional 
+            graduation_year -> optional
              preferred_name -> optional
                        role -> required -> rpi/external
                       email -> required
@@ -96,10 +104,13 @@ def find_or_create_user_by_email(
         whether the user was newly created or not
     """
     user = find_user_by_email(client, email)
-    if user is not None:
-        return user, False
-    else:
+
+    # Create if not found
+    if user is None:
         return create_user_with_email(client, email, role), True
+
+    # Return if found
+    return user, False
 
 
 def find_user_by_email(client: Client, email: str) -> Optional[Dict[str, Any]]:
@@ -320,10 +331,13 @@ def update_user_by_id(
 
 
 def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]]:
+    """Fetches users for a particular semester, or ALL users if semester_id is None."""
     query = gql(
         """
         query semester_users($where: users_bool_exp!) {
-            users(order_by: [{ display_name:asc_nulls_last}, {email: asc_nulls_last}], where: $where) {
+            users(order_by: [
+                { display_name:asc_nulls_last}, {email: asc_nulls_last}
+            ], where: $where) {
                 id
                 display_name
                 role
@@ -343,7 +357,7 @@ def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]
         """
     )
 
-    where_clause: Dict[str, Any] = dict()
+    where_clause: Dict[str, Any] = {}
 
     if semester_id:
         where_clause["enrollments"] = {"semester_id": {"_eq": semester_id}}
@@ -353,6 +367,7 @@ def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]
 
 
 def get_semesters(client: Client) -> List[Dict[str, Any]]:
+    """Fetches all semesters, ordered ascendingly by start date."""
     query = gql(
         """
         query semesters {
@@ -409,10 +424,14 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
 def get_enrollment(
     client: Client, user_id: str, semester_id: str
 ) -> Optional[Dict[str, Any]]:
+    """Fetches a particular enrollment by user and semester IDs."""
     query = gql(
         """
         query get_enrollment($user_id: uuid!, $semester_id: String!) {
-            enrollments(limit: 1, where: { user_id: { _eq: $user_id }, semester_id: { _eq: $semester_id } }) {
+            enrollments(
+                limit: 1,
+                where: { user_id: { _eq: $user_id }, semester_id: { _eq: $semester_id } }
+            ) {
                 is_project_lead
                 is_coordinator
                 is_faculty_advisor
@@ -426,8 +445,8 @@ def get_enrollment(
     )["enrollments"]
     if len(enrollments) == 0:
         return None
-    else:
-        return enrollments[0]
+
+    return enrollments[0]
 
 
 def get_projects(
@@ -440,17 +459,21 @@ def get_projects(
     Returns project name.
     """
 
-    projects_where_exp = dict()
+    projects_where_exp = {}
     if semester_id:
         projects_where_exp = {"enrollments": {"semester_id": {"_eq": semester_id}}}
 
-    enrollments_where_exp = dict()
+    enrollments_where_exp = {}
     if semester_id:
         enrollments_where_exp = {"semester_id": {"_eq": semester_id}}
 
     query = gql(
         """
-        query SemesterProjects($projects_where_exp: projects_bool_exp, $enrollments_where_exp: enrollments_bool_exp, $withEnrollments: Boolean!) {
+        query SemesterProjects(
+            $projects_where_exp: projects_bool_exp,
+            $enrollments_where_exp: enrollments_bool_exp,
+            $withEnrollments: Boolean!
+        ) {
           projects(order_by: {name: asc}, where: $projects_where_exp) {
             id
             name
@@ -459,7 +482,9 @@ def get_projects(
             short_description
             created_at
             is_approved
-            project_leads: enrollments(where: {_and: [$enrollments_where_exp, {is_project_lead: {_eq:true}}] }) @include(if: $withEnrollments) {
+            project_leads: enrollments(where: {_and:
+                [$enrollments_where_exp, {is_project_lead: {_eq:true}}]
+            }) @include(if: $withEnrollments) {
                 user_id
                 user {
                     display_name
@@ -522,15 +547,31 @@ def add_project(client: Client, project_data: Dict[str, Any]) -> Dict[str, Any]:
     return result["insert_projects_one"]
 
 
-def get_meetings(client: Client) -> List[Dict[str, Any]]:
+def get_meetings(
+    client: Client,
+    only_published: bool,
+    start_at: Optional[datetime],
+    end_at: Optional[datetime],
+) -> List[Dict[str, Any]]:
     """
     Fetches all meetings.
     Returns meeting name, type, start and end timestamps.
     """
+
+    where_clause: Dict[str, Any] = {}
+    if only_published:
+        where_clause["is_published"] = {"_eq": "true"}
+
+    if start_at and end_at:
+        where_clause["_and"] = [
+            {"start_date_time": {"_gte": start_at.isoformat()}},
+            {"start_date_time": {"_lte": end_at.isoformat()}},
+        ]
+
     query = gql(
         """
-        query meetings {
-            meetings {
+        query meetings($where_clause: meetings_bool_exp!) {
+            meetings(where: $where_clause) {
                 id
                 name
                 type
@@ -540,11 +581,12 @@ def get_meetings(client: Client) -> List[Dict[str, Any]]:
         }
         """
     )
-    result = client.execute(query)
+    result = client.execute(query, variable_values={"where_clause": where_clause})
     return result["meetings"]
 
 
 def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any]]:
+    """Fetches a particular meeting by it's ID."""
     query = gql(
         """
         query find_meeting_by_id($meeting_id: uuid!) {
@@ -571,6 +613,7 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
 
 
 def insert_meeting(client: Client, meeting_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Inserts a new meeting into the DB."""
     query = gql(
         """
         mutation add_meeting($meeting_data: meetings_insert_input!) {
@@ -587,7 +630,7 @@ def insert_meeting(client: Client, meeting_data: Dict[str, Any]) -> Dict[str, An
 
 
 def add_project_lead(
-    client: Client, project_id: str, user_id: str, semester_id: str, credits: int
+    client: Client, project_id: str, user_id: str, semester_id: str, credit_count: int
 ):
     """
     Adds user with id=user_id as project lead of project with id=project_id.
@@ -595,7 +638,12 @@ def add_project_lead(
     """
     query = gql(
         """
-        mutation AddProjectLead($project_id: uuid!, $user_id: uuid!, $semester_id: String!, $credits: Int!) {
+        mutation AddProjectLead(
+            $project_id: uuid!,
+            $user_id: uuid!,
+            $semester_id: String!,
+            $credits: Int!
+        ) {
             insert_enrollments_one(
                 object: {
                     is_project_lead: true,
@@ -603,7 +651,7 @@ def add_project_lead(
                     project_id: $project_id,
                     semester_id: $semester_id,
                     credits: $credits
-                },  
+                },
                 on_conflict: {
                     constraint: enrollments_pkey,
                     update_columns: [ project_id, is_project_lead ]
@@ -621,7 +669,7 @@ def add_project_lead(
             "project_id": project_id,
             "user_id": user_id,
             "semester_id": semester_id,
-            "credits": credits,
+            "credits": credit_count,
         },
     )
 

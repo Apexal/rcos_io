@@ -30,19 +30,18 @@
 	});
 	</script>
 
-	{% if session.get("is_coordinator_or_above") %}
-	<div class="card my-2">
-		<div class="card-header">
-			Administrator Controls
+	<nav class="my-3 d-flex">
+		{% if session.get("is_coordinator_or_above") %}
+		<a href="{{ url_for('meetings.add') }}" class="btn btn-success">
+			<i class="bi bi-plus-lg"></i>
+			Add Meeting
+		</a>
+		<div class="btn-group ms-auto">
+		  <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/meetings/browse" target="_blank">Edit in Hasura Console
+			<i class="bi bi-box-arrow-up-right ms-2"></i>
+		  </a>
 		</div>
-		<div class="card-body">
-			<a href="{{ url_for('meetings.add') }}" class="btn btn-success">
-				<i class="bi bi-plus-lg"></i>
-				Add Meeting
-			</a>
-			<a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/meetings/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-		</div>
-	</div>
-	{% endif %}
+		{% endif %}
+	  </nav>
 </div>
 {% endblock %}

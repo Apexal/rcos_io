@@ -1,4 +1,8 @@
-from typing import Any, Dict, List, Optional
+"""
+This module contains the members blueprint, which stores
+all user related views and functionality.
+"""
+from typing import Any, Dict, List, cast
 from flask import (
     Blueprint,
     render_template,
@@ -10,8 +14,9 @@ from flask import (
     session,
     current_app,
 )
+from graphql.error import GraphQLError
+from gql.transport.exceptions import TransportQueryError
 from rcos_io import utils
-
 from rcos_io.services import db, discord
 from rcos_io.views.auth import coordinator_or_above_required, login_required
 
@@ -29,8 +34,7 @@ def index():
     # Fetch target semester ID from url or default to current active one (which might not exist)
     try:
         semester_id, semester = utils.get_target_semester(request, session)
-    except Exception as e:
-        current_app.logger.exception(e)
+    except utils.NotFoundError:
         flash("No such semester found!", "warning")
         return redirect(url_for("members.index", semester_id="all"))
 
@@ -43,13 +47,13 @@ def index():
 
     try:
         all_users = db.get_users(g.db_client, semester_id)
-    except Exception as e:
-        current_app.logger.exception(e)
-        flash("Failed to fetch members...", "danger")
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to fetch users.", "danger")
         return redirect(url_for("members.index", semester_id="all"))
 
-    context["verified_users"] = []
-    context["unverified_users"] = []
+    context["verified_users"] = cast(List[Dict[str, Any]], [])
+    context["unverified_users"] = cast(List[Dict[str, Any]], [])
 
     for user in all_users:
         if user["is_verified"]:
@@ -73,37 +77,38 @@ def verify():
                     db.get_users(g.db_client, None),
                 )
             )
-        except Exception as e:
-            current_app.logger.exception(e)
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
             flash(
                 "Yikes! There was an error while fetching unverified users.", "danger"
             )
             return redirect(url_for("members.index"))
 
         return render_template("members/verify.html", unverified_users=unverified_users)
-    else:
-        # Extract form values
-        target_user_id = request.form["user_id"]
-        target_user_action = request.form["action"]
 
-        # Confirm that the desired action is valid
-        if (
-            not target_user_id
-            or not target_user_action
-            or target_user_action not in ("verify", "delete")
-        ):
-            flash("Invalid action.", "danger")
-            return redirect(url_for("members.verify"))
+    # HANDLE FORM SUBMISSION
+    # Extract form values
+    target_user_id = request.form["user_id"]
+    target_user_action = request.form["action"]
 
-        # Apply action
-        if target_user_action == "verify":
-            flash(f"Verified user {target_user_id}", "success")
-            db.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
-        else:
-            # TODO: actually delete user
-            flash(f"Deleted user {target_user_id}", "info")
-
+    # Confirm that the desired action is valid
+    if (
+        not target_user_id
+        or not target_user_action
+        or target_user_action not in ("verify", "delete")
+    ):
+        flash("Invalid action.", "danger")
         return redirect(url_for("members.verify"))
+
+    # Apply action
+    if target_user_action == "verify":
+        flash(f"Verified user {target_user_id}", "success")
+        db.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
+    else:
+        # TODO: actually delete user
+        flash(f"Deleted user {target_user_id}", "info")
+
+    return redirect(url_for("members.verify"))
 
 
 @bp.route("/<user_id>")
@@ -112,7 +117,8 @@ def detail(user_id: str):
 
     try:
         user = db.find_user_by_id(g.db_client, user_id, True)
-    except:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("That is not a valid user ID!", "warning")
         return redirect(url_for("index"))
 
@@ -129,6 +135,7 @@ def detail(user_id: str):
             user=user,
             discord_user=discord_user,
         )
-    else:
-        flash("No user exists with that ID!", "warning")
-        return redirect(url_for("index"))
+
+    # Handle user not found/not verified
+    flash("No user exists with that ID!", "warning")
+    return redirect(url_for("index"))

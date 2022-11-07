@@ -1,12 +1,13 @@
+"""
+This module contains the authentication blueprint, which stores
+all auth related views and functionality.
+"""
 from datetime import date
 import functools
 import random
 import string
-from typing import Any, Dict, Optional, Union
+from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
 from urllib.error import HTTPError
-
-from rcos_io.services import github, db, discord
-from rcos_io import settings, utils
 
 from flask import (
     current_app,
@@ -19,6 +20,13 @@ from flask import (
     url_for,
     flash,
 )
+from graphql.error import GraphQLError
+from gql.transport.exceptions import TransportQueryError
+from rcos_io.services import github, db, discord, email
+from rcos_io import settings, utils
+
+
+C = TypeVar("C", bound=Callable[..., Any])
 
 
 bp = Blueprint("auth", __name__, url_prefix="/")
@@ -26,7 +34,17 @@ bp = Blueprint("auth", __name__, url_prefix="/")
 
 @bp.before_app_request
 def load_logged_in_user():
-    """Set global user variables `is_logged_in`, `user`, and `logged_in_user_nickname` for access in views and templates."""
+    """
+    Set global user variables
+    - is_logged_in
+    - user
+    - semesters
+    - semester
+    for access in views and templates.
+
+    You can access these in views OR in templates with `g.user`
+    """
+
     user: Optional[Dict[str, Any]] = session.get("user")
 
     # Fetch and store semester in session if not there or if it's changed
@@ -61,7 +79,7 @@ def load_logged_in_user():
         g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
 
 
-def login_required(view):
+def login_required(view: C) -> C:
     """Flask decorator to require that the user is logged in to access the view.
 
     ```
@@ -74,17 +92,17 @@ def login_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None:
             flash("You must login to view that page!", "danger")
             return redirect(url_for("auth.login", redirect_to=request.path))
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def verified_required(view):
+def verified_required(view: C) -> C:
     """Flask decorator to require that the logged in user is verified to access the view.
 
     ```
@@ -97,18 +115,23 @@ def verified_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None or not g.user["is_verified"]:
             flash("You must verified to view that page!", "danger")
             return redirect("/")
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def setup_required(view):
-    """Flask decorator to require that the logged in user is has Discord, GitHub, and a secondary email set.
+def setup_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user has
+    - Discord
+    - GitHub
+    - a secondary email
+    set.
 
     ```
     # Example
@@ -120,7 +143,7 @@ def setup_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if (
             g.user is None
             or not g.user["discord_user_id"]
@@ -133,10 +156,10 @@ def setup_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def rpi_required(view):
+def rpi_required(view: C) -> C:
     """Flask decorator to require that the logged in user is an RPI user to access the view.
 
     ```
@@ -149,7 +172,7 @@ def rpi_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if g.user is None or g.user["role"] != "rpi":
             flash(
                 "You must be an RPI student, faculty, or alum to view that page!",
@@ -159,11 +182,16 @@ def rpi_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def mentor_or_above_required(view):
-    """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
+def mentor_or_above_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user is either currently a
+    - Mentor
+    - Coordinator
+    - Faculty Advisor
+    to access the view.
 
     ```
     # Example
@@ -175,7 +203,7 @@ def mentor_or_above_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if not session.get("is_mentor_or_above"):
             flash(
                 "You must be a Mentor or above to view this page!",
@@ -185,11 +213,16 @@ def mentor_or_above_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
-def coordinator_or_above_required(view):
-    """Flask decorator to require that the logged in user is either currently a Mentor, Coordinator, or Faculty Advisor to access the view.
+def coordinator_or_above_required(view: C) -> C:
+    """
+    Flask decorator to require that the logged in user is either currently a
+    - Mentor
+    - Coordinator
+    - Faculty Advisor
+    to access the view.
 
     ```
     # Example
@@ -201,7 +234,7 @@ def coordinator_or_above_required(view):
     """
 
     @functools.wraps(view)
-    def wrapped_view(**kwargs):
+    def wrapped_view(**kwargs: Any):
         if not session.get("is_coordinator_or_above"):
             flash(
                 "You must be a Coordinator or above to view that page!",
@@ -211,11 +244,15 @@ def coordinator_or_above_required(view):
 
         return view(**kwargs)
 
-    return wrapped_view
+    return cast(C, wrapped_view)
 
 
 @bp.route("/login", methods=("GET", "POST"))
 def login():
+    """
+    Renders the email login form with email hints for either RPI or external users.
+    Handles login form submissions by generating OTPs and emailing them.
+    """
     if request.method == "GET":
         # Check if user tried to go to website that requires auth and was redirected to login
         if request.args.get("redirect_to"):
@@ -224,31 +261,37 @@ def login():
 
         # "role" could be "rpi" or "external" to determine what to show on login page
         return render_template("auth/login.html", role=request.args.get("role"))
-    elif request.method == "POST":
-        user_email = request.form["email"]
-        session["user_email"] = user_email
 
-        # Generate and store OTP
-        otp = generate_otp()
-        session["user_otp"] = otp
+    # Handle POST request form submission
+    user_email = request.form["email"]
+    session["user_email"] = user_email
 
-        if settings.ENV == "production":
-            # Send it to the user via email
-            # send_otp_to_email(user_email, otp)
-            pass
+    # Generate and store OTP
+    otp = generate_otp()
+    session["user_otp"] = otp
 
-        current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
+    if settings.ENV == "production":
+        # Send it to the user via email
+        email.send_otp_email(user_email, otp)
 
-        # Render OTP form for user to enter OTP
-        return render_template("auth/otp.html", user_email=user_email, otp=otp)
+    current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
+
+    # Render OTP form for user to enter OTP
+    return render_template("auth/otp.html", user_email=user_email, otp=otp)
 
 
 @bp.route("/login/otp", methods=("POST",))
-def otp():
+def submit_otp():
     """
     Finish the login process by checking that the submitted OTP matches the OTP sent to the user.
 
-    Sets `user` in the session on success, and flashes, resets session, and redirects to login on fail.
+    On correct:
+    - Sets `user` in the session
+    - and flashes
+
+    On incorrect:
+    - resets session
+    - redirects to login page
     """
 
     # Grab the OTP from the submitted form
@@ -264,7 +307,7 @@ def otp():
     # This better be set! If it isn't something fishy is up so abort!
     if user_otp is None or user_email is None:
         flash("There was an error logging you in. Please try again later.", "danger")
-        return
+        return redirect(url_for("auth.login"))
 
     # Check that OTP matches and flash error and go back to login if wrong OTP
     if submitted_otp != user_otp:
@@ -282,8 +325,8 @@ def otp():
     # Go home OR to the desired path the user tried going to before login
     if redirect_to:
         return redirect(redirect_to)
-    else:
-        return redirect(url_for("auth.profile" if is_new_user else "index"))
+
+    return redirect(url_for("auth.profile" if is_new_user else "index"))
 
 
 @bp.route("/logout")
@@ -317,14 +360,15 @@ def discord_callback():
     if code is None:
         return redirect("/")
 
-    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    # Attempt to complete OAuth2 flow and result in access token
+    # and user info (id, username, avatar, etc.)
     try:
         discord_user_tokens = discord.get_tokens(code)
         discord_access_token = discord_user_tokens["access_token"]
         discord_user_info = discord.get_user_info(discord_access_token)
-    except HTTPError as e:
+    except HTTPError as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to link your Discord.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     # Extract and store Discord user id on user in database
@@ -332,12 +376,15 @@ def discord_callback():
 
     try:
         update_logged_in_user({"discord_user_id": discord_user_id})
-    except Exception as e:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to save your Discord link.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
-    flash_message = f"Linked Discord account @{discord_user_info['username']}#{discord_user_info['discriminator']}"
+    flash_message = (
+        "Linked Discord account "
+        f"@{discord_user_info['username']}#{discord_user_info['discriminator']}"
+    )
 
     # Attempt to add them to the Discord server (will do nothing if already in the server)
     try:
@@ -351,10 +398,11 @@ def discord_callback():
         if new_nickname:
             try:
                 discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
-            except Exception as e:
-                current_app.logger.exception(e)
-    except HTTPError as e:
-        current_app.logger.exception(e)
+            except HTTPError as error:
+                current_app.logger.exception(error)
+    except HTTPError as error:
+        current_app.logger.exception(error)
+        flash("Failed to add you to the Discord server.", "warning")
 
     flash(flash_message, "primary")
 
@@ -382,14 +430,15 @@ def github_callback():
         flash("What are you trying to do...", "danger")
         return redirect("/")
 
-    # Attempt to complete OAuth2 flow and result in access token and user info (id, username, avatar, etc.)
+    # Attempt to complete OAuth2 flow and result in access token and user info
+    # (id, username, avatar, etc.)
     try:
         github_user_tokens = github.get_tokens(code)
         github_access_token = github_user_tokens["access_token"]
         github_user_info = github.get_user_info(github_access_token)
-    except HTTPError as e:
+    except HTTPError as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to link your GitHub.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     # All we really care about is their GitHub username
@@ -398,9 +447,9 @@ def github_callback():
     # Attempt to store GitHub username on user
     try:
         update_logged_in_user({"github_username": github_username})
-    except Exception as e:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("Yikes! Failed to save your GitHub link.", "danger")
-        current_app.logger.exception(e)
         return redirect("/")
 
     flash(f"Linked GitHub account @{github_username}", "primary")
@@ -415,41 +464,44 @@ def profile():
 
     if request.method == "GET":
         # Fetch Discord user profile if linked
-        context: Dict[str, Any] = dict()
+        context: Dict[str, Any] = {}
         if g.user["discord_user_id"]:
             context["discord_user"] = discord.get_user(g.user["discord_user_id"])
 
         return render_template("auth/profile.html", **context)
-    else:
-        # Store in database
-        updates: Dict[str, Union[str, int]] = dict()
 
-        def handle_update(input_name: str):
-            if (
-                input_name in request.form
-                and request.form[input_name].strip()
-                and len(request.form[input_name].strip()) > 0
-            ):
-                updates[input_name] = request.form[input_name].strip()
+    # HANDLE FORM SUBMISSION
 
-        handle_update("first_name")
-        handle_update("last_name")
-        handle_update("graduation_year")
-        handle_update("secondary_email")
+    # Store in database
+    updates: Dict[str, Union[str, int]] = {}
 
-        # If changing secondary email, mark it as unverified
-        if "secondary_email" in updates:
-            updates["is_secondary_email_verified"] = False
+    def handle_update(input_name: str):
+        if (
+            input_name in request.form
+            and request.form[input_name].strip()
+            and len(request.form[input_name].strip()) > 0
+        ):
+            updates[input_name] = request.form[input_name].strip()
 
-        # Attempt to apply updates in DB. This will fail if constraints fails like secondary email is reused
-        try:
-            update_logged_in_user(updates)
-            flash("Updated your profile!", "success")
-        except Exception as e:
-            current_app.logger.exception(e)
-            flash("There was an error while updating your profile!", "danger")
+    handle_update("first_name")
+    handle_update("last_name")
+    handle_update("graduation_year")
+    handle_update("secondary_email")
 
-        return redirect(url_for("auth.profile"))
+    # If changing secondary email, mark it as unverified
+    if "secondary_email" in updates:
+        updates["is_secondary_email_verified"] = False
+
+    # Attempt to apply updates in DB.
+    # This will fail if constraints fails like secondary email is reused
+    try:
+        update_logged_in_user(updates)
+        flash("Updated your profile!", "success")
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("There was an error while updating your profile!", "danger")
+
+    return redirect(url_for("auth.profile"))
 
 
 ##################################################################
@@ -474,8 +526,8 @@ def update_logged_in_user(updates: Dict[str, Any]):
         if new_nickname:
             try:
                 discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
-            except Exception as e:
-                current_app.logger.exception(e)
+            except HTTPError as error:
+                current_app.logger.exception(error)
 
 
 def generate_otp(length: int = DEFAULT_OTP_LENGTH) -> str:

@@ -1,5 +1,8 @@
+"""
+This module contains all GitHub related functionality.
+"""
+from typing import TypedDict
 import requests
-from typing import List, Optional, TypedDict
 from rcos_io.settings import (
     GITHUB_APP_CLIENT_ID,
     GITHUB_APP_CLIENT_SECRET,
@@ -7,10 +10,17 @@ from rcos_io.settings import (
 )
 
 GITHUB_API_ENDPOINT = "https://api.github.com"
-GITHUB_AUTH_URL = f"https://github.com/login/oauth/authorize?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
+GITHUB_AUTH_URL = (
+    "https://github.com/login/oauth/authorize"
+    f"?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
+)
 
 
 class GitHubTokens(TypedDict):
+    """
+    https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#response
+    """
+
     access_token: str
     scope: str
     token_type: int
@@ -18,12 +28,17 @@ class GitHubTokens(TypedDict):
 
 def get_tokens(code: str) -> GitHubTokens:
     """
-    Given an authorization code, request an access token for a GitHub user. Returns the token data. Throws an error if invalid request.
+    Given an authorization code, request an access token for a GitHub user.
 
-    See https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
+    Returns:
+        GitHubTokens
+    Raises:
+        HTTPError on failed request
+
+    See https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps
     """
     response = requests.post(
-        f"https://github.com//login/oauth/access_token",
+        "https://github.com//login/oauth/access_token",
         data={
             "client_id": GITHUB_APP_CLIENT_ID,
             "client_secret": GITHUB_APP_CLIENT_SECRET,
@@ -31,6 +46,7 @@ def get_tokens(code: str) -> GitHubTokens:
             "redirect_uri": GITHUB_APP_REDIRECT_URL,
         },
         headers={"Accept": "application/json"},
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -40,6 +56,10 @@ def get_tokens(code: str) -> GitHubTokens:
 
 
 class User(TypedDict):
+    """
+    https://docs.github.com/en/rest/users/users#get-the-authenticated-user
+    """
+
     id: str
     login: str
     avatar_url: str  # link to github profile page
@@ -47,7 +67,8 @@ class User(TypedDict):
 
 def get_user_info(access_token: str) -> User:
     """
-    Given an access token, get a GitHub user's info including id, username (login), avatar_url, etc. Throws an error on failed request.
+    Given an access token, get a GitHub user's info including id, username (login), avatar_url, etc.
+    Throws an error on failed request.
 
     See https://docs.github.com/en/rest/users/users#get-the-authenticated-user
     """
@@ -57,6 +78,7 @@ def get_user_info(access_token: str) -> User:
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/vnd.github+json",
         },
+        timeout=3,
     )
     response.raise_for_status()
     # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
@@ -66,12 +88,16 @@ def get_user_info(access_token: str) -> User:
 
 
 class Person(TypedDict):
+    """Subset of object used in GitHub API responses."""
+
     name: str
     email: str
     date: str
 
 
 class Commit(TypedDict):
+    """Subset of commit object in GitHub API responses."""
+
     url: str
     author: Person
     committer: Person
@@ -80,6 +106,8 @@ class Commit(TypedDict):
 
 
 class CommitInfo(TypedDict):
+    """Subset of top-level commit info object in GitHub API responses."""
+
     url: str
     sha: str
     html_url: str
@@ -87,11 +115,3 @@ class CommitInfo(TypedDict):
     commit: Commit
     author: User
     committer: User
-
-
-def get_repo_commits(
-    repo_url: str, author_github_username: Optional[str]
-) -> List[CommitInfo]:
-    repo_short = repo_url.removeprefix("https://github.com/")
-
-    return []

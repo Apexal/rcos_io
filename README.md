@@ -44,8 +44,9 @@ can install Redis by following [the getting started guide.](https://redis.io/doc
 1. `python3 -m venv ./venv`
 2. `source ./venv/bin/activate`
 3. `pip install -r requirements.txt` (note: `pip` and not `pip3`)
-4. `cp .env.example .env`
-5. Fill out `.env` with valid values
+4. `pre-commit install`
+5. `cp .env.example .env`
+6. Fill out `.env` with valid values
 
 ### Running
 
