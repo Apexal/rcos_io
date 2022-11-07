@@ -2,7 +2,8 @@
 This module contains the meetings blueprint, which stores
 all meeting related views and functionality.
 """
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any, Dict, Optional, cast
 from flask import (
     Blueprint,
     render_template,
@@ -101,19 +102,21 @@ def detail(meeting_id: str):
 @bp.route("/api/events")
 def events_api():
     """Returns a JSON array of event objects that Fullcalendar can understand."""
-    # start = (
-    #     datetime.fromisoformat(request.args.get("start"))
-    #     if "start" in request.args
-    #     else None
-    # )
-    # end = (
-    #     datetime.fromisoformat(request.args.get("end"))
-    #     if "end" in request.args
-    #     else None
-    # )
+    start = (
+        datetime.fromisoformat(cast(str, request.args.get("start")))
+        if "start" in request.args
+        else None
+    )
+    end = (
+        datetime.fromisoformat(cast(str, request.args.get("end")))
+        if "end" in request.args
+        else None
+    )
 
     # Fetch meetings
-    meetings = db.get_meetings(g.db_client)
+    meetings = db.get_meetings(
+        g.db_client, only_published=True, start_at=start, end_at=end
+    )
 
     # Convert them to objects that Fullcalendar can understand
     events = list(map(meeting_to_event, meetings))
@@ -123,9 +126,10 @@ def events_api():
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:
     """Creates a Fullcalendar event object from a meeting."""
+    meeting_type = cast(str, meeting["type"]).title()
     return {
         "id": meeting["id"],
-        "title": meeting["name"] or f"{meeting['type']} Meeting",
+        "title": meeting["name"] or meeting_type,
         "start": meeting["start_date_time"],
         "end": meeting["end_date_time"],
         "url": f"/meetings/{meeting['id']}",

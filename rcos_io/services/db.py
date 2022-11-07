@@ -22,6 +22,7 @@ https://hasura.io/docs/latest/mutations/postgres/index/
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
 from flask import g, Blueprint
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
@@ -489,15 +490,31 @@ def add_project(client: Client, project_data: Dict[str, Any]) -> Dict[str, Any]:
     return result["insert_projects_one"]
 
 
-def get_meetings(client: Client) -> List[Dict[str, Any]]:
+def get_meetings(
+    client: Client,
+    only_published: bool,
+    start_at: Optional[datetime],
+    end_at: Optional[datetime],
+) -> List[Dict[str, Any]]:
     """
     Fetches all meetings.
     Returns meeting name, type, start and end timestamps.
     """
+
+    where_clause: Dict[str, Any] = {}
+    if only_published:
+        where_clause["is_published"] = {"_eq": "true"}
+
+    if start_at and end_at:
+        where_clause["_and"] = [
+            {"start_date_time": {"_gte": start_at.isoformat()}},
+            {"start_date_time": {"_lte": end_at.isoformat()}},
+        ]
+
     query = gql(
         """
-        query meetings {
-            meetings {
+        query meetings($where_clause: meetings_bool_exp!) {
+            meetings(where: $where_clause) {
                 id
                 name
                 type
@@ -507,7 +524,7 @@ def get_meetings(client: Client) -> List[Dict[str, Any]]:
         }
         """
     )
-    result = client.execute(query)
+    result = client.execute(query, variable_values={"where_clause": where_clause})
     return result["meetings"]
 
 
