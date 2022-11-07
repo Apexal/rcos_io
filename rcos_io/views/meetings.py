@@ -21,6 +21,7 @@ from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import db, attendance
 from rcos_io.views.auth import (
     coordinator_or_above_required,
+    mentor_or_above_required,
     login_required,
 )
 
@@ -101,6 +102,7 @@ def detail(meeting_id: str):
 
 
 @bp.route("/<meeting_id>/host")
+@mentor_or_above_required
 @login_required
 def host(meeting_id: str):
     """Opens a meeting attendance room."""
@@ -119,6 +121,7 @@ def host(meeting_id: str):
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
+@mentor_or_above_required
 @login_required
 def close(meeting_id: str):
     """Closes a room for attendance."""

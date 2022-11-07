@@ -21,7 +21,7 @@ bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
 @bp.route("/verify", methods=["POST"])
 @auth.login_required
-# @auth.mentor_or_above_required
+@auth.mentor_or_above_required
 def verify_attendance():
     """
     Handles verifying a user ID given a meeting ID.
