@@ -432,7 +432,6 @@ def get_projects(
                     display_name
                 }
             }
-            fake
             enrollments_aggregate(where: $enrollments_where_exp) {
                 aggregate {
                     count
