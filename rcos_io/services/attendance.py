@@ -1,9 +1,11 @@
-import datetime
+"""
+The attendance module handles the core attendance behavior such as verification, code generation, and room creation. 
+"""
+
 import random
 import string
 import json
 import dataclasses
-import math
 
 from dataclasses import dataclass
 from rcos_io.services import cache
@@ -14,6 +16,9 @@ EXPIRATION_MINUTES = 30
 
 @dataclass
 class AttendanceSession:
+    """
+    Represents an attendance session that's stored within the cache; room_code => session
+    """
     room_id: str
     meeting_id: str
     verification_percent: float

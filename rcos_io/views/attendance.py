@@ -26,6 +26,9 @@ bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 @auth.login_required
 # @auth.mentor_or_above_required
 def verify_attendance():
+    """
+    Handles verifying a user ID given a meeting ID.
+    """
     payload = json.loads(request.data)
     user_id = payload["user_id"]
     meeting_id = payload["meeting_id"]
@@ -46,6 +49,10 @@ def verify_attendance():
 @auth.login_required
 @auth.rpi_required
 def attend():
+    """
+    Handles the user's attendance view 
+    """
+    
     if request.method == "GET":
         return render_template("attendance/attend.html")
     else:

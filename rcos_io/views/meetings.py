@@ -108,8 +108,8 @@ def host(meeting_id: str):
 
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
-    except Exception as e:
-        current_app.logger.exception(e)
+    except Exception as error:
+        current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.meetings"))
 
