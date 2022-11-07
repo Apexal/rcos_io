@@ -28,9 +28,16 @@ bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 def verify_attendance():
     payload = json.loads(request.data)
     user_id = payload["user_id"]
+    meeting_id = payload["meeting_id"]
 
     if not attendance.verify_user(user_id):
         return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
+
+    # get the user ID from RCS ID
+    user = db.find_user_by_rcs_id(g.db_client, user_id)
+
+    # successfully verified; submit attendence for the verified user
+    db.insert_attendance(g.db_client, user["id"], meeting_id)
 
     return "Successfully verified!", 200
 
@@ -48,9 +55,12 @@ def attend():
         valid_code, needs_verification = attendance.validate_code(code, user["rcs_id"])
 
         if valid_code and not needs_verification:
-            flash("Your attendance has been recorded!", "primary")
+            attendance_session = attendance.get_room(code)
+            db.insert_attendance(
+                g.db_client, user["id"], attendance_session["meeting_id"]
+            )
 
-            print("Attendance recorded for %s" % (user["rcs_id"]))
+            flash("Your attendance has been recorded!", "primary")
         elif valid_code and needs_verification:
             flash(
                 "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.",

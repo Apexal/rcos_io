@@ -25,7 +25,7 @@ let onClose = (code, meeting_id) => {
  * Called on "Verify" button click. Sends a message to verify an
  * RCS ID for attendance.
  */
-let onVerify = () => {
+let onVerify = (meeting_id) => {
     const user_id = user_id_field.value;
     
     if (user_id === null || user_id.length == 0) {
@@ -39,7 +39,7 @@ let onVerify = () => {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            user_id
+            user_id, meeting_id
         })
     })
     .then(response => response.text())

@@ -230,6 +230,63 @@ def find_user_by_id(
     return user
 
 
+def find_user_by_rcs_id(
+    client: Client, rcs_id: str, include_enrollments: bool = False
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetches a user with the given user_id UUID. Optionally includes their enrollments.
+
+    Args:
+        client: GQL client
+        user_id: the UUID of the user to fetch
+        include_enrollments: whether to also fetch the user's semester enrollments
+    Returns:
+        found user data or `None`
+    """
+    query = gql(
+        """
+        query find_user_by_id($rcs_id: String!, $include_enrollments: Boolean!) {
+           users(where: {rcs_id: {_eq: $rcs_id }}) {
+                id
+                email
+                first_name
+                last_name
+                display_name
+                is_verified
+                graduation_year
+                rcs_id
+                role
+                discord_user_id
+                github_username
+                enrollments @include(if: $include_enrollments) {
+                    credits
+                    project {
+                        id
+                        name
+                    }
+                    semester {
+                        id
+                        name
+                    }
+                    is_project_lead
+                    is_coordinator
+                    is_faculty_advisor
+                }
+            }
+        }
+        """
+    )
+    user = client.execute(
+        query,
+        variable_values={
+            "rcs_id": rcs_id,
+            "include_enrollments": include_enrollments,
+        },
+    )["users"]
+
+    return user[0]
+
+
 def update_user_by_id(
     client: Client, user_id: str, updates: Dict[str, Any]
 ) -> Dict[str, Any]:
@@ -569,3 +626,32 @@ def add_project_lead(
     )
 
     return result["insert_enrollments_one"]
+
+
+def insert_attendance(client: Client, user_id: str, meeting_id: str):
+    """
+    Insert an attendance for a meeting.
+    """
+    query = gql(
+        """
+        mutation InsertAttendance($meeting_id: uuid!, $user_id: uuid!) {
+            insert_meeting_attendances_one(
+                object: {meeting_id: $meeting_id, user_id: $user_id},
+                on_conflict: {
+                    constraint: meeting_attendances_pkey,
+                    update_columns: []
+                }
+            ) {
+                meeting_id
+                user_id
+            }
+        }
+    """
+    )
+
+    result = client.execute(
+        query,
+        variable_values={"user_id": user_id, "meeting_id": meeting_id},
+    )
+
+    return result["insert_meeting_attendances_one"]

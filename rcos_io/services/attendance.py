@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from rcos_io.services import cache
 
 ATTENDANCE_CODE_LENGTH = 6
-
+EXPIRATION_MINUTES = 30
 
 @dataclass
 class AttendanceSession:
@@ -44,7 +44,9 @@ def register_room(room_id: str, meeting_id: str) -> str:
         min(random.random(), 0.2),
         datetime.datetime.now().timestamp(),
     )
+
     cache.get_cache().set(code, json.dumps(dataclasses.asdict(session)))
+    cache.get_cache().expire(code, 60 * EXPIRATION_MINUTES)
 
     return code
 
@@ -54,6 +56,18 @@ def close_room(code: str):
     Closes a room for attendance.
     """
     cache.get_cache().delete(code)
+
+
+def get_room(code: str):
+    """
+    Fetches a room from the cache.
+    """
+    room = cache.get_cache().get(code)
+
+    if room is None:
+        return None
+
+    return json.loads(room)
 
 
 def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
@@ -84,8 +98,6 @@ def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
         cache.get_cache().sadd("to_be_verified", user_id)
 
         return True, True
-
-    # TODO: add attendance to database
 
     return True, False
 
