@@ -101,12 +101,14 @@ def detail(meeting_id: str):
     )
 
 
-@bp.route("/<meeting_id>/host")
+@bp.route("/<meeting_id>/open")
 @mentor_or_above_required
 @login_required
-def host(meeting_id: str):
+def open_meeting(meeting_id: str):
     """Opens a meeting attendance room."""
     meeting = None
+    small_group_id = "default"
+    code = None
 
     try:
         meeting = db.get_meeting_by_id(g.db_client, meeting_id)
@@ -115,7 +117,28 @@ def host(meeting_id: str):
         flash("There was an error fetching the meeting.", "warning")
         return redirect(url_for("meetings.meetings"))
 
-    code = attendance.register_room(meeting["location"], meeting_id)
+    # if we're opening a small group attendance room, get the ID of the room
+    if meeting["type"] == "small group":
+        user: Dict[str, Any] = g.user
+
+        try:
+            small_group_id = db.get_mentor_small_group(g.db_client, user["id"])["small_group_id"]
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash(
+                f"There was an error fetching the small group room for user {user['id']}.",
+                "warning"
+            )
+            return redirect(url_for("meetings.meetings"))
+
+    # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
+    # then find <meeting_id>:default. The latter keyword determines how many unique
+    # sessions can be opened. For instance, if there are 10 small group rooms, 10
+    # unique sessions rooms can be opened.
+    if not attendance.room_exists(meeting_id, small_group_id):
+        code = attendance.register_room(meeting["location"], meeting_id)
+    else:
+        code = attendance.get_code_for_room(meeting_id, small_group_id)
 
     return render_template("attendance/host.html", code=code, meeting_id=meeting_id)
 
