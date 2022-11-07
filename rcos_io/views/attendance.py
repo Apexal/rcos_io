@@ -1,23 +1,20 @@
-from datetime import date
-import functools
-import json
-from typing import Any, Dict, Optional, Union
-from urllib.error import HTTPError
+"""
+Handles all of the views for the attendance system.
+"""
 
-from rcos_io.services import db, attendance
-from rcos_io import settings, utils, auth
+import json
+from typing import Any, Dict
 
 from flask import (
-    current_app,
     Blueprint,
     g,
-    redirect,
     render_template,
     request,
-    session,
-    url_for,
     flash,
 )
+
+from rcos_io import auth
+from rcos_io.services import db, attendance
 
 bp = Blueprint("attendance", __name__, url_prefix="/attendance")
 
@@ -50,30 +47,29 @@ def verify_attendance():
 @auth.rpi_required
 def attend():
     """
-    Handles the user's attendance view 
+    Handles the user's attendance view
     """
-    
+
     if request.method == "GET":
         return render_template("attendance/attend.html")
+
+    code = request.form["attendance_code"]
+    user: Dict[str, Any] = g.user
+
+    valid_code, needs_verification = attendance.validate_code(code, user["rcs_id"])
+
+    if valid_code and not needs_verification:
+        attendance_session = attendance.get_room(code)
+        db.insert_attendance(g.db_client, user["id"], attendance_session["meeting_id"])
+
+        flash("Your attendance has been recorded!", "primary")
+    elif valid_code and needs_verification:
+        flash(
+            "You have been randomly selected to be manually verified! Please talk to"
+            + " your room's Coordinator / Mentor to check in.",
+            "warning",
+        )
     else:
-        code = request.form["attendance_code"]
-        user: Dict[str, Any] = g.user
+        flash("Invalid attendance code.", "danger")
 
-        valid_code, needs_verification = attendance.validate_code(code, user["rcs_id"])
-
-        if valid_code and not needs_verification:
-            attendance_session = attendance.get_room(code)
-            db.insert_attendance(
-                g.db_client, user["id"], attendance_session["meeting_id"]
-            )
-
-            flash("Your attendance has been recorded!", "primary")
-        elif valid_code and needs_verification:
-            flash(
-                "You have been randomly selected to be manually verified! Please talk to your room's Coordinator / Mentor to check in.",
-                "warning",
-            )
-        else:
-            flash("Invalid attendance code.", "danger")
-
-        return render_template("attendance/attend.html")
+    return render_template("attendance/attend.html")
