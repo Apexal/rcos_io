@@ -79,7 +79,7 @@ def get_room(code: str):
     return json.loads(room)
 
 
-def validate_code(code: str, user_id: str) -> tuple[bool, bool]:
+def validate_code(code: str, user_id: str):
     """
     Attempt to verify if an attendance code is correct. Randomly selects some
     users to be manually verified based on a per-room percentage.
