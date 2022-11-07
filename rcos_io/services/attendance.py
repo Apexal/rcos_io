@@ -11,6 +11,7 @@ from rcos_io.services import cache
 ATTENDANCE_CODE_LENGTH = 6
 EXPIRATION_MINUTES = 30
 
+
 @dataclass
 class AttendanceSession:
     room_id: str

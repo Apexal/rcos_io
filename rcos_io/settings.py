@@ -81,4 +81,15 @@ GITHUB_APP_REDIRECT_URL = env_get("GITHUB_APP_REDIRECT_URL")
 
 # github app docs: https://docs.github.com/en/developers/apps/getting-started-with-apps/about-apps
 
-REDIS_URL = env_get("REDIS_URL")
+
+REDISHOST = env_get("REDISHOST")
+"""Address for the Redis cache"""
+
+REDISPORT = env_get("REDISPORT")
+"""Port for the Redis cache"""
+
+REDISUSER = env_get("REDISUSER")
+"""Username for the RCOS I/O user in Redis"""
+
+REDISPASSWORD = env_get("REDISPASSWORD")
+"""Password for the RCOS I/O user in Redis"""
