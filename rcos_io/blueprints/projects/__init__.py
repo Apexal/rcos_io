@@ -22,7 +22,7 @@ from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import utils, database
 from rcos_io.blueprints import auth
 
-bp = Blueprint("projects", __name__, url_prefix="/projects")
+bp = Blueprint("projects", __name__, template_folder="templates")
 
 
 @bp.route("/")

@@ -17,7 +17,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io import database
+from rcos_io.services import database
 from rcos_io.blueprints.auth import (
     coordinator_or_above_required,
     login_required,

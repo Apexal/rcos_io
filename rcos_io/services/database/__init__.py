@@ -1,5 +1,5 @@
 """
-This module contains all database-related functionality.
+This package contains all database-related functionality.
 
 Instead of manually connecting to a relational database
 and writing long SQL queries, we use Hasura to get a
@@ -23,9 +23,11 @@ https://hasura.io/docs/latest/mutations/postgres/index/
 
 from gql import Client
 from gql.transport.requests import RequestsHTTPTransport
-from rcos_io.settings import GQL_API_URL, HASURA_ADMIN_SECRET
+from rcos_io.services import settings
 
-
+# Import everything from all the modules in this package so that
+# everything can be imported from rcos_io.services.database
+# instead of having to import from each module
 from .meetings import *
 from .projects import *
 from .users import *
@@ -43,9 +45,9 @@ def client_factory():
         new GQL client
     """
     transport = RequestsHTTPTransport(
-        url=GQL_API_URL,
+        url=settings.GQL_API_URL,
         verify=True,
         retries=3,
-        headers={"x-hasura-admin-secret": HASURA_ADMIN_SECRET},
+        headers={"x-hasura-admin-secret": settings.HASURA_ADMIN_SECRET},
     )
     return Client(transport=transport, fetch_schema_from_transport=False)

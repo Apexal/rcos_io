@@ -6,12 +6,11 @@ which handle the different routes, filters, and functionality of the app.
 """
 
 from flask import Flask, render_template, g
-from rcos_io import settings
-from .services import filters, database
+from .services import filters, database, settings
 
 # Import and register blueprints
 # See https://flask.palletsprojects.com/en/2.2.x/blueprints/
-from .blueprints import auth, projects, meetings, users
+from .blueprints import auth, meetings, users, projects
 
 # Create and configure the app
 app = Flask(__name__)
@@ -39,6 +38,6 @@ def index():
 # Register app blueprints
 app.register_blueprint(filters.bp)
 app.register_blueprint(auth.bp, url_prefix="/")
-app.register_blueprint(projects.bp)
+app.register_blueprint(projects.bp, url_prefix="/projects")
 app.register_blueprint(meetings.bp, url_prefix="/meetings")
 app.register_blueprint(users.bp, url_prefix="/users")

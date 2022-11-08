@@ -22,8 +22,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import github, discord, email, utils, database
-from rcos_io import settings
+from rcos_io.services import github, discord, email, utils, database, settings
 
 C = TypeVar("C", bound=Callable[..., Any])
 
