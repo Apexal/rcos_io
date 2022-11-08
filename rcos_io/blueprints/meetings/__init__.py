@@ -17,13 +17,13 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import db
-from rcos_io.views.auth import (
+from rcos_io.services import database
+from rcos_io.blueprints.auth import (
     coordinator_or_above_required,
     login_required,
 )
 
-bp = Blueprint("meetings", __name__, url_prefix="/meetings")
+bp = Blueprint("meetings", __name__, template_folder="templates")
 
 
 @bp.route("/")
@@ -66,7 +66,7 @@ def add():
 
     # Attempt to insert meeting into database
     try:
-        new_meeting = db.insert_meeting(g.db_client, meeting_data)
+        new_meeting = database.insert_meeting(g.db_client, meeting_data)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to add meeting. Check logs.", "danger")
@@ -82,7 +82,7 @@ def detail(meeting_id: str):
 
     # Attempt to fetch meeting
     try:
-        meeting = db.get_meeting_by_id(g.db_client, meeting_id)
+        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
@@ -114,7 +114,7 @@ def events_api():
     )
 
     # Fetch meetings
-    meetings = db.get_meetings(
+    meetings = database.get_meetings(
         g.db_client, only_published=True, start_at=start, end_at=end
     )
 

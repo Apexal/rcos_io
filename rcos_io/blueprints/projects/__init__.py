@@ -19,11 +19,10 @@ import bleach
 import markdown
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io import utils
-from rcos_io.services import db
-from rcos_io.views import auth
+from rcos_io.services import utils, database
+from rcos_io.blueprints import auth
 
-bp = Blueprint("projects", __name__, url_prefix="/projects")
+bp = Blueprint("projects", __name__, template_folder="templates")
 
 
 @bp.route("/")
@@ -52,7 +51,7 @@ def index():
 
     # Attempt to fetch projects
     try:
-        all_projects = db.get_projects(g.db_client, False, semester_id)
+        all_projects = database.get_projects(g.db_client, False, semester_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! There was an error while fetching the projects.", "danger")
@@ -101,7 +100,7 @@ def add():
     }
 
     try:
-        inserted_project = db.add_project(g.db_client, project_data)
+        inserted_project = database.add_project(g.db_client, project_data)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Oops! There was en error while submitting the project.", "danger")
@@ -122,7 +121,9 @@ def approve():
         try:
             unapproved_projects = [
                 project
-                for project in db.get_projects(g.db_client, False, semester_id=None)
+                for project in database.get_projects(
+                    g.db_client, False, semester_id=None
+                )
                 if not project["is_approved"]
             ]
 
@@ -175,7 +176,7 @@ def detail(project_id: str):
 
     # Attempt to fetch project
     try:
-        project = db.get_project(g.db_client, project_id)
+        project = database.get_project(g.db_client, project_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Invalid project ID!", "danger")

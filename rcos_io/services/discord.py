@@ -5,13 +5,7 @@ This module contains constants and functions for interacting with the Discord AP
 from typing import Any, Dict, Optional, TypedDict, Union
 from typing_extensions import NotRequired
 import requests
-from rcos_io.settings import (
-    DISCORD_BOT_TOKEN,
-    DISCORD_CLIENT_ID,
-    DISCORD_CLIENT_SECRET,
-    DISCORD_REDIRECT_URL,
-    DISCORD_SERVER_ID,
-)
+from rcos_io.services import settings
 
 DISCORD_VERSION_NUMBER = "10"
 DISCORD_API_ENDPOINT = f"https://discord.com/api/v{DISCORD_VERSION_NUMBER}"
@@ -20,12 +14,12 @@ DISCORD_API_ENDPOINT = f"https://discord.com/api/v{DISCORD_VERSION_NUMBER}"
 # See https://discord.com/developers/docs/topics/oauth2#authorization-code-grant
 DISCORD_AUTH_URL = (
     "https://discord.com/api/oauth2/authorize"
-    f"?client_id={DISCORD_CLIENT_ID}&redirect_uri={DISCORD_REDIRECT_URL}"
+    f"?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}"
     "&response_type=code&scope=identify%20guilds.join&prompt=none"
 )
 
 HEADERS = {
-    "Authorization": f"Bot {DISCORD_BOT_TOKEN}",
+    "Authorization": f"Bot {settings.DISCORD_BOT_TOKEN}",
 }
 """
 Base headers to send along with Discord API requests.
@@ -65,11 +59,11 @@ def get_tokens(code: str) -> DiscordTokens:
     response = requests.post(
         f"{DISCORD_API_ENDPOINT}/oauth2/token",
         data={
-            "client_id": DISCORD_CLIENT_ID,
-            "client_secret": DISCORD_CLIENT_SECRET,
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "client_secret": settings.DISCORD_CLIENT_SECRET,
             "grant_type": "authorization_code",
             "code": code,
-            "redirect_uri": DISCORD_REDIRECT_URL,
+            "redirect_uri": settings.DISCORD_REDIRECT_URL,
             "scope": "identity guilds.join",
         },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -141,7 +135,7 @@ def add_user_to_server(access_token: str, user_id: str):
         "access_token": access_token,
     }
     response = requests.put(
-        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
+        f"{DISCORD_API_ENDPOINT}/guilds/{settings.DISCORD_SERVER_ID}/members/{user_id}",
         json=data,
         headers=HEADERS,
         timeout=3,
@@ -188,7 +182,8 @@ def add_role_to_member(user_id: str, role_id: str):
     See https://discord.com/developers/docs/resources/guild#modify-guild-member
     """
     response = requests.put(
-        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}/roles/{role_id}",
+        f"{DISCORD_API_ENDPOINT}/guilds/{settings.DISCORD_SERVER_ID}"
+        f"/members/{user_id}/roles/{role_id}",
         headers=HEADERS,
         timeout=3,
     )
@@ -210,7 +205,7 @@ def kick_user_from_server(user_id: str):
     See https://discord.com/developers/docs/resources/guild#remove-guild-member
     """
     response = requests.delete(
-        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
+        f"{DISCORD_API_ENDPOINT}/guilds/{settings.DISCORD_SERVER_ID}/members/{user_id}",
         headers=HEADERS,
         timeout=3,
     )
@@ -233,7 +228,7 @@ def set_member_nickname(user_id: str, nickname: str):
     See https://discord.com/developers/docs/resources/guild#modify-current-member
     """
     response = requests.patch(
-        f"{DISCORD_API_ENDPOINT}/guilds/{DISCORD_SERVER_ID}/members/{user_id}",
+        f"{DISCORD_API_ENDPOINT}/guilds/{settings.DISCORD_SERVER_ID}/members/{user_id}",
         json={"nick": nickname},
         headers=HEADERS,
         timeout=3,

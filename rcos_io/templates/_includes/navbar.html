@@ -28,10 +28,10 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
       <div class="navbar-nav me-auto">
-        {{ nav_item("Home", "/") }}
-        {{ nav_item("Projects", "/projects") }}
-        {{ nav_item("Members", "/members") }}
-        {{ nav_item("Meetings", "/meetings") }}
+        {{ nav_item("Home", url_for("index")) }}
+        {{ nav_item("Projects", url_for("projects.index")) }}
+        {{ nav_item("Users", url_for("users.index")) }}
+        {{ nav_item("Meetings", url_for("meetings.index")) }}
         <a class="nav-link" href="https://handbook.rcos.io" target="_blank"
           >Handbook <i class="bi bi-box-arrow-up-right"></i>
           </a
