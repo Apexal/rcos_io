@@ -13,7 +13,7 @@ from flask import (
     flash,
 )
 
-from rcos_io import auth
+from rcos_io.blueprints import auth
 from rcos_io.services import database, attendance
 
 bp = Blueprint("attendance", __name__, template_folder="/templates")
