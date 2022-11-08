@@ -4,9 +4,9 @@
   <h1 class="text-capitalize">
     
     {% if semester %}
-    {{ semester["name"] }} Members
+    {{ semester["name"] }} users
     {% else %}
-    Members Across All Semesters
+    users Across All Semesters
     {% endif %}
     
     <span class="badge bg-secondary">{{ verified_users | length }}</span>
@@ -41,7 +41,7 @@
         <div class="card-body">
           <div class="me-auto">
             <h5 class="card-title fs-2 fw-bold">
-              <a href="{{ url_for('members.detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["display_name"] }}</a>
+              <a href="{{ url_for('users.detail', user_id=user['id']) }}" class="text-decoration-none">{{ user["display_name"] }}</a>
             </h5>
             <div>
               <span class="badge bg-primary">{{ user["enrollments_aggregate"]["aggregate"]["count"] }} semesters</span>
@@ -74,7 +74,7 @@
   <nav class="my-3 d-flex">
     {% if session.get("is_coordinator_or_above") %}
     <div class="btn-group ms-auto">
-      <a href="{{ url_for('members.verify') }}" class="btn btn-light">
+      <a href="{{ url_for('users.verify') }}" class="btn btn-light">
         Verify Users
         {% if unverified_users|length > 0 %}
         <span class="badge bg-danger">{{ unverified_users|length }}</span>
