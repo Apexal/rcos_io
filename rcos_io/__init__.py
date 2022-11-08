@@ -11,7 +11,7 @@ from .services import filters, database
 
 # Import and register blueprints
 # See https://flask.palletsprojects.com/en/2.2.x/blueprints/
-from .blueprints import auth, projects, meetings, members
+from .blueprints import auth, projects, members, meetings
 
 # Create and configure the app
 app = Flask(__name__)
@@ -40,5 +40,5 @@ def index():
 app.register_blueprint(filters.bp)
 app.register_blueprint(auth.bp, url_prefix="/")
 app.register_blueprint(projects.bp)
-app.register_blueprint(meetings.bp)
+app.register_blueprint(meetings.bp, url_prefix="/meetings")
 app.register_blueprint(members.bp)

@@ -23,7 +23,7 @@ from rcos_io.blueprints.auth import (
     login_required,
 )
 
-bp = Blueprint("meetings", __name__, url_prefix="/meetings")
+bp = Blueprint("meetings", __name__, template_folder="templates")
 
 
 @bp.route("/")
