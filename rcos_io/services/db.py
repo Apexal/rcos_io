@@ -617,3 +617,19 @@ def add_project_lead(
     )
 
     return result["insert_enrollments_one"]
+
+def get_small_groups(client: Client, semester_id: str) -> List[Dict[str, Any]]:
+    query = gql(
+        """
+        query small_groups($semester_id: String!) {
+            small_groups(where: {semester_id: {_eq: $semester_id}}) {
+                id
+                semester_id
+                name
+                location
+            }
+        }
+        """
+    )
+    result = client.execute(query, variable_values={"semester_id": semester_id})
+    return result["small_groups"]
