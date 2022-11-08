@@ -141,7 +141,7 @@ def open_meeting(meeting_id: str):
     # sessions can be opened. For instance, if there are 10 small group rooms, 10
     # unique sessions rooms can be opened.
     if not attendance.room_exists(meeting_id, small_group_id):
-        code = attendance.register_room(meeting["location"], meeting_id)
+        code = attendance.register_room(meeting["location"], meeting_id, small_group_id)
     else:
         code = attendance.get_code_for_room(meeting_id, small_group_id)
 

@@ -62,7 +62,10 @@ def register_room(
     cache.get_cache().expire(code, 60 * EXPIRATION_MINUTES)
 
     # {meeting_id}:{small_group_id} => code
-    cache.get_cache().set(f"{meeting_id}:{small_group_id}", code)
+    key = f"{meeting_id}:{small_group_id}"
+    print("creating " + key)
+    cache.get_cache().set(key, code)
+    cache.get_cache().expire(key, 60 * EXPIRATION_MINUTES)
 
     return code
 
@@ -105,7 +108,11 @@ def get_code_for_room(meeting_id: str, small_group_id: str) -> str:
 
 def room_exists(meeting_id: str, small_group_id: str) -> bool:
     """Checks if there is an open attendance session for that meeting & small group room"""
-    return cache.get_cache().get(f"{meeting_id}:{small_group_id}") is not None
+    key = f"{meeting_id}:{small_group_id}"
+    print("looking for " + key)
+    room = cache.get_cache().get(f"{meeting_id}:{small_group_id}")
+    print("got ", room)
+    return room is not None
 
 
 def validate_code(code: str, user_id: str):
