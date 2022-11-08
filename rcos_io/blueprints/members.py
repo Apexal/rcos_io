@@ -16,9 +16,8 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io import utils
-from rcos_io.services import db, discord
-from rcos_io.views.auth import coordinator_or_above_required, login_required
+from rcos_io.services import database, discord, utils
+from rcos_io.blueprints.auth import coordinator_or_above_required, login_required
 
 bp = Blueprint("members", __name__, url_prefix="/members")
 
@@ -46,7 +45,7 @@ def index():
     }
 
     try:
-        all_users = db.get_users(g.db_client, semester_id)
+        all_users = database.get_users(g.db_client, semester_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to fetch users.", "danger")
@@ -74,7 +73,7 @@ def verify():
             unverified_users: List[Dict[str, Any]] = list(
                 filter(
                     lambda user: not user["is_verified"],
-                    db.get_users(g.db_client, None),
+                    database.get_users(g.db_client, None),
                 )
             )
         except (GraphQLError, TransportQueryError) as error:
@@ -103,7 +102,7 @@ def verify():
     # Apply action
     if target_user_action == "verify":
         flash(f"Verified user {target_user_id}", "success")
-        db.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
+        database.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
     else:
         # TODO: actually delete user
         flash(f"Deleted user {target_user_id}", "info")
@@ -116,7 +115,7 @@ def detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
-        user = db.find_user_by_id(g.db_client, user_id, True)
+        user = database.find_user_by_id(g.db_client, user_id, True)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("That is not a valid user ID!", "warning")
