@@ -2,7 +2,7 @@
 This module contains constants and functions for interacting with the Discord API.
 """
 
-from typing import Any, Dict, Optional, TypedDict, Union
+from typing import Any, Dict, Optional, TypedDict, Union, cast
 from typing_extensions import NotRequired
 import requests
 from rcos_io.services import settings
@@ -167,6 +167,38 @@ def get_user(user_id: str) -> Union[DiscordUser, None]:
     # throws HTTPError for 4XX or 5XX
     user = response.json()
     return user
+
+
+def create_user_dm_channel(user_id: str):
+    """
+    https://discord.com/developers/docs/resources/user#create-dm
+    """
+    response = requests.post(
+        f"{DISCORD_API_ENDPOINT}/users/@me/channels",
+        json={
+            "recipient_id": user_id,
+        },
+        headers=HEADERS,
+        timeout=3,
+    )
+    response.raise_for_status()
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#response-status-codes
+    # throws HTTPError for 4XX or 5XX
+    return cast(Dict[str, Any], response.json())
+
+
+def dm_user(dm_channel_id: str, message_content: str):
+    """
+    https://discord.com/developers/docs/resources/channel#create-message
+    """
+    response = requests.post(
+        f"{DISCORD_API_ENDPOINT}/channels/{dm_channel_id}/messages",
+        json={"content": message_content},
+        headers=HEADERS,
+        timeout=3,
+    )
+    response.raise_for_status()
+    return response.json()
 
 
 def add_role_to_member(user_id: str, role_id: str):

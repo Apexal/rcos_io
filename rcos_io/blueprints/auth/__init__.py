@@ -7,7 +7,7 @@ import functools
 import random
 import string
 from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
-from urllib.error import HTTPError
+from requests import HTTPError
 
 from flask import (
     current_app,
@@ -268,8 +268,20 @@ def login():
     otp = generate_otp()
     session["user_otp"] = otp
 
+    # Try sending OTP via Discord direct message
+    try:
+        user = database.find_user_by_email(g.db_client, user_email)
+        if user and user["discord_user_id"]:
+            dm_channel = discord.create_user_dm_channel(user["discord_user_id"])
+            discord.dm_user(
+                dm_channel["id"],
+                f"**{otp}** is your one-time password to complete your login.",
+            )
+    except HTTPError as error:
+        current_app.logger.exception(error)
+
+    # Send it to the user via email
     if settings.ENV == "production":
-        # Send it to the user via email
         email.send_otp_email(user_email, otp)
 
     current_app.logger.info(f"OTP generated and sent for {user_email}: {otp}")
