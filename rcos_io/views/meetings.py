@@ -105,7 +105,7 @@ def detail(meeting_id: str):
 
 
 @bp.route("/<meeting_id>/open")
-@coordinator_or_above_required      # TODO: change to mentors or above
+@coordinator_or_above_required  # TODO: change to mentors or above
 @login_required
 def open_meeting(meeting_id: str):
     """Opens a meeting attendance room."""

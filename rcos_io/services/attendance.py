@@ -21,6 +21,7 @@ class AttendanceSession:
     """
     Represents an attendance session that's stored within the cache; room_code => session
     """
+
     room_id: str
     meeting_id: str
     small_group_id: str
@@ -103,7 +104,7 @@ def get_code_for_room(meeting_id: str, small_group_id: str) -> str:
     if code is None:
         return None
 
-    return code.decode('utf-8')
+    return code.decode("utf-8")
 
 
 def room_exists(meeting_id: str, small_group_id: str) -> bool:
