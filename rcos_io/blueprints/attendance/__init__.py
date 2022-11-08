@@ -16,7 +16,7 @@ from flask import (
 from rcos_io.blueprints import auth
 from rcos_io.services import database, attendance
 
-bp = Blueprint("attendance", __name__, template_folder="/templates")
+bp = Blueprint("attendance", __name__, template_folder="templates")
 
 
 @bp.route("/verify", methods=["POST"])
@@ -51,7 +51,7 @@ def attend():
     """
 
     if request.method == "GET":
-        return render_template("attendance/attend.html")
+        return render_template("attend.html")
 
     code = request.form["attendance_code"]
     user: Dict[str, Any] = g.user
@@ -74,4 +74,4 @@ def attend():
     else:
         flash("Invalid attendance code.", "danger")
 
-    return render_template("attendance/attend.html")
+    return render_template("attend.html")
