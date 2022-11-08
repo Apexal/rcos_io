@@ -704,6 +704,7 @@ def insert_attendance(client: Client, user_id: str, meeting_id: str):
 
     return result["insert_meeting_attendances_one"]
 
+
 def get_mentor_small_group(client: Client, user_id: str):
     """Get the small group that a user is mentoring for."""
     query = gql(
@@ -718,7 +719,7 @@ def get_mentor_small_group(client: Client, user_id: str):
 
     result = client.execute(
         query,
-        variable_values={"user_id": user_id },
+        variable_values={"user_id": user_id},
     )
 
     return result["small_group_mentors"][0]

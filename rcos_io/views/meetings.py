@@ -21,7 +21,6 @@ from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import db, attendance
 from rcos_io.views.auth import (
     coordinator_or_above_required,
-    mentor_or_above_required,
     login_required,
 )
 
@@ -95,14 +94,18 @@ def detail(meeting_id: str):
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.index"))
 
+    # TODO: change this to 'is_mentor_or_above'
+    can_open_attendance = session.get("is_coordinator_or_above")
+
     return render_template(
         "meetings/detail.html",
         meeting=meeting,
+        is_authorized=can_open_attendance,
     )
 
 
 @bp.route("/<meeting_id>/open")
-@mentor_or_above_required
+@coordinator_or_above_required      # TODO: change to mentors or above
 @login_required
 def open_meeting(meeting_id: str):
     """Opens a meeting attendance room."""
@@ -122,12 +125,14 @@ def open_meeting(meeting_id: str):
         user: Dict[str, Any] = g.user
 
         try:
-            small_group_id = db.get_mentor_small_group(g.db_client, user["id"])["small_group_id"]
+            small_group_id = db.get_mentor_small_group(g.db_client, user["id"])[
+                "small_group_id"
+            ]
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
                 f"There was an error fetching the small group room for user {user['id']}.",
-                "warning"
+                "warning",
             )
             return redirect(url_for("meetings.meetings"))
 
@@ -140,18 +145,18 @@ def open_meeting(meeting_id: str):
     else:
         code = attendance.get_code_for_room(meeting_id, small_group_id)
 
-    return render_template("attendance/host.html", code=code, meeting_id=meeting_id)
+    return render_template("attendance/open.html", code=code, meeting=meeting)
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
-@mentor_or_above_required
+@coordinator_or_above_required
 @login_required
 def close(meeting_id: str):
     """Closes a room for attendance."""
-    code = request.args["code"]
+    code = request.form["code"]
     attendance.close_room(code)
 
-    return url_for("meetings.detail", meeting_id=meeting_id), 200
+    return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
 
 @bp.route("/api/events")

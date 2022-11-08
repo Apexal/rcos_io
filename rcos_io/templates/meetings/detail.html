@@ -44,6 +44,8 @@
 
     <br/>
 
-    <a class="btn btn-primary" href="{{ url_for('meetings.host', meeting_id=meeting['id']) }}">Host Meeting</a>
+    {% if is_authorized %}
+    <a class="btn btn-primary" href="{{ url_for('meetings.open_meeting', meeting_id=meeting['id']) }}">Open Attendance</a>
+    {% endif %}
 </div>
 {% endblock %}

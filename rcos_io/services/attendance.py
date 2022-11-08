@@ -21,7 +21,6 @@ class AttendanceSession:
     """
     Represents an attendance session that's stored within the cache; room_code => session
     """
-
     room_id: str
     meeting_id: str
     small_group_id: str
@@ -42,7 +41,9 @@ def generate_code(code_length: int = ATTENDANCE_CODE_LENGTH):
     return code
 
 
-def register_room(room_id: str, meeting_id: str, small_group_id: str = "default") -> str:
+def register_room(
+    room_id: str, meeting_id: str, small_group_id: str = "default"
+) -> str:
     """
     Registers a new attendance room.
     """
@@ -52,7 +53,7 @@ def register_room(room_id: str, meeting_id: str, small_group_id: str = "default"
         room_id,
         meeting_id,
         small_group_id,
-        min(random.random(), 0.2),
+        min(random.random(), 0.3),
         datetime.datetime.now().timestamp(),
     )
 
@@ -72,6 +73,10 @@ def close_room(code: str):
     """
     room = get_room(code)
 
+    # room is already closed, just ignore it
+    if room is None:
+        return
+
     cache.get_cache().delete(code)
     cache.get_cache().delete(f"{room['meeting_id']}:{room['small_group_id']}")
 
@@ -87,13 +92,21 @@ def get_room(code: str):
 
     return json.loads(room)
 
+
 def get_code_for_room(meeting_id: str, small_group_id: str) -> str:
     """Get the attendance code for a room."""
-    return cache.get_cache().get(f'{meeting_id}:{small_group_id}')["code"]
+    code = cache.get_cache().get(f"{meeting_id}:{small_group_id}")
+
+    if code is None:
+        return None
+
+    return code.decode('utf-8')
+
 
 def room_exists(meeting_id: str, small_group_id: str) -> bool:
     """Checks if there is an open attendance session for that meeting & small group room"""
-    return cache.get_cache().get(f'{meeting_id}:{small_group_id}') is not None
+    return cache.get_cache().get(f"{meeting_id}:{small_group_id}") is not None
+
 
 def validate_code(code: str, user_id: str):
     """

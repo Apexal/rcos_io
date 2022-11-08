@@ -3,8 +3,11 @@
 {% block content %}
 <div class="container">
     <h1>Attendance</h1>
-
-    <button onclick="onClose('{{ code }}', '{{ meeting_id }}')" class="btn btn-danger">Close</button>
+    
+    <form action="{{ url_for('meetings.close', meeting_id=meeting['id']) }}" method="POST">
+      <input type="hidden" name="code" value="{{ code }}" />
+      <button class="btn btn-danger" type="submit">Close</button>
+    </form>
 
     <h1><center>{{ code }}</center></h1>
 
@@ -22,7 +25,7 @@
       />
     </div>
     <br/>
-    <button onclick="onVerify('{{ meeting_id }}')" class="btn btn-primary">Verify</button>
+    <button onclick="onVerify('{{ meeting[id] }}')" class="btn btn-primary">Verify</button>
 </div>
 <script src="/static/js/attendance.js"></script>
 {% endblock %}
