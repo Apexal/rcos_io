@@ -3,16 +3,12 @@ This module contains all GitHub related functionality.
 """
 from typing import TypedDict
 import requests
-from rcos_io.settings import (
-    GITHUB_APP_CLIENT_ID,
-    GITHUB_APP_CLIENT_SECRET,
-    GITHUB_APP_REDIRECT_URL,
-)
+from rcos_io.services import settings
 
 GITHUB_API_ENDPOINT = "https://api.github.com"
 GITHUB_AUTH_URL = (
     "https://github.com/login/oauth/authorize"
-    f"?client_id={GITHUB_APP_CLIENT_ID}&redirect_uri={GITHUB_APP_REDIRECT_URL}"
+    f"?client_id={settings.GITHUB_APP_CLIENT_ID}&redirect_uri={settings.GITHUB_APP_REDIRECT_URL}"
 )
 
 
@@ -40,10 +36,10 @@ def get_tokens(code: str) -> GitHubTokens:
     response = requests.post(
         "https://github.com//login/oauth/access_token",
         data={
-            "client_id": GITHUB_APP_CLIENT_ID,
-            "client_secret": GITHUB_APP_CLIENT_SECRET,
+            "client_id": settings.GITHUB_APP_CLIENT_ID,
+            "client_secret": settings.GITHUB_APP_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": GITHUB_APP_REDIRECT_URL,
+            "redirect_uri": settings.GITHUB_APP_REDIRECT_URL,
         },
         headers={"Accept": "application/json"},
         timeout=3,

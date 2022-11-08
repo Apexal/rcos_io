@@ -28,10 +28,10 @@
 
 	<hr/>
 
-	<h3>Members</h3>
+	<h3>users</h3>
 	{% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
 		{% for user in project['enrollments'] %}
-			<li><a href="{{ url_for('members.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
+			<li><a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
 		{% endfor %}
 	{% else %}
 		<i>None yet!</i>

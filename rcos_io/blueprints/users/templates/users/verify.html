@@ -22,7 +22,7 @@
     <tbody>
       {% for user in unverified_users %}
       <tr>
-        <td><a href="{{ url_for('members.detail', user_id=user['id']) }}">{{ user["email"] }}</a></td>
+        <td><a href="{{ url_for('users.detail', user_id=user['id']) }}">{{ user["email"] }}</a></td>
         <td>{{ user["first_name" ]}}</td>
         <td>{{ user["last_name"] }}</td>
         <td>
@@ -52,7 +52,7 @@
   </table>
 
   <hr>
-  <a href="{{ url_for('members.index') }}" class="btn btn-primary">Verified Users</a>
+  <a href="{{ url_for('users.index') }}" class="btn btn-primary">Verified Users</a>
 
 </div>
 {% endblock %}

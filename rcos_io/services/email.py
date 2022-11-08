@@ -4,9 +4,11 @@ This module contains email-related functionality.
 
 from mailjet_rest import Client
 
-from rcos_io.settings import MAILJET_API_KEY, MAILJET_API_SECRET
+from rcos_io.services import settings
 
-mailjet = Client(auth=(MAILJET_API_KEY, MAILJET_API_SECRET), version="v3.1")
+mailjet = Client(
+    auth=(settings.MAILJET_API_KEY, settings.MAILJET_API_SECRET), version="v3.1"
+)
 
 
 def send_otp_email(email: str, otp: str):

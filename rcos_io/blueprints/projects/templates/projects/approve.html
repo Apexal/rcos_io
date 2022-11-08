@@ -24,7 +24,7 @@
       {% for project in unapproved_projects %}
       <tr>
         <td><a href="{{ url_for('projects.detail', project_id=project['id']) }}">{{ project["name"] }}</a></td>
-        <td><a href="{{ url_for('members.detail', user_id=project['owner']['id']) }}">{{ project["owner"]["display_name"] }}</a></td>
+        <td><a href="{{ url_for('users.detail', user_id=project['owner']['id']) }}">{{ project["owner"]["display_name"] }}</a></td>
         <td>{{ project["short_description"] }}</td>
         <td>{% if project["tags"] %}{{ project["tags"]|join(", ") }}{% else %}-{% endif %}</td>
         <td>{{ project["created_at"]|format_datetime("date") }}</td>

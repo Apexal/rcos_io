@@ -22,14 +22,12 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import github, db, discord, email
-from rcos_io import settings, utils
-
+from rcos_io.services import github, discord, email, utils, database, settings
 
 C = TypeVar("C", bound=Callable[..., Any])
 
 
-bp = Blueprint("auth", __name__, url_prefix="/")
+bp = Blueprint("auth", __name__, template_folder="templates")
 
 
 @bp.before_app_request
@@ -51,7 +49,7 @@ def load_logged_in_user():
     if "semesters" not in session or session["semester"]["end_date"] < str(
         date.today()
     ):
-        session["semesters"] = db.get_semesters(g.db_client)
+        session["semesters"] = database.get_semesters(g.db_client)
         session["semester"] = utils.active_semester(session["semesters"])
 
     g.is_logged_in = user is not None
@@ -65,7 +63,7 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
-            enrollment = db.get_enrollment(
+            enrollment = database.get_enrollment(
                 g.db_client, g.user["id"], session["semester"]["id"]
             )
             if enrollment:
@@ -317,7 +315,7 @@ def submit_otp():
     ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
-    session["user"], is_new_user = db.find_or_create_user_by_email(
+    session["user"], is_new_user = database.find_or_create_user_by_email(
         g.db_client, user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
@@ -492,7 +490,7 @@ def profile():
     if "secondary_email" in updates:
         updates["is_secondary_email_verified"] = False
 
-    # Attempt to apply updates in DB.
+    # Attempt to apply updates in database.
     # This will fail if constraints fails like secondary email is reused
     try:
         update_logged_in_user(updates)
@@ -517,7 +515,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = db.update_user_by_id(g.db_client, g.user["id"], updates)
+    session["user"] = database.update_user_by_id(g.db_client, g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname
@@ -525,7 +523,9 @@ def update_logged_in_user(updates: Dict[str, Any]):
         new_nickname = discord.generate_nickname(g.user)
         if new_nickname:
             try:
-                discord.set_member_nickname(g.user["discord_user_id"], new_nickname)
+                discord.set_member_nickname(
+                    cast(str, g.user["discord_user_id"]), new_nickname
+                )
             except HTTPError as error:
                 current_app.logger.exception(error)
 

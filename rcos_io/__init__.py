@@ -5,17 +5,12 @@ It creates the Flask app and registers the app blueprints
 which handle the different routes, filters, and functionality of the app.
 """
 
-from flask import Flask, render_template
-from rcos_io import settings, filters
-from rcos_io.services import db
+from flask import Flask, render_template, g
+from .services import filters, database, settings
 
 # Import and register blueprints
 # See https://flask.palletsprojects.com/en/2.2.x/blueprints/
-from .views import auth
-from .views import projects
-from .views import meetings
-from .views import members
-from .views import attendance
+from .blueprints import auth, meetings, users, projects, attendance
 
 # Create and configure the app
 app = Flask(__name__)
@@ -26,6 +21,13 @@ app.config["SECRET_KEY"] = settings.SECRET_KEY
 app.config["HASURA_CONSOLE_URL"] = settings.HASURA_CONSOLE_URL
 app.config["RAILWAY_PROJECT_URL"] = settings.RAILWAY_PROJECT_URL
 
+
+@app.before_request
+def attach_db_client():
+    """Creates a new GQL client and attach it to the every reqest as `g.db_client`."""
+    g.db_client = database.client_factory()
+
+
 # Temporary home route
 @app.route("/")
 def index():
@@ -34,10 +36,9 @@ def index():
 
 
 # Register app blueprints
-app.register_blueprint(db.bp)
 app.register_blueprint(filters.bp)
-app.register_blueprint(auth.bp)
-app.register_blueprint(projects.bp)
-app.register_blueprint(meetings.bp)
-app.register_blueprint(members.bp)
-app.register_blueprint(attendance.bp)
+app.register_blueprint(auth.bp, url_prefix="/")
+app.register_blueprint(projects.bp, url_prefix="/projects")
+app.register_blueprint(meetings.bp, url_prefix="/meetings")
+app.register_blueprint(users.bp, url_prefix="/users")
+app.register_blueprint(attendance.bp, url_prefix="/attendance")
