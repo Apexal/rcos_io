@@ -32,6 +32,8 @@ from .meetings import *
 from .projects import *
 from .users import *
 from .semesters import *
+from .attendance import *
+from .small_group import *
 
 
 def client_factory():

@@ -1,14 +1,17 @@
 """Handles connecting to the Redis cache."""
 import redis
 
-from rcos_io.settings import REDISHOST, REDISPORT, REDISPASSWORD
+from rcos_io.services import settings
 
 CLIENT = None
-if REDISPASSWORD == "default":
-    CLIENT = redis.Redis(host=REDISHOST, port=REDISPORT, db=0)
+if settings.REDISPASSWORD == "default":
+    CLIENT = redis.Redis(host=settings.REDISHOST, port=settings.REDISPORT, db=0)
 else:
     CLIENT = redis.StrictRedis(
-        host=REDISHOST, port=REDISPORT, db=0, password=REDISPASSWORD
+        host=settings.REDISHOST,
+        port=settings.REDISPORT,
+        db=0,
+        password=settings.REDISPASSWORD,
     )
 
 

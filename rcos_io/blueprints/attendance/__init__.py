@@ -14,9 +14,9 @@ from flask import (
 )
 
 from rcos_io import auth
-from rcos_io.services import db, attendance
+from rcos_io.services import database, attendance
 
-bp = Blueprint("attendance", __name__, url_prefix="/attendance")
+bp = Blueprint("attendance", __name__, template_folder="/templates")
 
 
 @bp.route("/verify", methods=["POST"])
@@ -34,10 +34,10 @@ def verify_attendance():
         return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
 
     # get the user ID from RCS ID
-    user = db.find_user_by_rcs_id(g.db_client, user_id)
+    user = database.find_user_by_rcs_id(g.db_client, user_id)
 
     # successfully verified; submit attendence for the verified user
-    db.insert_attendance(g.db_client, user["id"], meeting_id)
+    database.insert_attendance(g.db_client, user["id"], meeting_id)
 
     return "Successfully verified!", 200
 
@@ -60,7 +60,9 @@ def attend():
 
     if valid_code and not needs_verification:
         attendance_session = attendance.get_room(code)
-        db.insert_attendance(g.db_client, user["id"], attendance_session["meeting_id"])
+        database.insert_attendance(
+            g.db_client, user["id"], attendance_session["meeting_id"]
+        )
 
         flash("Your attendance has been recorded!", "primary")
     elif valid_code and needs_verification:
