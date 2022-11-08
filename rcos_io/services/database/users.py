@@ -117,9 +117,7 @@ def create_user_with_email(client: Client, email: str, role: str):
                 constraint: users_email_key,
                 update_columns: []
             }) {
-                returning {
                 ...basicUser
-                }
             }
         }
         """
