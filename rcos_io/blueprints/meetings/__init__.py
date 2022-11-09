@@ -106,20 +106,24 @@ def detail(meeting_id: str):
 @bp.route("/<meeting_id>/open")
 @coordinator_or_above_required  # TODO: change to mentors or above
 @login_required
-def open_meeting(meeting_id: str):
+def open_attendance(meeting_id: str):
     """Opens a meeting attendance room."""
-    meeting = None
     small_group_id = "default"
-    code = None
 
+    # Attempt to find meeting
     try:
         meeting = database.get_meeting_by_id(g.db_client, meeting_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.meetings"))
+        return redirect(url_for("meetings.index"))
 
-    # if we're opening a small group attendance room, get the ID of the room
+    # Handle missing meeting
+    if meeting is None:
+        flash("Meeting not found!", "danger")
+        return redirect(url_for("meetings.index"))
+
+    # If we're opening a small group attendance room, get the ID of the room
     if meeting["type"] == "small group":
         user: Dict[str, Any] = g.user
 
@@ -133,7 +137,7 @@ def open_meeting(meeting_id: str):
                 f"There was an error fetching the small group room for user {user['id']}.",
                 "warning",
             )
-            return redirect(url_for("meetings.meetings"))
+            return redirect(url_for("meetings.index"))
 
     # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
     # then find <meeting_id>:default. The latter keyword determines how many unique

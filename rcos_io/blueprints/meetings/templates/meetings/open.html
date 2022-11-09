@@ -4,12 +4,14 @@
 <div class="container">
     <h1>Attendance</h1>
     
+  	{% include '/_includes/flashed_messages.html' %}
+
     <form action="{{ url_for('meetings.close', meeting_id=meeting['id']) }}" method="POST">
       <input type="hidden" name="code" value="{{ code }}" />
       <button class="btn btn-danger" type="submit">Close</button>
     </form>
 
-    <h1><center>{{ code }}</center></h1>
+    <h1 class="text-center display-1">{{ code }}</h1>
 
     <hr/>
 

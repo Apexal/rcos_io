@@ -10,6 +10,7 @@ import dataclasses
 import datetime
 
 from dataclasses import dataclass
+from typing import Any, Dict, Optional, cast
 from rcos_io.services import cache
 
 ATTENDANCE_CODE_LENGTH = 6
@@ -89,18 +90,17 @@ def get_room(code: str):
     """
     Fetches a room from the cache.
     """
-    room = cache.get_cache().get(code)
+    room: Optional[bytes] = cache.get_cache().get(code)
 
     if room is None:
         return None
 
-    return json.loads(room)
+    return cast(Dict[str, Any], json.loads(room))
 
 
-def get_code_for_room(meeting_id: str, small_group_id: str) -> str:
+def get_code_for_room(meeting_id: str, small_group_id: str):
     """Get the attendance code for a room."""
-    code = cache.get_cache().get(f"{meeting_id}:{small_group_id}")
-
+    code: Optional[bytes] = cache.get_cache().get(f"{meeting_id}:{small_group_id}")
     if code is None:
         return None
 
@@ -111,7 +111,7 @@ def room_exists(meeting_id: str, small_group_id: str) -> bool:
     """Checks if there is an open attendance session for that meeting & small group room"""
     key = f"{meeting_id}:{small_group_id}"
     print("looking for " + key)
-    room = cache.get_cache().get(f"{meeting_id}:{small_group_id}")
+    room: Optional[bytes] = cache.get_cache().get(key)
     print("got ", room)
     return room is not None
 
@@ -124,7 +124,7 @@ def validate_code(code: str, user_id: str):
     Returns a tuple of booleans; the first of which is if the verification was successful,
     while the second is whether or not they were chosen to be manually verified.
     """
-    attendance_session = cache.get_cache().get(code)
+    attendance_session: Optional[bytes] = cache.get_cache().get(code)
 
     if attendance_session is None:
         return False, False

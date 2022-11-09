@@ -1,4 +1,7 @@
-"""Handles connecting to the Redis cache."""
+"""
+This modules initializes the connection to the Redis server
+and exposes it through `get_cache()`.
+"""
 import redis
 
 from rcos_io.services import settings
