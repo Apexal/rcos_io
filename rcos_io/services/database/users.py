@@ -250,3 +250,60 @@ def get_enrollment(
         return None
 
     return enrollments[0]
+
+
+def find_user_by_rcs_id(
+    client: Client, rcs_id: str, include_enrollments: bool = False
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetches a user with the given RCS ID. Optionally includes their enrollments.
+
+    Args:
+        client: GQL client
+        rcs_id: the RCS ID of the user to fetch
+        include_enrollments: whether to also fetch the user's semester enrollments
+    Returns:
+        found user data or `None`
+    """
+    query = gql(
+        """
+        query find_user_by_id($rcs_id: String!, $include_enrollments: Boolean!) {
+           users(where: {rcs_id: {_eq: $rcs_id }}) {
+                id
+                email
+                first_name
+                last_name
+                display_name
+                is_verified
+                graduation_year
+                rcs_id
+                role
+                discord_user_id
+                github_username
+                enrollments @include(if: $include_enrollments) {
+                    credits
+                    project {
+                        id
+                        name
+                    }
+                    semester {
+                        id
+                        name
+                    }
+                    is_project_lead
+                    is_coordinator
+                    is_faculty_advisor
+                }
+            }
+        }
+        """
+    )
+    user = client.execute(
+        query,
+        variable_values={
+            "rcs_id": rcs_id,
+            "include_enrollments": include_enrollments,
+        },
+    )["users"]
+
+    return user[0]

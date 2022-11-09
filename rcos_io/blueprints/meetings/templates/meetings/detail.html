@@ -41,5 +41,11 @@
             <li class="list-group-item">Presentation URL</li>
         </ul>
     </div>
+
+    <br/>
+
+    {% if is_authorized %}
+    <a class="btn btn-primary" href="{{ url_for('meetings.open_attendance', meeting_id=meeting['id']) }}">Open Attendance</a>
+    {% endif %}
 </div>
 {% endblock %}

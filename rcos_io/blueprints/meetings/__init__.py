@@ -17,7 +17,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import database
+from rcos_io.services import database, attendance
 from rcos_io.blueprints.auth import (
     coordinator_or_above_required,
     login_required,
@@ -93,10 +93,73 @@ def detail(meeting_id: str):
         flash("No meeting with that ID found!", "danger")
         return redirect(url_for("meetings.index"))
 
+    # TODO: change this to 'is_mentor_or_above'
+    can_open_attendance = session.get("is_coordinator_or_above")
+
     return render_template(
         "meetings/detail.html",
         meeting=meeting,
+        is_authorized=can_open_attendance,
     )
+
+
+@bp.route("/<meeting_id>/open")
+@coordinator_or_above_required  # TODO: change to mentors or above
+@login_required
+def open_attendance(meeting_id: str):
+    """Opens a meeting attendance room."""
+    small_group_id = "default"
+
+    # Attempt to find meeting
+    try:
+        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("There was an error fetching the meeting.", "warning")
+        return redirect(url_for("meetings.index"))
+
+    # Handle missing meeting
+    if meeting is None:
+        flash("Meeting not found!", "danger")
+        return redirect(url_for("meetings.index"))
+
+    # If we're opening a small group attendance room, get the ID of the room
+    if meeting["type"] == "small group":
+        user: Dict[str, Any] = g.user
+
+        try:
+            small_group_id = database.get_mentor_small_group(g.db_client, user["id"])[
+                "small_group_id"
+            ]
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash(
+                f"There was an error fetching the small group room for user {user['id']}.",
+                "warning",
+            )
+            return redirect(url_for("meetings.index"))
+
+    # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
+    # then find <meeting_id>:default. The latter keyword determines how many unique
+    # sessions can be opened. For instance, if there are 10 small group rooms, 10
+    # unique sessions rooms can be opened.
+    if not attendance.room_exists(meeting_id, small_group_id):
+        code = attendance.register_room(meeting["location"], meeting_id, small_group_id)
+    else:
+        code = attendance.get_code_for_room(meeting_id, small_group_id)
+
+    return render_template("meetings/open.html", code=code, meeting=meeting)
+
+
+@bp.route("/<meeting_id>/close", methods=["POST"])
+@coordinator_or_above_required
+@login_required
+def close(meeting_id: str):
+    """Closes a room for attendance."""
+    code = request.form["code"]
+    attendance.close_room(code)
+
+    return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
 
 @bp.route("/api/events")

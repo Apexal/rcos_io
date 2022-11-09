@@ -1,0 +1,33 @@
+{% extends "/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Attendance</h1>
+    
+  	{% include '/_includes/flashed_messages.html' %}
+
+    <form action="{{ url_for('meetings.close', meeting_id=meeting['id']) }}" method="POST">
+      <input type="hidden" name="code" value="{{ code }}" />
+      <button class="btn btn-danger" type="submit">Close</button>
+    </form>
+
+    <h1 class="text-center display-1">{{ code }}</h1>
+
+    <hr/>
+
+    <div id="verification_status"></div>
+    <div class="form-group">
+      <label for="project_name">RCS ID</label>
+      <input
+        type="text"
+        class="form-control"
+        id="unverified_user"
+        name="unverified_user"
+        required
+      />
+    </div>
+    <br/>
+    <button onclick="onVerify('{{ meeting[id] }}')" class="btn btn-primary">Verify</button>
+</div>
+<script src="/static/js/attendance.js"></script>
+{% endblock %}
