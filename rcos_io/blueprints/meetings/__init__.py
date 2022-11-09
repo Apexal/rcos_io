@@ -66,7 +66,7 @@ def add():
 
     # Attempt to insert meeting into database
     try:
-        new_meeting = database.insert_meeting(g.database.client, meeting_data)
+        new_meeting = database.insert_meeting(g.db_client, meeting_data)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to add meeting. Check logs.", "danger")
@@ -82,7 +82,7 @@ def detail(meeting_id: str):
 
     # Attempt to fetch meeting
     try:
-        meeting = database.get_meeting_by_id(g.database.client, meeting_id)
+        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("There was an error fetching the meeting.", "warning")
@@ -174,7 +174,7 @@ def events_api():
 
     # Fetch meetings
     meetings = database.get_meetings(
-        g.database.client, only_published=True, start_at=start, end_at=end
+        g.db_client, only_published=True, start_at=start, end_at=end
     )
 
     # Convert them to objects that Fullcalendar can understand
