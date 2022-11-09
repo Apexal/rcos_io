@@ -144,7 +144,7 @@ def open_meeting(meeting_id: str):
     else:
         code = attendance.get_code_for_room(meeting_id, small_group_id)
 
-    return render_template("attendance/open.html", code=code, meeting=meeting)
+    return render_template("meetings/open.html", code=code, meeting=meeting)
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
