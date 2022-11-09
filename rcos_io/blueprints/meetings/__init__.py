@@ -17,7 +17,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import database, attendance
+from rcos_io.services import database, attendance, utils
 from rcos_io.blueprints.auth import (
     coordinator_or_above_required,
     login_required,
@@ -94,7 +94,7 @@ def detail(meeting_id: str):
         return redirect(url_for("meetings.index"))
 
     # TODO: change this to 'is_mentor_or_above'
-    can_open_attendance = session.get("is_coordinator_or_above")
+    can_open_attendance: Optional[bool] = session.get("is_coordinator_or_above")
 
     return render_template(
         "meetings/detail.html",
@@ -128,9 +128,13 @@ def open_attendance(meeting_id: str):
         user: Dict[str, Any] = g.user
 
         try:
-            small_group_id = database.get_mentor_small_group(g.db_client, user["id"])[
-                "small_group_id"
-            ]
+            small_group = database.get_mentor_small_group(
+                g.db_client, session["semester"]["id"], user["id"]
+            )
+
+            if small_group is None:
+                raise utils.NotFoundError("Small group not found for mentor")
+            small_group_id = small_group["small_group_id"]
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
