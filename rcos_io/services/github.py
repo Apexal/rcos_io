@@ -127,7 +127,7 @@ class CommitInfo(TypedDict):
 
 def gen_params(**kwargs):
     """
-    generates params for request querystring
+    Generates params for request querystring.
     """
     valid_keys = {"author", "since", "until", "sha"}
     params = {"per_page": 100}  # get 100 commits per page
@@ -146,7 +146,7 @@ def get_commits(
     user: Optional[str] = None,
 ):
     """
-    grabs all commits on all branches
+    Grabs all commits on all branches for a given GitHub repo, after a given time.
 
     takes >
          repolink: github html url
