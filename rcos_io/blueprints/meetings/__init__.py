@@ -1,29 +1,63 @@
+# pylint: disable=W0613
+
 """
 This module contains the meetings blueprint, which stores
 all meeting related views and functionality.
 """
+import functools
 from datetime import datetime
-from typing import Any, Dict, Optional, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
+
 from flask import (
     Blueprint,
+    current_app,
+    flash,
+    g,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
-    flash,
     session,
-    current_app,
-    g,
+    url_for,
 )
-from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import database, attendance
+from graphql.error import GraphQLError
+
 from rcos_io.blueprints.auth import (
     coordinator_or_above_required,
     login_required,
+    mentor_or_above_required,
 )
+from rcos_io.services import attendance, database
+
+C = TypeVar("C", bound=Callable[..., Any])
 
 bp = Blueprint("meetings", __name__, template_folder="templates")
+
+
+def meeting_route(view: C) -> C:
+    """Fetches meeting from meeting_id URL parameter."""
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs: Any):
+        # Attempt to fetch meeting
+        try:
+            meeting = database.get_meeting_by_id(g.db_client, kwargs["meeting_id"])
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash("There was an error fetching the meeting.", "warning")
+            return redirect(url_for("meetings.index"))
+
+        # Handle meeting not found
+        if meeting is None:
+            flash("No meeting with that ID found!", "danger")
+            return redirect(url_for("meetings.index"))
+
+        g.meeting = meeting
+        g.context = {"meeting": meeting}
+
+        return view(**kwargs)
+
+    return cast(C, wrapped_view)
 
 
 @bp.route("/")
@@ -77,51 +111,35 @@ def add():
 
 
 @bp.route("/<meeting_id>")
+@meeting_route
 def detail(meeting_id: str):
     """Renders the detail page for a particular meeting."""
-
-    # Attempt to fetch meeting
-    try:
-        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.index"))
-
-    # Handle meeting not found
-    if meeting is None:
-        flash("No meeting with that ID found!", "danger")
-        return redirect(url_for("meetings.index"))
-
     # TODO: change this to 'is_mentor_or_above'
-    can_open_attendance = session.get("is_coordinator_or_above")
+    g.context["can_open_attendance"] = session.get("is_coordinator_or_above")
 
     return render_template(
         "meetings/detail.html",
-        meeting=meeting,
-        is_authorized=can_open_attendance,
+        **g.context,
     )
 
 
+# @bp.route("/<meeting_id>/attendances")
+# @login_required
+# @mentor_or_above_required
+# @meeting_route
+# def attendances(meeting_id: str):
+#     return g.context
+
+
 @bp.route("/<meeting_id>/open")
-@coordinator_or_above_required  # TODO: change to mentors or above
 @login_required
+@coordinator_or_above_required  # TODO: change to mentors or above
+@meeting_route
 def open_attendance(meeting_id: str):
     """Opens a meeting attendance room."""
     small_group_id = "default"
 
-    # Attempt to find meeting
-    try:
-        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.index"))
-
-    # Handle missing meeting
-    if meeting is None:
-        flash("Meeting not found!", "danger")
-        return redirect(url_for("meetings.index"))
+    meeting: Dict[str, Any] = g.context["meeting"]
 
     # If we're opening a small group attendance room, get the ID of the room
     if meeting["type"] == "small group":
@@ -144,11 +162,13 @@ def open_attendance(meeting_id: str):
     # sessions can be opened. For instance, if there are 10 small group rooms, 10
     # unique sessions rooms can be opened.
     if not attendance.room_exists(meeting_id, small_group_id):
-        code = attendance.register_room(meeting["location"], meeting_id, small_group_id)
+        g.context["code"] = attendance.register_room(
+            meeting["location"], meeting_id, small_group_id
+        )
     else:
-        code = attendance.get_code_for_room(meeting_id, small_group_id)
+        g.context["code"] = attendance.get_code_for_room(meeting_id, small_group_id)
 
-    return render_template("meetings/open.html", code=code, meeting=meeting)
+    return render_template("meetings/open.html", **g.context)
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
