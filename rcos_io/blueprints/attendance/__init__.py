@@ -56,11 +56,11 @@ def attend():
     code = request.form["attendance_code"]
     user: Dict[str, Any] = g.user
 
-    valid_code, needs_verification = attendance.validate_code(code, user["rcs_id"])
+    valid_code, needs_verification = attendance.validate_code(code, user["id"], user["rcs_id"])
 
     if valid_code and not needs_verification:
         attendance_session = attendance.get_room(code)
-        database.insert_attendance(
+        attendance.record_attendance(
             g.db_client, user["id"], attendance_session["meeting_id"]
         )
 
