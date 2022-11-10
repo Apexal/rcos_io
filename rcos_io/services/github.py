@@ -153,6 +153,16 @@ def get_commits(
         starttime: datetime object for when to grab commits since
           endtime: datetime object for when to grab commits until
              user: username for desired user to filter commits for
+
+    returns >
+        all_commits: dictionary of commits >
+            key: commit -> tree -> sha
+            value: dictionary of commit info >
+                key: "url"
+                value: html url of commit
+                ;
+                key: "timestamp"
+                value: ISO-8601 timestamp of commit
     """
 
     # convert datetime objects to iso strings
