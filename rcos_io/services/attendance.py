@@ -11,7 +11,7 @@ import datetime
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, cast
-from rcos_io.services import cache
+from rcos_io.services import cache, database
 
 ATTENDANCE_CODE_LENGTH = 6
 EXPIRATION_MINUTES = 30
@@ -65,11 +65,25 @@ def register_room(
 
     # {meeting_id}:{small_group_id} => code
     key = f"{meeting_id}:{small_group_id}"
-    print("creating " + key)
     cache.get_cache().set(key, code)
     cache.get_cache().expire(key, 60 * EXPIRATION_MINUTES)
 
     return code
+
+
+def record_attendance(client, user_id, meeting_id):
+    """
+    Records an attendance to the database & cache. Users are added
+    to the cache so that it is very quick to verify if someone has already
+    recorded an attendance for a meeting -- no extra database calls!
+    """
+    database.insert_attendance(client, user_id, meeting_id)
+    cache.get_cache().sadd("recorded_attendances", f"{user_id}:{meeting_id}")
+
+    # Refresh the expiration of the table to be 30 minutes after the *last*
+    # attendance. This ensures that the table is always alive while in use,
+    # but gets destroyed when inactive.
+    cache.get_cache().expire("recorded_attendances", 60 * EXPIRATION_MINUTES)
 
 
 def close_room(code: str):
@@ -110,13 +124,12 @@ def get_code_for_room(meeting_id: str, small_group_id: str):
 def room_exists(meeting_id: str, small_group_id: str) -> bool:
     """Checks if there is an open attendance session for that meeting & small group room"""
     key = f"{meeting_id}:{small_group_id}"
-    print("looking for " + key)
     room: Optional[bytes] = cache.get_cache().get(key)
-    print("got ", room)
+
     return room is not None
 
 
-def validate_code(code: str, user_id: str):
+def validate_code(code: str, user_id: str, rcs_id: str):
     """
     Attempt to verify if an attendance code is correct. Randomly selects some
     users to be manually verified based on a per-room percentage.
@@ -129,6 +142,7 @@ def validate_code(code: str, user_id: str):
     if attendance_session is None:
         return False, False
 
+    # load the redis value as JSON
     room = json.loads(attendance_session)
 
     # invalid code; there does not exist a room with that code
@@ -136,12 +150,17 @@ def validate_code(code: str, user_id: str):
         return False, False
 
     # in case the user tries to resubmit, return the same result
-    if cache.get_cache().sismember("to_be_verified", user_id):
+    if cache.get_cache().sismember("to_be_verified", rcs_id):
         return True, True
+
+    # does there exist an attendance record for this user already? In
+    # other words, has this person already recorded an attendance for this meeting?
+    if cache.get_cache().sismember("recorded_attendances", f'{user_id}:{room["meeting_id"]}'):
+        return True, False
 
     # the user has the correct code, however they were selected to be manually verified
     if random.random() <= room["verification_percent"]:
-        cache.get_cache().sadd("to_be_verified", user_id)
+        cache.get_cache().sadd("to_be_verified", rcs_id)
 
         return True, True
 
