@@ -114,17 +114,15 @@ class CommitInfo(TypedDict):
     committer: User
 
 
-"""
-   html url structure: https://github.com/Apexal/rcos_io
-    api url structure: https://api.github.com/repos/Apexal/rcos_io
+#    html url structure: https://github.com/Apexal/rcos_io
+#     api url structure: https://api.github.com/repos/Apexal/rcos_io
 
-         get branches: https://api.github.com/repos/Apexal/rcos_io/branches
-          get commits: https://api.github.com/repos/Apexal/rcos_io/commits
-  get commits by user: ?author=username or email
-    get commits since: ?since=ISO-8601 timestamp <-- starttime
-    get commits until: ?until=ISO-8601 timestamp <-- endtime
-get commits from head: ?sha=commit sha
-"""
+#          get branches: https://api.github.com/repos/Apexal/rcos_io/branches
+#           get commits: https://api.github.com/repos/Apexal/rcos_io/commits
+#   get commits by user: ?author=username or email
+#     get commits since: ?since=ISO-8601 timestamp <-- starttime
+#     get commits until: ?until=ISO-8601 timestamp <-- endtime
+# get commits from head: ?sha=commit sha
 
 
 def gen_params(**kwargs):
@@ -133,11 +131,11 @@ def gen_params(**kwargs):
     """
     valid_keys = {"author", "since", "until", "sha"}
     params = {"per_page": 100}  # get 100 commits per page
-    for arg in kwargs:
+    for arg_key, arg_val in kwargs.items():
         # only include valid github api parameters
         # only include non None values
-        if arg in valid_keys and kwargs[arg] is not None:
-            params[arg] = kwargs[arg]
+        if arg_key in valid_keys and arg_val is not None:
+            params[arg_key] = arg_val
     return params
 
 
