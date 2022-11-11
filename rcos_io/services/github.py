@@ -3,6 +3,7 @@ This module contains all GitHub related functionality.
 """
 from typing import TypedDict, Optional
 import datetime
+from urllib.parse import urlparse
 import requests
 from rcos_io.services import settings
 
@@ -125,7 +126,7 @@ class CommitInfo(TypedDict):
 # get commits from head: ?sha=commit sha
 
 
-def gen_params(**kwargs):
+def gen_params(**kwargs) -> dict:
     """
     Generates params for request querystring.
     """
@@ -139,12 +140,39 @@ def gen_params(**kwargs):
     return params
 
 
+def paginate_commits(commit_list: list, all_commits: dict) -> (dict, Optional[str]):
+    """
+    Parse through one page of commits and concatenate to container dictionary.
+    """
+    if len(commit_list) == 0:
+        return all_commits, None
+
+    for commit in commit_list:
+        # get tree sha (!= github api sha)
+        # (this will exclude commits that are repeated e.g. merge commits)
+        tree_sha = commit["commit"]["tree"]["sha"]
+        if tree_sha in all_commits:  # found commit upstream, stop fetching commits
+            return all_commits, None
+
+        # otherwise, add commit to returned dictionary
+        # attach html url and timestamp as values
+        all_commits[tree_sha] = {
+            "url": commit["html_url"],
+            "timestamp": commit["commit"]["author"]["date"],
+        }
+
+    # last commit on request page
+    last_sha = commit_list[-1]["sha"]
+
+    return all_commits, last_sha
+
+
 def get_commits(
     repolink: str,
     starttime: datetime.datetime,
     endtime: datetime.datetime = datetime.datetime.now(),
     user: Optional[str] = None,
-):
+) -> dict:
     """
     Grabs all commits on all branches for a given GitHub repo, after a given time.
 
@@ -169,10 +197,13 @@ def get_commits(
     starttime, endtime = starttime.isoformat(), endtime.isoformat()
 
     # grabs "owner_username/repo_name"
-    repoid = repolink[repolink.index("github.com/") + len("github.com/") :]
+    repoid = urlparse(repolink).path
 
     if repoid[-1] == "/":  # remove trailing slash
         repoid = repoid[:-1]
+
+    if repoid[0] == "/":  # remove leading slash
+        repoid = repoid[1:]
 
     # grabs branches for repo (limited to 100 branches due to pagination)
     # do not add branch pagination for now due to repos not having >100 branches
@@ -186,7 +217,7 @@ def get_commits(
 
     for head in branch_heads:
         # grabs "sha" from branch head url
-        head_sha = head[head.index("commits/") + len("commits/") :]
+        head_sha = urlparse(head).path.split("/")[-1]
         # grabs commits starting from branch head
         commit_list = requests.get(
             f"{GITHUB_API_URL}/repos/{repoid}/commits",
@@ -197,29 +228,8 @@ def get_commits(
         ).json()
 
         # repeatedly grab commit pages while github api returns 100 commits (max)
-        while len(commit_list) == 100:
-            break_outer = False
-            for commit in commit_list:
-                # get tree sha (!= github api sha)
-                # (this will exclude commits that are repeated e.g. merge commits)
-                tree_sha = commit["commit"]["tree"]["sha"]
-                if (
-                    tree_sha in all_commits
-                ):  # found commit upstream, stop fetching commits
-                    break_outer = True
-                    break
-                # add commit to returned dictionary
-                # attach html url and timestamp as values
-                all_commits[tree_sha] = {
-                    "url": commit["html_url"],
-                    "timestamp": commit["commit"]["author"]["date"],
-                }
-            if break_outer:
-                break
-
-            # last commit on request page
-            last_sha = commit_list[-1]["sha"]
-
+        all_commits, last_sha = paginate_commits(commit_list, all_commits)
+        while last_sha is not None:
             # repeat request with last commit
             commit_list = requests.get(
                 f"{GITHUB_API_URL}/repos/{repoid}/commits",
@@ -228,5 +238,7 @@ def get_commits(
                 ),
                 timeout=3,
             ).json()
+
+            all_commits, last_sha = paginate_commits(commit_list, all_commits)
 
     return all_commits
