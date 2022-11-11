@@ -154,15 +154,17 @@ def setup_required(view: C) -> C:
             not_done.append("linking your Discord")
         if not g.user["github_username"]:
             not_done.append("linking your GitHub")
-        if not g.user["secondary_email"]:
-            not_done.append("adding your secondary email")
-        if not g.user["is_secondary_email_verified"]:
-            not_done.append("verifying your secondary email")
+
+        # TODO: enable secondary emails
+        # if not g.user["secondary_email"]:
+        #     not_done.append("adding your secondary email")
+        # if not g.user["is_secondary_email_verified"]:
+        #     not_done.append("verifying your secondary email")
 
         if len(not_done) > 0:
             flash(
                 f"You must finish your profile by {', '.join(not_done)}"
-                "before accessing that page!",
+                " before accessing that page!",
                 "danger",
             )
             return redirect(url_for("auth.profile"))
