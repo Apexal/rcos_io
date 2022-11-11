@@ -49,6 +49,9 @@
             aria-expanded="false"
           >
            Logged in as <strong>{{ g.user["display_name"] }}</strong>
+           {% if not g.user["is_verified"]%}
+           <span class="badge bg-danger">UNVERIFIED</span>
+           {% endif %}
           </a>
           <ul class="dropdown-menu">
             <li>

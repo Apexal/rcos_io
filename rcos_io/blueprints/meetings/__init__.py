@@ -23,7 +23,7 @@ from gql.transport.exceptions import TransportQueryError
 from graphql.error import GraphQLError
 
 from rcos_io.blueprints.auth import (
-    coordinator_or_above_required,
+    setup_required,
     login_required,
     mentor_or_above_required,
 )
@@ -34,7 +34,7 @@ C = TypeVar("C", bound=Callable[..., Any])
 bp = Blueprint("meetings", __name__, template_folder="templates")
 
 
-def meeting_route(view: C) -> C:
+def for_meeting(view: C) -> C:
     """Fetches meeting from meeting_id URL parameter."""
 
     @functools.wraps(view)
@@ -68,25 +68,35 @@ def index():
 
 @bp.route("/add", methods=("GET", "POST"))
 @login_required
-@coordinator_or_above_required
+@mentor_or_above_required
 def add():
     """Renders the add meeting form and handles form submissions."""
     if request.method == "GET":
 
         # This list must match the meeting_types enum in the database!
-        meeting_types = [
-            "small group",
-            "large group",
-            "workshop",
-            "bonus",
-            "mentors",
-            "coordinators",
-            "other",
-        ]
+        # Mentors can only create workshops
+        meeting_types = (
+            [
+                "small group",
+                "large group",
+                "workshop",
+                "bonus",
+                "mentors",
+                "coordinators",
+                "other",
+            ]
+            if session["is_coordinator_or_above"]
+            else ["workshop"]
+        )
 
         return render_template("meetings/add.html", meeting_types=meeting_types)
 
     # HANDLE FORM SUBMISSION
+
+    # Mentors can only create workshops
+    if request.form["type"] == "small_group" and not session["is_mentor_or_above"]:
+        flash("Mentors can only create workshops!", "warning")
+        return redirect(url_for("meetings.index"))
 
     # Form new meeting dictionary for insert
     meeting_data: Dict[str, Optional[str]] = {
@@ -111,11 +121,11 @@ def add():
 
 
 @bp.route("/<meeting_id>")
-@meeting_route
+@setup_required
+@for_meeting
 def detail(meeting_id: str):
     """Renders the detail page for a particular meeting."""
-    # TODO: change this to 'is_mentor_or_above'
-    g.context["can_open_attendance"] = session.get("is_coordinator_or_above")
+    g.context["can_open_attendance"] = session.get("is_mentor_or_above")
 
     return render_template(
         "meetings/detail.html",
@@ -124,17 +134,16 @@ def detail(meeting_id: str):
 
 
 # @bp.route("/<meeting_id>/attendances")
-# @login_required
 # @mentor_or_above_required
-# @meeting_route
+# @for_meeting
 # def attendances(meeting_id: str):
 #     return g.context
 
 
 @bp.route("/<meeting_id>/open")
 @login_required
-@coordinator_or_above_required  # TODO: change to mentors or above
-@meeting_route
+@mentor_or_above_required
+@for_meeting
 def open_attendance(meeting_id: str):
     """Opens a meeting attendance room."""
     small_group_id = "default"
@@ -145,6 +154,7 @@ def open_attendance(meeting_id: str):
     if meeting["type"] == "small group":
         user: Dict[str, Any] = g.user
 
+        # Find this mentor's small group
         try:
             small_group_id = database.get_mentor_small_group(g.db_client, user["id"])[
                 "small_group_id"
@@ -172,7 +182,7 @@ def open_attendance(meeting_id: str):
 
 
 @bp.route("/<meeting_id>/close", methods=["POST"])
-@coordinator_or_above_required
+@mentor_or_above_required
 @login_required
 def close(meeting_id: str):
     """Closes a room for attendance."""

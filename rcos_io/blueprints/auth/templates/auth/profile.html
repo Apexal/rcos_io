@@ -71,12 +71,11 @@
             type="number"
             name="graduation_year"
             id="graduation_year"
-            placeholder="{{ g.user['graduation_year'] if g.user['graduation_year'] else '1900' }}"
+            placeholder="{{ g.user['graduation_year'] if g.user['graduation_year'] else 'For students' }}"
             value="{{ g.user['graduation_year'] if g.user['graduation_year'] }}"
             class="form-control"
             min="1900"
             max="2100"
-            required
           />
         </div>
         {% endif %}
