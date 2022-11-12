@@ -191,7 +191,7 @@ def detail(project_id: str):
     # parse out any project members that are *not* in the project this semester
     project["enrollments"] = list(
         filter(
-            lambda user: user["semester"]["id"] == session["semester"]["id"],
+            lambda enrollment: enrollment["semester_id"] == session["semester"]["id"],
             project["enrollments"],
         )
     )
@@ -221,5 +221,6 @@ def detail(project_id: str):
             ],
         )
     )
+    context["project"] = project
 
     return render_template("projects/detail.html", **context)

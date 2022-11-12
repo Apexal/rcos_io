@@ -6,7 +6,7 @@ all meeting related views and functionality.
 """
 import functools
 from datetime import datetime
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, cast
 
 from flask import (
     Blueprint,
@@ -23,6 +23,7 @@ from gql.transport.exceptions import TransportQueryError
 from graphql.error import GraphQLError
 
 from rcos_io.blueprints.auth import (
+    rpi_required,
     setup_required,
     login_required,
     mentor_or_above_required,
@@ -64,6 +65,31 @@ def for_meeting(view: C) -> C:
 def index():
     """Renders the main meetings template."""
     return render_template("meetings/index.html")
+
+
+@bp.route("/api/events")
+def events_api():
+    """Returns a JSON array of event objects that Fullcalendar can understand."""
+    start = (
+        datetime.fromisoformat(cast(str, request.args.get("start")))
+        if "start" in request.args
+        else None
+    )
+    end = (
+        datetime.fromisoformat(cast(str, request.args.get("end")))
+        if "end" in request.args
+        else None
+    )
+
+    # Fetch meetings
+    meetings = database.get_meetings(
+        g.db_client, only_published=True, start_at=start, end_at=end
+    )
+
+    # Convert them to objects that Fullcalendar can understand
+    events = list(map(meeting_to_event, meetings))
+
+    return events
 
 
 @bp.route("/add", methods=("GET", "POST"))
@@ -120,6 +146,44 @@ def add():
     return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
 
 
+@bp.route("/attend", methods=("GET", "POST"))
+@rpi_required
+def attend():
+    """
+    Handles the user's attendance view
+    """
+
+    if request.method == "GET":
+        return render_template("meetings/attend.html")
+
+    code = request.form["attendance_code"]
+    user: Dict[str, Any] = g.user
+
+    valid_code, needs_verification = attendance.validate_code(
+        code, user["id"], user["rcs_id"]
+    )
+
+    if valid_code and not needs_verification:
+        attendance_session = attendance.get_room(code)
+
+        if attendance_session:
+            attendance.record_attendance(
+                g.db_client, user["id"], attendance_session["meeting_id"]
+            )
+
+            flash("Your attendance has been recorded!", "primary")
+    elif valid_code and needs_verification:
+        flash(
+            "You have been randomly selected to be manually verified! Please talk to"
+            + " your room's Coordinator / Mentor to check in.",
+            "warning",
+        )
+    else:
+        flash("Invalid attendance code.", "danger")
+
+    return redirect(url_for("meetings.attend"))
+
+
 @bp.route("/<meeting_id>")
 @setup_required
 @for_meeting
@@ -133,7 +197,84 @@ def detail(meeting_id: str):
     )
 
 
-@bp.route("/<meeting_id>/open")
+@bp.route("/<meeting_id>/attendance")
+@mentor_or_above_required
+def meeting_attendance(meeting_id: str):
+    """Renders the attendance page for a particular meeting."""
+
+    context: Dict[str, Any] = {"meeting_id": meeting_id}
+
+    # Attempt to fetch the meeting
+    try:
+        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
+        if meeting is None:
+            raise utils.NotFoundError()
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to fetch meeting.", "danger")
+        return redirect(url_for("meetings.index"))
+    except (utils.NotFoundError) as error:
+        current_app.logger.exception(error)
+        flash("Meeting not found.", "warning")
+        return redirect(url_for("meetings.index"))
+
+    semester_id = meeting["semester_id"]
+
+    # Determine if we care about a particular small group
+    small_group_id: Optional[str] = request.args.get("small_group_id")
+    small_group: Optional[Dict[str, Any]] = None
+    if small_group_id is None:
+        small_group = database.get_mentor_small_group(
+            g.db_client, semester_id, g.user["id"]
+        )
+    else:
+        small_group = database.get_small_group(g.db_client, small_group_id)
+
+    # If we have a small group ID, make sure it's real
+    if small_group_id and not small_group:
+        flash("Small group not found.", "warning")
+        return redirect(url_for("meetings.meeting_attendance", meeting_id=meeting_id))
+
+    # Get this meeting's attendances
+    attendances = database.get_attendances(
+        g.db_client, meeting_id=meeting_id, small_group_id=small_group_id
+    )
+
+    # If we can determine who is **supposed** to attend this meeting (small group),
+    # find those people and determine who did not attend
+    non_attendance_users: List[Dict[str, Any]] = []
+
+    # If it is a typical meeting, we know who to expect there and who went versus missed
+    if meeting["type"] not in ["mentors", "coordinators"]:
+        attended_user_ids: Set[str] = set(
+            user_attendance["user"]["id"] for user_attendance in attendances
+        )
+
+        if small_group is None:
+            expected_attendee_users = database.get_users(g.db_client, semester_id)
+        else:
+            expected_attendee_enrollments = database.get_small_group_enrollments(
+                g.db_client, small_group["id"]
+            )
+            expected_attendee_users = [
+                enrollment["user"] for enrollment in expected_attendee_enrollments
+            ]
+
+        non_attendance_users = [
+            user
+            for user in expected_attendee_users
+            if user["id"] not in attended_user_ids
+        ]
+
+    context["small_group"] = small_group
+    context["meeting"] = meeting
+    context["attendances"] = attendances
+    context["non_attendance_users"] = non_attendance_users
+
+    return render_template("meetings/meeting_attendance.html", **context)
+
+
+@bp.route("/<meeting_id>/attendance/open")
 @login_required
 @mentor_or_above_required
 @for_meeting
@@ -185,7 +326,7 @@ def open_attendance(meeting_id: str):
     return render_template("meetings/open.html", **g.context)
 
 
-@bp.route("/<meeting_id>/close", methods=["POST"])
+@bp.route("/<meeting_id>/attendance/close", methods=["POST"])
 @mentor_or_above_required
 @login_required
 def close(meeting_id: str):
@@ -194,31 +335,6 @@ def close(meeting_id: str):
     attendance.close_room(code)
 
     return redirect(url_for("meetings.detail", meeting_id=meeting_id))
-
-
-@bp.route("/api/events")
-def events_api():
-    """Returns a JSON array of event objects that Fullcalendar can understand."""
-    start = (
-        datetime.fromisoformat(cast(str, request.args.get("start")))
-        if "start" in request.args
-        else None
-    )
-    end = (
-        datetime.fromisoformat(cast(str, request.args.get("end")))
-        if "end" in request.args
-        else None
-    )
-
-    # Fetch meetings
-    meetings = database.get_meetings(
-        g.db_client, only_published=True, start_at=start, end_at=end
-    )
-
-    # Convert them to objects that Fullcalendar can understand
-    events = list(map(meeting_to_event, meetings))
-
-    return events
 
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:

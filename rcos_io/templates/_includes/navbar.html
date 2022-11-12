@@ -33,7 +33,7 @@
         {{ nav_item("Users", url_for("users.index")) }}
         {{ nav_item("Meetings", url_for("meetings.index")) }}
         {% if g.is_logged_in and g.user["role"] == "rpi" %}
-        {{ nav_item("Attend", url_for("attendance.attend"))}}
+        {{ nav_item("Attend", url_for("meetings.attend"))}}
         {% endif %}
         <a class="nav-link" href="https://handbook.rcos.io" target="_blank"
           >Handbook <i class="bi bi-box-arrow-up-right"></i>

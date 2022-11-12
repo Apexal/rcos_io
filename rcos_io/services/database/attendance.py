@@ -34,7 +34,10 @@ def insert_attendance(client: Client, user_id: str, meeting_id: str):
 
 
 def get_attendances(
-    client: Client, meeting_id: Optional[str] = None, user_id: Optional[str] = None
+    client: Client,
+    meeting_id: Optional[str] = None,
+    small_group_id: Optional[str] = None,
+    user_id: Optional[str] = None,
 ):
     """Fetches attendances for a particular meeting AND/OR a particular user."""
     where_clause = {}
@@ -44,6 +47,15 @@ def get_attendances(
 
     if user_id:
         where_clause["user_id"] = {"_eq": user_id}
+
+    if small_group_id:
+        where_clause["user"] = {
+            "enrollments": {
+                "project": {
+                    "small_group_projects": {"small_group_id": {"_eq": small_group_id}}
+                }
+            }
+        }
 
     query = gql(
         """

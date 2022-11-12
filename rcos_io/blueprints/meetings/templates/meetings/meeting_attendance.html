@@ -51,14 +51,14 @@
             </div>
         </div>
         <div class="col">
-            {% if users_not_attended %}
+            {% if non_attendance_users is not none %}
             <div class="card">
                 <div class="card-header d-flex">
                     <span class="me-auto">Did Not Attend</span>
-                    <span class="badge bg-danger">{{ attendances|length }} total</span>
+                    <span class="badge bg-danger">{{ non_attendance_users|length }} total</span>
                 </div>
                 <ul class="list-group list-group-flush">
-                    {% for user in users_not_attended %}
+                    {% for user in non_attendance_users %}
                     <li class="list-group-item">
                         <a href="{{ url_for('users.detail', user_id=user['id']) }}">{{ user["display_name"] }}</a>                        
                     </li>

@@ -11,6 +11,7 @@ import datetime
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, cast
+from gql import Client
 from rcos_io.services import cache, database
 
 ATTENDANCE_CODE_LENGTH = 6
@@ -71,7 +72,7 @@ def register_room(
     return code
 
 
-def record_attendance(client, user_id, meeting_id):
+def record_attendance(client: Client, user_id: str, meeting_id: str):
     """
     Records an attendance to the database & cache. Users are added
     to the cache so that it is very quick to verify if someone has already

@@ -150,10 +150,12 @@ def setup_required(view: C) -> C:
             not_done.append("adding your first name")
         if not g.user["last_name"]:
             not_done.append("adding your last name")
-        if not g.user["discord_user_id"]:
-            not_done.append("linking your Discord")
-        if not g.user["github_username"]:
-            not_done.append("linking your GitHub")
+
+        if settings.ENV == "production":
+            if not g.user["discord_user_id"]:
+                not_done.append("linking your Discord")
+            if not g.user["github_username"]:
+                not_done.append("linking your GitHub")
 
         # TODO: enable secondary emails
         # if not g.user["secondary_email"]:

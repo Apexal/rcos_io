@@ -1,7 +1,25 @@
 """Database calls for small group-related actions."""
 
-from typing import Any, Dict, List, cast
+from typing import Any, Dict, List, Optional, cast
 from gql import Client, gql
+
+
+def get_small_group(client: Client, small_group_id: str):
+    """Fetches a particular small group by its id."""
+    query = gql(
+        """
+        query small_group($small_group_id: uuid!) {
+            small_groups_by_pk(id: $small_group_id) {
+                id
+                name
+                location
+                semester_id
+            }
+        }
+        """
+    )
+    result = client.execute(query, variable_values={"small_group_id": small_group_id})
+    return cast(Optional[Dict[str, Any]], result["small_groups_by_pk"])
 
 
 def get_mentor_small_group(client: Client, semester_id: str, user_id: str):
