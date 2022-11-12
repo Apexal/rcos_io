@@ -25,7 +25,6 @@ from graphql.error import GraphQLError
 from rcos_io.blueprints.auth import (
     rpi_required,
     setup_required,
-    login_required,
     mentor_or_above_required,
 )
 from rcos_io.services import attendance, database, utils
@@ -54,7 +53,8 @@ def for_meeting(view: C) -> C:
             return redirect(url_for("meetings.index"))
 
         g.meeting = meeting
-        g.context = {"meeting": meeting}
+        g.semester_id = meeting["semester_id"]
+        g.context = {"meeting": meeting, "semester_id": g.semester_id}
 
         return view(**kwargs)
 
@@ -93,7 +93,6 @@ def events_api():
 
 
 @bp.route("/add", methods=("GET", "POST"))
-@login_required
 @mentor_or_above_required
 def add():
     """Renders the add meeting form and handles form submissions."""
@@ -228,26 +227,14 @@ def detail(meeting_id: str):
 
 @bp.route("/<meeting_id>/attendance")
 @mentor_or_above_required
+@for_meeting
 def meeting_attendance(meeting_id: str):
     """Renders the attendance page for a particular meeting."""
 
-    context: Dict[str, Any] = {"meeting_id": meeting_id}
-
-    # Attempt to fetch the meeting
-    try:
-        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
-        if meeting is None:
-            raise utils.NotFoundError()
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("Yikes! Failed to fetch meeting.", "danger")
-        return redirect(url_for("meetings.index"))
-    except (utils.NotFoundError) as error:
-        current_app.logger.exception(error)
-        flash("Meeting not found.", "warning")
-        return redirect(url_for("meetings.index"))
-
-    semester_id = meeting["semester_id"]
+    # For type checking since g does not have types
+    context: Dict[str, Any] = g.context
+    meeting: Dict[str, Any] = g.meeting
+    semester_id: str = g.semester_id
 
     # Determine if we care about a particular small group
     small_group_id: Optional[str] = request.args.get("small_group_id")
@@ -296,7 +283,6 @@ def meeting_attendance(meeting_id: str):
         ]
 
     context["small_group"] = small_group
-    context["meeting"] = meeting
     context["attendances"] = attendances
     context["non_attendance_users"] = non_attendance_users
 
@@ -304,14 +290,16 @@ def meeting_attendance(meeting_id: str):
 
 
 @bp.route("/<meeting_id>/attendance/open")
-@login_required
 @mentor_or_above_required
 @for_meeting
 def open_attendance(meeting_id: str):
     """Opens a meeting attendance room."""
     small_group_id = "default"
 
-    meeting: Dict[str, Any] = g.context["meeting"]
+    # For type checking since g does not have types
+    context: Dict[str, Any] = g.context
+    meeting: Dict[str, Any] = g.meeting
+    semester_id: str = g.semester_id
 
     # If we're opening a small group attendance room, get the ID of the room
     if meeting["type"] == "small group":
@@ -320,7 +308,7 @@ def open_attendance(meeting_id: str):
         # Find this mentor's small group
         try:
             small_group = database.get_mentor_small_group(
-                g.db_client, meeting["semester_id"], user["id"]
+                g.db_client, semester_id, user["id"]
             )
             if small_group is None:
                 raise utils.NotFoundError()
@@ -345,18 +333,18 @@ def open_attendance(meeting_id: str):
     # sessions can be opened. For instance, if there are 10 small group rooms, 10
     # unique sessions rooms can be opened.
     if not attendance.room_exists(meeting_id, small_group_id):
-        g.context["code"] = attendance.register_room(
+        context["code"] = attendance.register_room(
             meeting["location"], meeting_id, small_group_id
         )
     else:
-        g.context["code"] = attendance.get_code_for_room(meeting_id, small_group_id)
+        context["code"] = attendance.get_code_for_room(meeting_id, small_group_id)
 
-    return render_template("meetings/open.html", **g.context)
+    return render_template("meetings/open.html", **context)
 
 
 @bp.route("/<meeting_id>/attendance/close", methods=["POST"])
 @mentor_or_above_required
-@login_required
+@for_meeting
 def close(meeting_id: str):
     """Closes a room for attendance."""
     code = request.form["code"]

@@ -74,8 +74,6 @@ def load_logged_in_user():
                 # TODO
                 session["is_mentor_or_above"] = session["is_coordinator_or_above"]
 
-        g.logged_in_user_nickname = discord.generate_nickname(user) or g.user["email"]
-
 
 def login_required(view: C) -> C:
     """Flask decorator to require that the user is logged in to access the view.
