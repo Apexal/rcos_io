@@ -1,165 +1,70 @@
+# pylint: disable=W0613
+
 """
 This module contains the meetings blueprint, which stores
 all meeting related views and functionality.
 """
+import functools
 from datetime import datetime
-from typing import Any, Dict, Optional, cast
+from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, cast
+
 from flask import (
     Blueprint,
+    current_app,
+    flash,
+    g,
+    redirect,
     render_template,
     request,
-    redirect,
-    url_for,
-    flash,
     session,
-    current_app,
-    g,
+    url_for,
 )
-from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import database, attendance
+from graphql.error import GraphQLError
+
 from rcos_io.blueprints.auth import (
-    coordinator_or_above_required,
+    rpi_required,
+    setup_required,
     login_required,
+    mentor_or_above_required,
 )
+from rcos_io.services import attendance, database, utils
+
+C = TypeVar("C", bound=Callable[..., Any])
 
 bp = Blueprint("meetings", __name__, template_folder="templates")
+
+
+def for_meeting(view: C) -> C:
+    """Fetches meeting from meeting_id URL parameter."""
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs: Any):
+        # Attempt to fetch meeting
+        try:
+            meeting = database.get_meeting_by_id(g.db_client, kwargs["meeting_id"])
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash("There was an error fetching the meeting.", "warning")
+            return redirect(url_for("meetings.index"))
+
+        # Handle meeting not found
+        if meeting is None:
+            flash("No meeting with that ID found!", "danger")
+            return redirect(url_for("meetings.index"))
+
+        g.meeting = meeting
+        g.context = {"meeting": meeting}
+
+        return view(**kwargs)
+
+    return cast(C, wrapped_view)
 
 
 @bp.route("/")
 def index():
     """Renders the main meetings template."""
     return render_template("meetings/index.html")
-
-
-@bp.route("/add", methods=("GET", "POST"))
-@login_required
-@coordinator_or_above_required
-def add():
-    """Renders the add meeting form and handles form submissions."""
-    if request.method == "GET":
-
-        # This list must match the meeting_types enum in the database!
-        meeting_types = [
-            "small group",
-            "large group",
-            "workshop",
-            "bonus",
-            "mentors",
-            "coordinators",
-            "other",
-        ]
-
-        return render_template("meetings/add.html", meeting_types=meeting_types)
-
-    # HANDLE FORM SUBMISSION
-
-    # Form new meeting dictionary for insert
-    meeting_data: Dict[str, Optional[str]] = {
-        "semester_id": session["semester"]["id"],
-        "name": request.form["name"].strip(),
-        "type": request.form["type"],
-        "start_date_time": request.form["start_date_time"],
-        "end_date_time": request.form["end_date_time"],
-        "location": request.form["location"].strip(),
-    }
-
-    # Attempt to insert meeting into database
-    try:
-        new_meeting = database.insert_meeting(g.db_client, meeting_data)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("Yikes! Failed to add meeting. Check logs.", "danger")
-        return redirect(url_for("meetings.index"))
-
-    # Redirect to the new meeting's detail page
-    return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
-
-
-@bp.route("/<meeting_id>")
-def detail(meeting_id: str):
-    """Renders the detail page for a particular meeting."""
-
-    # Attempt to fetch meeting
-    try:
-        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.index"))
-
-    # Handle meeting not found
-    if meeting is None:
-        flash("No meeting with that ID found!", "danger")
-        return redirect(url_for("meetings.index"))
-
-    # TODO: change this to 'is_mentor_or_above'
-    can_open_attendance = session.get("is_coordinator_or_above")
-
-    return render_template(
-        "meetings/detail.html",
-        meeting=meeting,
-        is_authorized=can_open_attendance,
-    )
-
-
-@bp.route("/<meeting_id>/open")
-@coordinator_or_above_required  # TODO: change to mentors or above
-@login_required
-def open_attendance(meeting_id: str):
-    """Opens a meeting attendance room."""
-    small_group_id = "default"
-
-    # Attempt to find meeting
-    try:
-        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("There was an error fetching the meeting.", "warning")
-        return redirect(url_for("meetings.index"))
-
-    # Handle missing meeting
-    if meeting is None:
-        flash("Meeting not found!", "danger")
-        return redirect(url_for("meetings.index"))
-
-    # If we're opening a small group attendance room, get the ID of the room
-    if meeting["type"] == "small group":
-        user: Dict[str, Any] = g.user
-
-        try:
-            small_group_id = database.get_mentor_small_group(g.db_client, user["id"])[
-                "small_group_id"
-            ]
-        except (GraphQLError, TransportQueryError) as error:
-            current_app.logger.exception(error)
-            flash(
-                f"There was an error fetching the small group room for user {user['id']}.",
-                "warning",
-            )
-            return redirect(url_for("meetings.index"))
-
-    # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
-    # then find <meeting_id>:default. The latter keyword determines how many unique
-    # sessions can be opened. For instance, if there are 10 small group rooms, 10
-    # unique sessions rooms can be opened.
-    if not attendance.room_exists(meeting_id, small_group_id):
-        code = attendance.register_room(meeting["location"], meeting_id, small_group_id)
-    else:
-        code = attendance.get_code_for_room(meeting_id, small_group_id)
-
-    return render_template("meetings/open.html", code=code, meeting=meeting)
-
-
-@bp.route("/<meeting_id>/close", methods=["POST"])
-@coordinator_or_above_required
-@login_required
-def close(meeting_id: str):
-    """Closes a room for attendance."""
-    code = request.form["code"]
-    attendance.close_room(code)
-
-    return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
 
 @bp.route("/api/events")
@@ -185,6 +90,279 @@ def events_api():
     events = list(map(meeting_to_event, meetings))
 
     return events
+
+
+@bp.route("/add", methods=("GET", "POST"))
+@login_required
+@mentor_or_above_required
+def add():
+    """Renders the add meeting form and handles form submissions."""
+    if request.method == "GET":
+
+        # This list must match the meeting_types enum in the database!
+        # Mentors can only create workshops
+        meeting_types = (
+            [
+                "small group",
+                "large group",
+                "workshop",
+                "bonus",
+                "mentors",
+                "coordinators",
+                "other",
+            ]
+            if session["is_coordinator_or_above"]
+            else ["workshop"]
+        )
+
+        return render_template("meetings/add.html", meeting_types=meeting_types)
+
+    # HANDLE FORM SUBMISSION
+
+    # Mentors can only create workshops
+    if request.form["type"] == "small_group" and not session["is_mentor_or_above"]:
+        flash("Mentors can only create workshops!", "warning")
+        return redirect(url_for("meetings.index"))
+
+    # Form new meeting dictionary for insert
+    meeting_data: Dict[str, Optional[str]] = {
+        "semester_id": session["semester"]["id"],
+        "name": request.form["name"].strip(),
+        "type": request.form["type"],
+        "start_date_time": request.form["start_date_time"],
+        "end_date_time": request.form["end_date_time"],
+        "location": request.form["location"].strip(),
+    }
+
+    # Attempt to insert meeting into database
+    try:
+        new_meeting = database.insert_meeting(g.db_client, meeting_data)
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to add meeting. Check logs.", "danger")
+        return redirect(url_for("meetings.index"))
+
+    # Redirect to the new meeting's detail page
+    return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
+
+
+@bp.route("/attend", methods=("GET", "POST"))
+@rpi_required
+def attend():
+    """
+    Handles the user's attendance view
+    """
+
+    if request.method == "GET":
+        return render_template("meetings/attend.html")
+
+    code = request.form["attendance_code"]
+    user: Dict[str, Any] = g.user
+
+    valid_code, needs_verification = attendance.validate_code(
+        code, user["id"], user["rcs_id"]
+    )
+
+    if valid_code and not needs_verification:
+        attendance_session = attendance.get_room(code)
+
+        if attendance_session:
+            attendance.record_attendance(
+                g.db_client, user["id"], attendance_session["meeting_id"]
+            )
+
+            flash("Your attendance has been recorded!", "primary")
+    elif valid_code and needs_verification:
+        flash(
+            "You have been randomly selected to be manually verified! Please talk to"
+            + " your room's Coordinator / Mentor to check in.",
+            "warning",
+        )
+    else:
+        flash("Invalid attendance code.", "danger")
+
+    return redirect(url_for("meetings.attend"))
+
+
+@bp.route("/attendance/verify", methods=["POST"])
+@mentor_or_above_required
+def verify_attendance():
+    """
+    Handles verifying a user ID given a meeting ID.
+    """
+    payload: Optional[Dict[str, Any]] = request.json
+    print(payload)
+    if payload is None:
+        return "Missing payload", 400
+
+    user_id = payload["user_id"]
+    meeting_id = payload["meeting_id"]
+
+    if not attendance.verify_user(user_id):
+        return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
+
+    # get the user ID from RCS ID
+    user = database.find_user_by_rcs_id(g.db_client, user_id)
+    print(user)
+    if user is None:
+        return "Can't find user with that RCS ID!", 400
+
+    # successfully verified; submit attendence for the verified user
+    database.insert_attendance(g.db_client, user["id"], meeting_id)
+
+    return "Successfully verified!", 200
+
+
+@bp.route("/<meeting_id>")
+@setup_required
+@for_meeting
+def detail(meeting_id: str):
+    """Renders the detail page for a particular meeting."""
+    g.context["can_open_attendance"] = session.get("is_mentor_or_above")
+
+    return render_template(
+        "meetings/detail.html",
+        **g.context,
+    )
+
+
+@bp.route("/<meeting_id>/attendance")
+@mentor_or_above_required
+def meeting_attendance(meeting_id: str):
+    """Renders the attendance page for a particular meeting."""
+
+    context: Dict[str, Any] = {"meeting_id": meeting_id}
+
+    # Attempt to fetch the meeting
+    try:
+        meeting = database.get_meeting_by_id(g.db_client, meeting_id)
+        if meeting is None:
+            raise utils.NotFoundError()
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
+        flash("Yikes! Failed to fetch meeting.", "danger")
+        return redirect(url_for("meetings.index"))
+    except (utils.NotFoundError) as error:
+        current_app.logger.exception(error)
+        flash("Meeting not found.", "warning")
+        return redirect(url_for("meetings.index"))
+
+    semester_id = meeting["semester_id"]
+
+    # Determine if we care about a particular small group
+    small_group_id: Optional[str] = request.args.get("small_group_id")
+    small_group: Optional[Dict[str, Any]] = None
+    if small_group_id is None:
+        small_group = database.get_mentor_small_group(
+            g.db_client, semester_id, g.user["id"]
+        )
+    else:
+        small_group = database.get_small_group(g.db_client, small_group_id)
+
+    # If we have a small group ID, make sure it's real
+    if small_group_id and not small_group:
+        flash("Small group not found.", "warning")
+        return redirect(url_for("meetings.meeting_attendance", meeting_id=meeting_id))
+
+    # Get this meeting's attendances
+    attendances = database.get_attendances(
+        g.db_client, meeting_id=meeting_id, small_group_id=small_group_id
+    )
+
+    # If we can determine who is **supposed** to attend this meeting (small group),
+    # find those people and determine who did not attend
+    non_attendance_users: List[Dict[str, Any]] = []
+
+    # If it is a typical meeting, we know who to expect there and who went versus missed
+    if meeting["type"] not in ["mentors", "coordinators"]:
+        attended_user_ids: Set[str] = set(
+            user_attendance["user"]["id"] for user_attendance in attendances
+        )
+
+        if small_group is None:
+            expected_attendee_users = database.get_users(g.db_client, semester_id)
+        else:
+            expected_attendee_enrollments = database.get_small_group_enrollments(
+                g.db_client, small_group["id"]
+            )
+            expected_attendee_users = [
+                enrollment["user"] for enrollment in expected_attendee_enrollments
+            ]
+
+        non_attendance_users = [
+            user
+            for user in expected_attendee_users
+            if user["id"] not in attended_user_ids
+        ]
+
+    context["small_group"] = small_group
+    context["meeting"] = meeting
+    context["attendances"] = attendances
+    context["non_attendance_users"] = non_attendance_users
+
+    return render_template("meetings/meeting_attendance.html", **context)
+
+
+@bp.route("/<meeting_id>/attendance/open")
+@login_required
+@mentor_or_above_required
+@for_meeting
+def open_attendance(meeting_id: str):
+    """Opens a meeting attendance room."""
+    small_group_id = "default"
+
+    meeting: Dict[str, Any] = g.context["meeting"]
+
+    # If we're opening a small group attendance room, get the ID of the room
+    if meeting["type"] == "small group":
+        user: Dict[str, Any] = g.user
+
+        # Find this mentor's small group
+        try:
+            small_group = database.get_mentor_small_group(
+                g.db_client, meeting["semester_id"], user["id"]
+            )
+            if small_group is None:
+                raise utils.NotFoundError()
+
+            small_group_id: str = small_group["id"]
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash(
+                f"There was an error fetching the small group room for user {user['id']}.",
+                "warning",
+            )
+            return redirect(url_for("meetings.index"))
+        except utils.NotFoundError as error:
+            current_app.logger.exception(error)
+            flash(
+                "You aren't mentoring a small group, creating a generic attendance code instead.",
+                "warning",
+            )
+
+    # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
+    # then find <meeting_id>:default. The latter keyword determines how many unique
+    # sessions can be opened. For instance, if there are 10 small group rooms, 10
+    # unique sessions rooms can be opened.
+    if not attendance.room_exists(meeting_id, small_group_id):
+        g.context["code"] = attendance.register_room(
+            meeting["location"], meeting_id, small_group_id
+        )
+    else:
+        g.context["code"] = attendance.get_code_for_room(meeting_id, small_group_id)
+
+    return render_template("meetings/open.html", **g.context)
+
+
+@bp.route("/<meeting_id>/attendance/close", methods=["POST"])
+@mentor_or_above_required
+@login_required
+def close(meeting_id: str):
+    """Closes a room for attendance."""
+    code = request.form["code"]
+    attendance.close_room(code)
+
+    return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
 
 def meeting_to_event(meeting: Dict[str, Any]) -> Dict[str, Any]:

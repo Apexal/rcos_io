@@ -10,7 +10,7 @@ from .services import filters, database, settings
 
 # Import and register blueprints
 # See https://flask.palletsprojects.com/en/2.2.x/blueprints/
-from .blueprints import auth, meetings, users, projects, attendance
+from .blueprints import auth, meetings, users, projects
 
 # Create and configure the app
 app = Flask(__name__)
@@ -41,4 +41,3 @@ app.register_blueprint(auth.bp, url_prefix="/")
 app.register_blueprint(projects.bp, url_prefix="/projects")
 app.register_blueprint(meetings.bp, url_prefix="/meetings")
 app.register_blueprint(users.bp, url_prefix="/users")
-app.register_blueprint(attendance.bp, url_prefix="/attendance")

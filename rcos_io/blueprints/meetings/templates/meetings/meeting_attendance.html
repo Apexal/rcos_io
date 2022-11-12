@@ -1,0 +1,72 @@
+{% extends "/base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Attendance</h1>
+    {% if meeting %}
+    <h2 class="mb-3">
+        For
+        <a class="text-capitalize" href="{{ url_for('meetings.detail', meeting_id=meeting['id']) }}">
+            {{ meeting.name or (meeting.type + " Meeting") }}</a>
+        {% if small_group %}
+        in <strong>{{ small_group["name"] }}</strong>
+        {% endif %}
+    </h2>
+    {% endif %}
+    
+    {% include '/_includes/flashed_messages.html' %}
+
+    <div class="row">
+        <div class="col">
+            <div class="card mb-5">
+                <div class="card-header d-flex">
+                    <span class="me-auto">Attended</span>
+                    <span class="badge bg-secondary">{{ attendances|length }} total</span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <form method="POST" class="d-flex">
+                            <input
+                                type="text"
+                                class="form-control me-1"
+                                placeholder="Manually add attendance by user ID, email, or RCS ID"
+                            />
+                            <button class="btn btn-dark">Add</button>
+                        </form>
+                    </li>
+                    {% for attendance in attendances %}
+                    <li class="list-group-item d-flex">
+                        <span class="me-auto">
+                            <a href="{{ url_for('users.detail', user_id=attendance['user']['id']) }}">{{ attendance["user"]["display_name"] }}</a>
+                        </span>
+                        {% if attendance["is_manually_added"] %}
+                        <span class="badge bg-warning">Manually Added</span>
+                        {% endif %}
+                        <span class="text-muted">
+                            {{ attendance["created_at"]|format_datetime("%-I:%M %p") }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col">
+            {% if non_attendance_users is not none %}
+            <div class="card">
+                <div class="card-header d-flex">
+                    <span class="me-auto">Did Not Attend</span>
+                    <span class="badge bg-danger">{{ non_attendance_users|length }} total</span>
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for user in non_attendance_users %}
+                    <li class="list-group-item">
+                        <a href="{{ url_for('users.detail', user_id=user['id']) }}">{{ user["display_name"] }}</a>                        
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

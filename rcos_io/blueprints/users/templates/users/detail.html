@@ -2,7 +2,7 @@
 <div class="container">
   <h1 class="display-2">{{ user['display_name'] or "Unnamed Member" }}</h1>
   <p class="fs-3">
-    {% if g.is_logged_in %}
+    {% if g.is_logged_in and g.user["is_verified"] %}
     <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
     {% endif %}
     {% if user["role"] == "rpi" %}
@@ -104,7 +104,7 @@
         </div>
       </div>
       {% endif %}
-      {% if g.is_logged_in and discord_user %}
+      {% if g.is_logged_in and g.user["is_verified"] and discord_user %}
       <div
         class="card mb-3"
         style="background-color: #5865f2; color: white; height: 95px"

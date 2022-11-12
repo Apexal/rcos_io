@@ -11,6 +11,7 @@ import datetime
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, cast
+from gql import Client
 from rcos_io.services import cache, database
 
 ATTENDANCE_CODE_LENGTH = 6
@@ -71,7 +72,7 @@ def register_room(
     return code
 
 
-def record_attendance(client, user_id, meeting_id):
+def record_attendance(client: Client, user_id: str, meeting_id: str):
     """
     Records an attendance to the database & cache. Users are added
     to the cache so that it is very quick to verify if someone has already
@@ -155,7 +156,9 @@ def validate_code(code: str, user_id: str, rcs_id: str):
 
     # does there exist an attendance record for this user already? In
     # other words, has this person already recorded an attendance for this meeting?
-    if cache.get_cache().sismember("recorded_attendances", f'{user_id}:{room["meeting_id"]}'):
+    if cache.get_cache().sismember(
+        "recorded_attendances", f'{user_id}:{room["meeting_id"]}'
+    ):
         return True, False
 
     # the user has the correct code, however they were selected to be manually verified

@@ -32,7 +32,9 @@
         {{ nav_item("Projects", url_for("projects.index")) }}
         {{ nav_item("Users", url_for("users.index")) }}
         {{ nav_item("Meetings", url_for("meetings.index")) }}
-        {{ nav_item("Attend", url_for("attendance.attend"))}}
+        {% if g.is_logged_in and g.user["role"] == "rpi" %}
+        {{ nav_item("Attend", url_for("meetings.attend"))}}
+        {% endif %}
         <a class="nav-link" href="https://handbook.rcos.io" target="_blank"
           >Handbook <i class="bi bi-box-arrow-up-right"></i>
           </a
@@ -49,6 +51,9 @@
             aria-expanded="false"
           >
            Logged in as <strong>{{ g.user["display_name"] }}</strong>
+           {% if not g.user["is_verified"]%}
+           <span class="badge bg-danger">UNVERIFIED</span>
+           {% endif %}
           </a>
           <ul class="dropdown-menu">
             <li>

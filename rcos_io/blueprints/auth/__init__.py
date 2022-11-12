@@ -6,7 +6,7 @@ from datetime import date
 import functools
 import random
 import string
-from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, cast
 from requests import HTTPError
 
 from flask import (
@@ -112,9 +112,10 @@ def verified_required(view: C) -> C:
     ```
     """
 
+    @login_required
     @functools.wraps(view)
     def wrapped_view(**kwargs: Any):
-        if g.user is None or not g.user["is_verified"]:
+        if not g.user["is_verified"]:
             flash("You must verified to view that page!", "danger")
             return redirect("/")
 
@@ -140,17 +141,35 @@ def setup_required(view: C) -> C:
     ```
     """
 
+    @verified_required
     @functools.wraps(view)
     def wrapped_view(**kwargs: Any):
-        if (
-            g.user is None
-            or not g.user["discord_user_id"]
-            or not g.user["github_username"]
-            or not g.user["secondary_email"]
-            or not g.user["is_secondary_email_verified"]
-        ):
-            flash("You must finish your profile first!", "danger")
-            return redirect("/")
+        # Check what is not on the user yet and compile a error message
+        not_done: List[str] = []
+        if not g.user["first_name"]:
+            not_done.append("adding your first name")
+        if not g.user["last_name"]:
+            not_done.append("adding your last name")
+
+        if settings.ENV == "production":
+            if not g.user["discord_user_id"]:
+                not_done.append("linking your Discord")
+            if not g.user["github_username"]:
+                not_done.append("linking your GitHub")
+
+        # TODO: enable secondary emails
+        # if not g.user["secondary_email"]:
+        #     not_done.append("adding your secondary email")
+        # if not g.user["is_secondary_email_verified"]:
+        #     not_done.append("verifying your secondary email")
+
+        if len(not_done) > 0:
+            flash(
+                f"You must finish your profile by {', '.join(not_done)}"
+                " before accessing that page!",
+                "danger",
+            )
+            return redirect(url_for("auth.profile"))
 
         return view(**kwargs)
 
@@ -169,6 +188,7 @@ def rpi_required(view: C) -> C:
     ```
     """
 
+    @setup_required
     @functools.wraps(view)
     def wrapped_view(**kwargs: Any):
         if g.user is None or g.user["role"] != "rpi":
@@ -200,6 +220,7 @@ def mentor_or_above_required(view: C) -> C:
     ```
     """
 
+    @setup_required
     @functools.wraps(view)
     def wrapped_view(**kwargs: Any):
         if not session.get("is_mentor_or_above"):
@@ -231,6 +252,7 @@ def coordinator_or_above_required(view: C) -> C:
     ```
     """
 
+    @setup_required
     @functools.wraps(view)
     def wrapped_view(**kwargs: Any):
         if not session.get("is_coordinator_or_above"):

@@ -4,6 +4,13 @@
   We fall back to 'secondary' by default.
 #}
 
+{% if g.is_logged_in and not g.user["is_verified"] %}
+<div class="alert alert-warning">
+  Your account is <strong>pending verification</strong> by the RCOS administration. Your access will be limited
+  until you are verified.
+</div>
+{% endif %}
+
 {% for type, message in get_flashed_messages(with_categories=true) %}
 <div
   class="alert alert-{% if type != 'message' %}{{ type }}{% else %}secondary{% endif %}"
