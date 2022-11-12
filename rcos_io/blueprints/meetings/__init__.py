@@ -184,6 +184,35 @@ def attend():
     return redirect(url_for("meetings.attend"))
 
 
+@bp.route("/attendance/verify", methods=["POST"])
+@mentor_or_above_required
+def verify_attendance():
+    """
+    Handles verifying a user ID given a meeting ID.
+    """
+    payload: Optional[Dict[str, Any]] = request.json
+    print(payload)
+    if payload is None:
+        return "Missing payload", 400
+
+    user_id = payload["user_id"]
+    meeting_id = payload["meeting_id"]
+
+    if not attendance.verify_user(user_id):
+        return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
+
+    # get the user ID from RCS ID
+    user = database.find_user_by_rcs_id(g.db_client, user_id)
+    print(user)
+    if user is None:
+        return "Can't find user with that RCS ID!", 400
+
+    # successfully verified; submit attendence for the verified user
+    database.insert_attendance(g.db_client, user["id"], meeting_id)
+
+    return "Successfully verified!", 200
+
+
 @bp.route("/<meeting_id>")
 @setup_required
 @for_meeting
