@@ -36,6 +36,11 @@ def get_meetings(
                 type
                 start_date_time
                 end_date_time
+                meeting_attendances_aggregate {
+                    aggregate {
+                        count
+                    }
+                }
             }
         }
         """
@@ -51,6 +56,7 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
         query find_meeting_by_id($meeting_id: uuid!) {
             meeting: meetings_by_pk(id:$meeting_id) {
                 id
+                semester_id
                 name
                 type
                 start_date_time
@@ -60,6 +66,11 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
                 host {
                     id
                     display_name
+                }
+                meeting_attendances_aggregate {
+                    aggregate {
+                        count
+                    }
                 }
             }
         }

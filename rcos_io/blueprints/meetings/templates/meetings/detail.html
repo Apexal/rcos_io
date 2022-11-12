@@ -47,5 +47,8 @@
     {% if can_open_attendance %}
     <a class="btn btn-primary" href="{{ url_for('meetings.open_attendance', meeting_id=meeting['id']) }}">Open Attendance</a>
     {% endif %}
+    {% if session.get("is_mentor_or_above") %}
+    <a href="{{ url_for('attendance.index', meeting_id=meeting['id']) }}" class="btn btn-info">View Attendance <span class="badge bg-white text-dark">{{ meeting["meeting_attendances_aggregate"]["aggregate"]["count"] }}</span></a>
+    {% endif %}
 </div>
 {% endblock %}

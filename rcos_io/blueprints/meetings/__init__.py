@@ -27,7 +27,7 @@ from rcos_io.blueprints.auth import (
     login_required,
     mentor_or_above_required,
 )
-from rcos_io.services import attendance, database
+from rcos_io.services import attendance, database, utils
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -133,13 +133,6 @@ def detail(meeting_id: str):
     )
 
 
-# @bp.route("/<meeting_id>/attendances")
-# @mentor_or_above_required
-# @for_meeting
-# def attendances(meeting_id: str):
-#     return g.context
-
-
 @bp.route("/<meeting_id>/open")
 @login_required
 @mentor_or_above_required
@@ -156,13 +149,24 @@ def open_attendance(meeting_id: str):
 
         # Find this mentor's small group
         try:
-            small_group_id = database.get_mentor_small_group(g.db_client, user["id"])[
-                "small_group_id"
-            ]
+            small_group = database.get_mentor_small_group(
+                g.db_client, meeting["semester_id"], user["id"]
+            )
+            if small_group is None:
+                raise utils.NotFoundError()
+
+            small_group_id: str = small_group["id"]
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
                 f"There was an error fetching the small group room for user {user['id']}.",
+                "warning",
+            )
+            return redirect(url_for("meetings.index"))
+        except utils.NotFoundError as error:
+            current_app.logger.exception(error)
+            flash(
+                "Couldn't find your small group.",
                 "warning",
             )
             return redirect(url_for("meetings.index"))

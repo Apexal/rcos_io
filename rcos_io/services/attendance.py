@@ -155,7 +155,9 @@ def validate_code(code: str, user_id: str, rcs_id: str):
 
     # does there exist an attendance record for this user already? In
     # other words, has this person already recorded an attendance for this meeting?
-    if cache.get_cache().sismember("recorded_attendances", f'{user_id}:{room["meeting_id"]}'):
+    if cache.get_cache().sismember(
+        "recorded_attendances", f'{user_id}:{room["meeting_id"]}'
+    ):
         return True, False
 
     # the user has the correct code, however they were selected to be manually verified
