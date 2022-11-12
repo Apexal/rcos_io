@@ -307,10 +307,9 @@ def open_attendance(meeting_id: str):
         except utils.NotFoundError as error:
             current_app.logger.exception(error)
             flash(
-                "Couldn't find your small group.",
+                "You aren't mentoring a small group, creating a generic attendance code instead.",
                 "warning",
             )
-            return redirect(url_for("meetings.index"))
 
     # If we're in a small group room, look for <meeting_id>:<small_group_id>. If not,
     # then find <meeting_id>:default. The latter keyword determines how many unique
