@@ -84,6 +84,7 @@ def add():
 
     # Extract form values
     name = request.form["project_name"]
+    short_desc = request.form["project_short_desc"]
     desc = request.form["project_desc"]
     stack = request.form["project_stack"]
 
@@ -96,6 +97,7 @@ def add():
         "owner_id": user["id"],
         "name": name,
         "description_markdown": desc,
+        "short_description": short_desc,
         "tags": stack,
     }
 

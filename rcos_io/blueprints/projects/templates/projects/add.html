@@ -7,7 +7,7 @@
   
   <form method="post">
     <div class="form-group">
-      <label for="project_name">Project Name</label>
+      <label for="project_name">Name</label>
       <input
         type="text"
         class="form-control"
@@ -20,8 +20,25 @@
 
     <br />
 
+	<div class="form-group">
+	  <label for="project_short_desc">Tagline</label>
+	  <input
+		type="text"
+		class="form-control"
+		id="project_short_desc"
+		name="project_short_desc"
+		placeholder="Revolutionary new Discord bot."
+		required
+	  />
+	  <small id="project_short_desc" class="form-text text-muted">
+		  Describe your project in one or two short sentences.
+	  </small>
+	</div>
+
+    <br />
+
     <div class="form-group">
-      <label for="project_desc">Project Description</label>
+      <label for="project_desc">Description</label>
       <textarea
         class="form-control"
         id="project_desc"
@@ -31,6 +48,9 @@
         placeholder="XYZ is a revolutionary new Discord bot that does..."
         required
       ></textarea>
+	  <small id="project_desc" class="form-text text-muted">
+		  Describe your project in more detail.
+	  </small>
     </div>
 
     <br />
