@@ -134,7 +134,7 @@ def add_project(client: Client, project_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     query = gql(
         """
-        mutation AddProject($owner_id: uuid!, $project_data: projects_insert_input!) {
+        mutation AddProject($project_data: projects_insert_input!) {
             insert_projects_one(object: $project_data) {
                 id
             }

@@ -92,21 +92,24 @@ def add():
     # Handle POST form submission and to add project
 
     # Extract form values
-    name = request.form["project_name"]
-    desc = request.form["project_desc"]
-    stack = request.form["project_stack"]
+    name = request.form["name"]
+    short_description = request.form["short_description"]
+    description_markdown = request.form["description_markdown"]
 
     # separate each technology in the list string
     # into separate strings and then trim extra whitespace
-    stack = list(set(s.strip().lower() for s in stack.split(",")))
+    tags = list(set(f'"{s.strip().lower()}"' for s in request.form["tags"].split(",")))
 
     user: Dict[str, Any] = g.user
     project_data = {
         "owner_id": user["id"],
         "name": name,
-        "description_markdown": desc,
-        "tags": stack,
+        "short_description": short_description,
+        "description_markdown": description_markdown,
+        "tags": "{" + ",".join(tags) + "}",
     }
+
+    print(project_data)
 
     try:
         inserted_project = database.add_project(g.db_client, project_data)
@@ -115,7 +118,7 @@ def add():
         flash("Oops! There was en error while submitting the project.", "danger")
         return redirect(url_for("projects.index"))
     #
-    #   TODO: send validation to Discord, validation panel in site
+    #   TODO: send approval request to Discord
     #
 
     return redirect(url_for("projects.detail", project_id=inserted_project["id"]))

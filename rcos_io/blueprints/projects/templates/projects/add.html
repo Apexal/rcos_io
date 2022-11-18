@@ -6,29 +6,38 @@
   {% include '/_includes/flashed_messages.html' %}
   
   <form method="post">
-    <div class="form-group">
+    <div class="form-group mb-3">
       <label for="project_name">Project Name</label>
       <input
         type="text"
         class="form-control"
-        id="project_name"
-        name="project_name"
+        id="name"
+        name="name"
         placeholder="Submitty 2, Yet Another Course Scheduler, ..."
         required
       />
     </div>
 
-    <br />
+    <div class="form-group mb-3">
+      <label for="short_description">One-line Description</label>
+      <input
+        type="text"
+        class="form-control"
+        id="short_description"
+        name="short_description"
+        placeholder="Coolest project ever..."
+        required
+      >
+    </div>
 
     <div class="form-group">
-      <label for="project_desc">Project Description</label>
+      <label for="description_markdown">Full Description</label>
       <textarea
         class="form-control"
-        id="project_desc"
-        name="project_desc"
-        rows="3"
-        ,
-        placeholder="XYZ is a revolutionary new Discord bot that does..."
+        id="description_markdown"
+        name="description_markdown"
+        rows="5"
+        placeholder="**Markdown** is *supported*!"
         required
       ></textarea>
     </div>
@@ -36,16 +45,16 @@
     <br />
 
     <div class="form-group">
-      <label for="project_stack">Technical Stack</label>
+      <label for="tags">Technical Stack</label>
       <input
         type="text"
         class="form-control"
-        id="project_stack"
-        name="project_stack"
+        id="tags"
+        name="tags"
         placeholder="Node.js, React, Haskell, etc..."
         required
       />
-      <small id="project_stack_format" class="form-text text-muted"
+      <small class="form-text text-muted"
         >Separate the different technologies by a comma (Node.js,
         React.js)</small
       >
