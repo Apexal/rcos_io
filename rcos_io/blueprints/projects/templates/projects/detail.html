@@ -8,42 +8,45 @@
 
 	{% include '/_includes/flashed_messages.html' %}
 
-	<blockquote class="blockquote">
-		<p>{{ project["short_description"] }}</p>
-	</blockquote>
-	{% for tag in project['tags'] %}
-		<span class="badge bg-secondary">{{ tag }}</span>
-	{% endfor %}
 	<div>
-		{{ description_markdown | safe }}
+		<blockquote class="blockquote">
+			<p>{{ project["short_description"] }}</p>
+		</blockquote>
+		{% for tag in project['tags'] %}
+			<span class="badge bg-secondary">{{ tag }}</span>
+		{% endfor %}
+		<div class="my-3">
+			{{ project["description_markdown"] | safe }}
+		</div>
 	</div>
 
 	<hr/>
 
-	<h2 class="mb-3">Team Members</h2>
-	{% for semester_id, enrollments in enrollments_by_semester_id.items() %}
-	<div class="mb-3">
-		<h3>{{ enrollments[0]["semester"]["name"] }}</h3>
-		<ul>
-			{% for user in enrollments %}
-				<li>
-					<a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a>
-					{% if user["is_project_lead"] %}
-					<span class="badge bg-warning">Lead</span>
-					{% endif %}
-				</li>
-			{% endfor %}
-		</ul>
+	<div class="mb-5">
+		<h2 class="mb-3">Team Members <span class="badge bg-secondary">{{ project["enrollments"]|length }} total</span></h2>
+		{% for semester_id, enrollments in enrollments_by_semester_id.items() %}
+		<div class="mb-3">
+			<h3>{{ enrollments[0]["semester"]["name"] }} <span class="badge bg-secondary">{{ enrollments|length }}</span></h3>
+			<ul>
+				{% for user in enrollments %}
+					<li>
+						<a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a>
+						{% if user["is_project_lead"] %}
+						<span class="badge bg-warning">Lead</span>
+						{% endif %}
+					</li>
+				{% endfor %}
+			</ul>
+		</div>
+		{% endfor %}
 	</div>
-	{% endfor %}
-	<!-- {% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
-	{% else %}
-		<i>None yet!</i>
-	{% endif %} -->
-
+	
 	{% if session.get("is_coordinator_or_above") %}
-	<hr>
-	<a href="https://rcos-hasura.up.railway.app/console/data/default/schema/public/tables/projects/browse" class="btn btn-light" target="_blank">Edit on Hasura</a>
-	{% endif %}
+    <div class="btn-group ms-auto">
+      <a class="btn btn-light" href="{{ config['HASURA_CONSOLE_URL'] }}/data/default/schema/public/tables/projects/browse" target="_blank">Edit in Hasura Console
+        <i class="bi bi-box-arrow-up-right ms-2"></i>
+      </a>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
