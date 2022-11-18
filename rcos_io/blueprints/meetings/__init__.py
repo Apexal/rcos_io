@@ -24,7 +24,6 @@ from graphql.error import GraphQLError
 
 from rcos_io.blueprints.auth import (
     rpi_required,
-    setup_required,
     mentor_or_above_required,
 )
 from rcos_io.services import attendance, database, utils
@@ -213,7 +212,6 @@ def verify_attendance():
 
 
 @bp.route("/<meeting_id>")
-@setup_required
 @for_meeting
 def detail(meeting_id: str):
     """Renders the detail page for a particular meeting."""
