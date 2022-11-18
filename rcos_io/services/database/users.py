@@ -1,13 +1,17 @@
 """
 This module contains database CRUD operations for users.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 from gql import Client, gql
 
 from . import fragments
 
 
-def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]]:
+def get_users(
+    client: Client,
+    semester_id: Optional[str] = None,
+    is_verified: Optional[bool] = True,
+):
     """Fetches users for a particular semester, or ALL users if semester_id is None."""
     query = gql(
         """
@@ -34,13 +38,16 @@ def get_users(client: Client, semester_id: Optional[str]) -> List[Dict[str, Any]
         """
     )
 
-    where_clause: Dict[str, Any] = {}
+    where_clause: Dict[str, Any] = {"is_verified": {"_eq": True}}
 
     if semester_id:
         where_clause["enrollments"] = {"semester_id": {"_eq": semester_id}}
 
+    if is_verified is not None:
+        where_clause["is_verified"] = {"_eq": is_verified}
+
     result = client.execute(query, variable_values={"where": where_clause})
-    return result["users"]
+    return cast(List[Dict[str, Any]], result["users"])
 
 
 def find_or_create_user_by_email(

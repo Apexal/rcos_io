@@ -24,7 +24,11 @@ bp = Blueprint("users", __name__, template_folder="templates")
 
 @bp.route("/")
 def index():
-    """Gets all users enrolled for a specific semester OR for all semesters."""
+    """
+    Gets all users enrolled for a specific semester OR for all semesters.
+
+    Only includes verified users.
+    """
 
     # Search term to filter users on
     # TODO: use it!
@@ -45,20 +49,16 @@ def index():
     }
 
     try:
-        all_users = database.get_users(g.db_client, semester_id)
+        context["users"] = database.get_users(g.db_client, semester_id=semester_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to fetch users.", "danger")
         return redirect(url_for("users.index", semester_id="all"))
 
-    context["verified_users"] = cast(List[Dict[str, Any]], [])
-    context["unverified_users"] = cast(List[Dict[str, Any]], [])
-
-    for user in all_users:
-        if user["is_verified"]:
-            context["verified_users"].append(user)
-        else:
-            context["unverified_users"].append(user)
+    # Only coordinators+ need to know about unverified users
+    if session.get("is_coordinator_or_above"):
+        print("Extra fetch")
+        context["unverified_users"] = database.get_users(g.db_client, is_verified=False)
 
     return render_template("users/index.html", **context)
 
@@ -70,12 +70,7 @@ def verify():
     """Renders the list of **unverified** users and handles verifying them."""
     if request.method == "GET":
         try:
-            unverified_users: List[Dict[str, Any]] = list(
-                filter(
-                    lambda user: not user["is_verified"],
-                    database.get_users(g.db_client, None),
-                )
-            )
+            unverified_users = database.get_users(g.db_client, is_verified=False)
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
