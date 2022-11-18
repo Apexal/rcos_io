@@ -4,38 +4,42 @@
 
 {% block content %}
 <div class="container">
-	<h1 class="display-2">{{ project['name'] }}</h1>
+	<h1 class="display-1">{{ project['name'] }}</h1>
 
 	{% include '/_includes/flashed_messages.html' %}
 
 	<blockquote class="blockquote">
 		<p>{{ project["short_description"] }}</p>
 	</blockquote>
+	{% for tag in project['tags'] %}
+		<span class="badge bg-secondary">{{ tag }}</span>
+	{% endfor %}
 	<div>
-		{{ full_description | safe }}
+		{{ description_markdown | safe }}
 	</div>
-
-	<h3>Stack</h3>
-	{% if project['tags'] is defined and project['tags'] is not none and project['tags']|length > 0 %}
-		<ul>
-			{% for s in project['tags'] %}
-				<li>{{ s }}</li>
-			{% endfor %}
-		</ul>
-	{% else %}
-		<i>None yet!</i>
-	{% endif %}
 
 	<hr/>
 
-	<h3>users</h3>
-	{% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
-		{% for user in project['enrollments'] %}
-			<li><a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a> {{ "(Project Lead)" if user['is_project_lead'] else "" }}</li>
-		{% endfor %}
+	<h2 class="mb-3">Team Members</h2>
+	{% for semester_id, enrollments in enrollments_by_semester_id.items() %}
+	<div class="mb-3">
+		<h3>{{ enrollments[0]["semester"]["name"] }}</h3>
+		<ul>
+			{% for user in enrollments %}
+				<li>
+					<a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a>
+					{% if user["is_project_lead"] %}
+					<span class="badge bg-warning">Lead</span>
+					{% endif %}
+				</li>
+			{% endfor %}
+		</ul>
+	</div>
+	{% endfor %}
+	<!-- {% if project['enrollments'] is defined and project['enrollments']|length > 0 %}
 	{% else %}
 		<i>None yet!</i>
-	{% endif %}
+	{% endif %} -->
 
 	{% if session.get("is_coordinator_or_above") %}
 	<hr>

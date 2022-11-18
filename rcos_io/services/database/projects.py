@@ -20,7 +20,15 @@ def get_project_by_id(client: Client, project_id: str) -> Optional[Dict[str, Any
                 id
                 short_description
                 description_markdown
-                enrollments {
+                enrollments(order_by: [
+                    {semester_id: desc},
+                    {is_project_lead: desc},
+                    {user: {display_name: asc}}
+                ]) {
+                    semester_id
+                    semester {
+                        name
+                    }
                     user_id
                     is_project_lead
                     user {
@@ -28,7 +36,6 @@ def get_project_by_id(client: Client, project_id: str) -> Optional[Dict[str, Any
                         rcs_id
                         display_name
                     }
-                    semester_id
                 }
             }
         }

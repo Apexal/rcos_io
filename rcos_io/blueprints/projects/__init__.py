@@ -2,7 +2,8 @@
 This module contains the projects blueprint, which stores
 all project related views and functionality.
 """
-from typing import Any, Dict
+from collections import defaultdict
+from typing import Any, Dict, List
 from flask import (
     Blueprint,
     request,
@@ -79,7 +80,6 @@ def index():
 
 
 @bp.route("/add", methods=("GET", "POST"))
-@auth.login_required
 @auth.rpi_required
 def add():
     """
@@ -122,7 +122,6 @@ def add():
 
 
 @bp.route("/approve", methods=("GET", "POST"))
-@auth.login_required
 @auth.coordinator_or_above_required
 def approve():
     """Renders the list of **unapproved** projects and handles verifying them."""
@@ -170,15 +169,6 @@ def approve():
 def detail(project_id: str):
     """Renders the detail page for a specific project."""
 
-    # Fetch target semester ID from url or default to current active one (which might not exist)
-    semester_id, semester = utils.get_target_semester(request, session)
-
-    # Values passed to template
-    context: Dict[str, Any] = {
-        "semester_id": semester_id,
-        "semester": semester,
-    }
-
     # Attempt to fetch project
     try:
         project = database.get_project_by_id(g.db_client, project_id)
@@ -192,19 +182,18 @@ def detail(project_id: str):
         flash("No such project with that ID exists!", "warning")
         return redirect(url_for("projects.index"))
 
-    # TODO: semester-specific project pages via ?semester_id
-    # parse out any project members that are *not* in the project this semester
-    project["enrollments"] = list(
-        filter(
-            lambda enrollment: enrollment["semester_id"] == session["semester"]["id"],
-            project["enrollments"],
-        )
+    # Group enrollments by semesters
+    enrollments_by_semester_id: defaultdict[str, List[Dict[str, Any]]] = defaultdict(
+        lambda: []
     )
+
+    for enrollment in project["enrollments"]:
+        enrollments_by_semester_id[enrollment["semester_id"]].append(enrollment)
 
     # Sanitize the project's markdown description to remove any sketchy HTML
     # This prevents Cross-Site Scripting (XSS) attacks (hopefully...)
     compiled_md = markdown.markdown(project["description_markdown"])
-    context["full_description"] = Markup(
+    project["description_markdown"] = Markup(
         bleach.clean(
             compiled_md,
             tags=[
@@ -226,6 +215,9 @@ def detail(project_id: str):
             ],
         )
     )
-    context["project"] = project
 
-    return render_template("projects/detail.html", **context)
+    return render_template(
+        "projects/detail.html",
+        project=project,
+        enrollments_by_semester_id=enrollments_by_semester_id,
+    )
