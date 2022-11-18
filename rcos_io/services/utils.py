@@ -57,7 +57,7 @@ def get_target_semester(request: Request, session: SessionMixin):
     """
     semester_id: Optional[str] = request.args.get("semester_id")
 
-    if not semester_id and "semester" in session:
+    if not semester_id and session.get("semester"):
         semester_id = session["semester"]["id"]
     elif not semester_id or semester_id == "all":
         semester_id = None
