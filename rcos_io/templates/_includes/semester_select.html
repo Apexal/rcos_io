@@ -2,5 +2,5 @@
     {% for sem in session["semesters"] %}
     <option value="{{ sem['id'] }}" {% if semester_id == sem["id"] %}selected{% endif %}>{{ sem["name"]|capitalize }}</option>
     {% endfor %}
-    <option value="all" {% if semester_id == "all" %}selected{% endif %}>All Semesters</option>
+    <option value="all" {% if semester_id is none %}selected{% endif %}>All Semesters</option>
 </select>

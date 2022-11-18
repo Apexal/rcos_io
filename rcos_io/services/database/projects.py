@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from gql import Client, gql
 
 
-def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
+def get_project_by_id(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
     """
     Fetches the project with the given ID.
     Returns project name, participants, description, tags and relevant repos.
@@ -42,20 +42,26 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
 def get_projects(
     client: Client,
     with_enrollments: bool,
-    semester_id: Optional[str],
+    semester_id: Optional[str] = None,
+    is_approved: Optional[bool] = True,
+    is_looking_for_members: Optional[bool] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
     Fetches all projects in the current semester.
     Returns project name.
     """
 
-    projects_where_exp = {}
-    if semester_id:
+    projects_where_exp: Dict[str, Any] = {}
+    enrollments_where_exp: Dict[str, Any] = {}
+    if semester_id is not None:
         projects_where_exp = {"enrollments": {"semester_id": {"_eq": semester_id}}}
-
-    enrollments_where_exp = {}
-    if semester_id:
         enrollments_where_exp = {"semester_id": {"_eq": semester_id}}
+
+    if is_approved is not None:
+        projects_where_exp["is_approved"] = {"_eq": is_approved}
+
+    if is_looking_for_members is not None:
+        projects_where_exp["is_looking_for_members"] = {"_eq": is_looking_for_members}
 
     query = gql(
         """

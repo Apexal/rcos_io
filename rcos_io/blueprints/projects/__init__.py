@@ -42,29 +42,38 @@ def index():
         flash("No such semester found!", "warning")
         return redirect(url_for("projects.index", semester_id="all"))
 
+    is_looking_for_members = (
+        True
+        if semester and request.args.get("is_looking_for_members") is not None
+        else None
+    )
+
     # Values passed to template
     context: Dict[str, Any] = {
         "search": search,
+        "is_looking_for_members": is_looking_for_members,
         "semester_id": semester_id,
         "semester": semester,
     }
 
-    # Attempt to fetch projects
+    # Attempt to fetch APPROVED projects
     try:
-        all_projects = database.get_projects(g.db_client, False, semester_id)
+        context["projects"] = database.get_projects(
+            g.db_client,
+            False,
+            semester_id=semester_id,
+            is_looking_for_members=is_looking_for_members,
+        )
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! There was an error while fetching the projects.", "danger")
         return redirect(url_for("index"))
 
-    context["approved_projects"] = []
-    context["unapproved_projects"] = []
-
-    for project in all_projects:
-        if project["is_approved"]:
-            context["approved_projects"].append(project)
-        else:
-            context["unapproved_projects"].append(project)
+    # Only coordinators+ need to know about unapproved projects
+    if session.get("is_coordinator_or_above"):
+        context["unapproved_projects"] = database.get_projects(
+            g.db_client, False, is_approved=False
+        )
 
     return render_template("projects/index.html", **context)
 
@@ -119,13 +128,9 @@ def approve():
     """Renders the list of **unapproved** projects and handles verifying them."""
     if request.method == "GET":
         try:
-            unapproved_projects = [
-                project
-                for project in database.get_projects(
-                    g.db_client, False, semester_id=None
-                )
-                if not project["is_approved"]
-            ]
+            unapproved_projects = database.get_projects(
+                g.db_client, False, is_approved=False
+            )
 
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
@@ -176,7 +181,7 @@ def detail(project_id: str):
 
     # Attempt to fetch project
     try:
-        project = database.get_project(g.db_client, project_id)
+        project = database.get_project_by_id(g.db_client, project_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Invalid project ID!", "danger")
