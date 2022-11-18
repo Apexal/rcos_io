@@ -57,7 +57,6 @@ def index():
 
     # Only coordinators+ need to know about unverified users
     if session.get("is_coordinator_or_above"):
-        print("Extra fetch")
         context["unverified_users"] = database.get_users(g.db_client, is_verified=False)
 
     return render_template("users/index.html", **context)
@@ -118,18 +117,19 @@ def detail(user_id: str):
 
     # User might be found or not found
     # Also, only show unverified users to admins so they can approve or deny them
-    if user and (user["is_verified"] or session.get("is_coordinator_or_above")):
-        if user["discord_user_id"]:
-            discord_user = discord.get_user(user["discord_user_id"])
-        else:
-            discord_user = None
+    if user is None or (
+        not user["is_verified"] and not session.get("is_coordinator_or_above")
+    ):
+        flash("No user exists with that ID!", "warning")
+        return redirect(url_for("index"))
 
-        return render_template(
-            "users/detail.html",
-            user=user,
-            discord_user=discord_user,
-        )
+    if user["discord_user_id"]:
+        discord_user = discord.get_user(user["discord_user_id"])
+    else:
+        discord_user = None
 
-    # Handle user not found/not verified
-    flash("No user exists with that ID!", "warning")
-    return redirect(url_for("index"))
+    return render_template(
+        "users/detail.html",
+        user=user,
+        discord_user=discord_user,
+    )
