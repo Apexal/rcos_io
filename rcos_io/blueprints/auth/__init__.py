@@ -19,6 +19,7 @@ from flask import (
     session,
     url_for,
     flash,
+    abort,
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
@@ -359,6 +360,40 @@ def submit_otp():
         return redirect(redirect_to)
 
     return redirect(url_for("auth.profile" if is_new_user else "index"))
+
+
+@bp.route("/impersonate")
+def impersonate():
+    """
+    Allows local developers and Coordinators+ in production
+    to login as any user for testing.
+    """
+
+    # Ensure we're running locally OR we're logged in as a coordinator+ in production
+    if settings.ENV != "development" and not session.get("is_coordinator_or_above"):
+        abort(404)
+
+    rcs_id = request.args.get("rcs_id")
+    user_id = request.args.get("user_id")
+
+    if rcs_id:
+        # Find or create the user from the email entered
+        user = database.find_user_by_rcs_id(g.db_client, rcs_id)
+    elif user_id:
+        user = database.find_user_by_id(g.db_client, user_id)
+    else:
+        flash("No user ID or RCS ID provided.", "warning")
+        return redirect(url_for("index"))
+
+    if user is None:
+        flash("User not found.", "danger")
+        return redirect(url_for("index"))
+
+    session.clear()
+    session["user"] = g.user = user
+
+    flash(f"Logged in as {user['display_name']}", "info")
+    return redirect(url_for("index"))
 
 
 @bp.route("/logout")
