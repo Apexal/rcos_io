@@ -96,8 +96,7 @@ def add():
     short_description = request.form["short_description"]
     description_markdown = request.form["description_markdown"]
 
-    # separate each technology in the list string
-    # into separate strings and then trim extra whitespace
+    # Parse tags from comma-separated string and wrap in quotes to form postgres strings
     tags = list(set(f'"{s.strip().lower()}"' for s in request.form["tags"].split(",")))
 
     user: Dict[str, Any] = g.user
@@ -106,10 +105,8 @@ def add():
         "name": name,
         "short_description": short_description,
         "description_markdown": description_markdown,
-        "tags": "{" + ",".join(tags) + "}",
+        "tags": "{" + ",".join(tags) + "}",  # Postgres array literal {"val", "val"}
     }
-
-    print(project_data)
 
     try:
         inserted_project = database.add_project(g.db_client, project_data)
@@ -120,6 +117,13 @@ def add():
     #
     #   TODO: send approval request to Discord
     #
+
+    flash(
+        "Woo hoo! You proposed a new project. "
+        "Coordinators will review it and approve it or reach out to you. "
+        "It will not be listed until it is approved.",
+        "success",
+    )
 
     return redirect(url_for("projects.detail", project_id=inserted_project["id"]))
 
@@ -180,8 +184,10 @@ def detail(project_id: str):
         flash("Invalid project ID!", "danger")
         return redirect(url_for("projects.index"))
 
-    # Handle project not found
-    if project is None:
+    # Handle project not found or not approved
+    if project is None or (
+        not project["is_approved"] and not session.get("is_coordinators_or_above")
+    ):
         flash("No such project with that ID exists!", "warning")
         return redirect(url_for("projects.index"))
 

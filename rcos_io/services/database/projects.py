@@ -14,10 +14,11 @@ def get_project_by_id(client: Client, project_id: str) -> Optional[Dict[str, Any
         """
         query GetProject($pid: uuid!) {
             project: projects_by_pk(id: $pid) {
+                id
+                is_approved
                 name
                 tags
                 github_repos
-                id
                 short_description
                 description_markdown
                 enrollments(order_by: [
