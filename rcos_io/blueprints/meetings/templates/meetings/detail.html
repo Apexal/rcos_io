@@ -5,7 +5,7 @@
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
           <li class="breadcrumb-item active" aria-current="page"><a href="{{ url_for('meetings.index') }}">Meetings</a></li>
-          <li class="breadcrumb-item active" aria-current="page"><a href="#">Fall 2022</a></li>
+          <li class="breadcrumb-item active" aria-current="page"><a href="#">{{ meeting["semester"]["name"] }}</a></li>
           <li class="breadcrumb-item active text-capitalize" aria-current="page"><a href="#">{{ meeting["type"] }}s</a></li>
         </ol>
       </nav>

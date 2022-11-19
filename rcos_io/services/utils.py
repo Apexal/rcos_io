@@ -10,7 +10,9 @@ class NotFoundError(Exception):
     """Custom exception for when expected data was not found."""
 
 
-def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def active_semester(
+    semesters: List[Dict[str, Any]], on_date: Optional[date] = date.today()
+) -> Optional[Dict[str, Any]]:
     """
     Returns the semester that's either in progress or next up.
 
@@ -18,11 +20,12 @@ def active_semester(semesters: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
 
     Args:
         semesters: list of semester objects
+        on_date: the reference date
     Returns:
         the current or next semester OR `None` if neither exists
     """
 
-    today = str(date.today())
+    today = str(on_date)
 
     for semester in semesters:
         if semester["start_date"] <= today <= semester["end_date"]:

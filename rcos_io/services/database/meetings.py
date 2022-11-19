@@ -56,6 +56,10 @@ def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any
         query find_meeting_by_id($meeting_id: uuid!) {
             meeting: meetings_by_pk(id:$meeting_id) {
                 id
+                semester {
+                    id
+                    name
+                }
                 semester_id
                 name
                 type

@@ -109,7 +109,7 @@ def add():
                 "coordinators",
                 "other",
             ]
-            if session["is_coordinator_or_above"]
+            if session.get("is_coordinator_or_above")
             else ["workshop"]
         )
 
@@ -122,9 +122,17 @@ def add():
         flash("Mentors can only create workshops!", "warning")
         return redirect(url_for("meetings.index"))
 
+    # Determine the semester from the date
+    semester = utils.active_semester(
+        session["semesters"], datetime.fromisoformat(request.form["start_date_time"])
+    )
+    if semester is None:
+        flash("The start date is not within any known semester!", "danger")
+        return redirect(url_for("meetings.add"))
+
     # Form new meeting dictionary for insert
     meeting_data: Dict[str, Optional[str]] = {
-        "semester_id": session["semester"]["id"],
+        "semester_id": semester["id"],
         "name": request.form["name"].strip(),
         "type": request.form["type"],
         "start_date_time": request.form["start_date_time"],
