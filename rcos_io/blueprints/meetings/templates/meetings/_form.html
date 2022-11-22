@@ -1,0 +1,41 @@
+{% macro field_errors(field) -%}
+{% if field.errors %}
+    <ul class="errors">
+    {% for error in field.errors %}
+        <li class="text-danger">{{ error }}</li>
+    {% endfor %}
+    </ul>
+{% endif %}
+{%- endmacro %}
+
+{{ form.csrf_token }}
+
+<div class="mb-3">
+    {{ form.name.label(class_="form-label") }}
+    {{ form.name(class_="form-control") }}
+    {{ field_errors(form.name) }}
+</div>
+
+<div class="mb-3">
+    {{ form.type.label(class_="form-label") }}
+    {{ form.type(class_="form-control") }}
+    {{ field_errors(form.type) }}
+</div>
+
+<div class="mb-3">
+    {{ form.start_date_time.label(class_="form-label") }}
+    {{ form.start_date_time(class_="form-control") }}
+    {{ field_errors(form.start_date_time) }}
+</div>
+
+<div class="mb-3">
+    {{ form.end_date_time.label(class_="form-label") }}
+    {{ form.end_date_time(class_="form-control") }}
+    {{ field_errors(form.end_date_time) }}
+</div>
+
+<div class="mb-3">
+    {{ form.location.label(class_="form-label") }}
+    {{ form.location(class_="form-control") }}
+    {{ field_errors(form.location) }}
+</div>
