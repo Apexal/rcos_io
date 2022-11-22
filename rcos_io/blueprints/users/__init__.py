@@ -96,7 +96,7 @@ def verify():
     # Apply action
     if target_user_action == "verify":
         flash(f"Verified user {target_user_id}", "success")
-        database.update_user_by_id(g.db_client, target_user_id, {"is_verified": True})
+        database.update_user(g.db_client, target_user_id, {"is_verified": True})
     else:
         # TODO: actually delete user
         flash(f"Deleted user {target_user_id}", "info")
@@ -109,7 +109,7 @@ def detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
-        user = database.find_user_by_id(g.db_client, user_id, True)
+        user = database.get_user(g.db_client, user_id=user_id, include_enrollments=True)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("That is not a valid user ID!", "warning")

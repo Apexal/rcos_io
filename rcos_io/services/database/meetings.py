@@ -49,7 +49,7 @@ def get_meetings(
     return result["meetings"]
 
 
-def get_meeting_by_id(client: Client, meeting_id: str) -> Optional[Dict[str, Any]]:
+def get_meeting(client: Client, meeting_id: str) -> Optional[Dict[str, Any]]:
     """Fetches a particular meeting by it's ID."""
     query = gql(
         """
@@ -101,3 +101,12 @@ def insert_meeting(client: Client, meeting_data: Dict[str, Any]) -> Dict[str, An
         "insert_meetings_one"
     ]
     return new_meeting
+
+
+def update_meeting(client: Client, meeting_id: str, meeting_data: Dict[str, Any]):
+    """Updates a particular meeting."""
+    query = gql(
+        """
+    """
+    )
+    result = client.execute(query)

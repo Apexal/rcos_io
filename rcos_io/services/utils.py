@@ -10,7 +10,7 @@ class NotFoundError(Exception):
     """Custom exception for when expected data was not found."""
 
 
-def active_semester(
+def get_active_semester(
     semesters: List[Dict[str, Any]], on_date: Optional[date] = date.today()
 ) -> Optional[Dict[str, Any]]:
     """

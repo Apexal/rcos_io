@@ -41,7 +41,7 @@ def for_meeting(view: C) -> C:
     def wrapped_view(**kwargs: Any):
         # Attempt to fetch meeting
         try:
-            meeting = database.get_meeting_by_id(g.db_client, kwargs["meeting_id"])
+            meeting = database.get_meeting(g.db_client, kwargs["meeting_id"])
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("There was an error fetching the meeting.", "warning")
@@ -121,7 +121,7 @@ def add():
             return redirect(url_for("meetings.index"))
 
         # Determine the semester from the date
-        semester = utils.active_semester(
+        semester = utils.get_active_semester(
             session["semesters"], form.start_date_time.data
         )
         if semester is None:
@@ -134,14 +134,12 @@ def add():
             "type": form.type.data,
             "start_date_time": form.start_date_time.data.isoformat(),
             "end_date_time": form.end_date_time.data.isoformat(),
-            "location": form.location.data
+            "location": form.location.data,
         }
 
         # Attempt to insert meeting into database
         try:
-            new_meeting = database.insert_meeting(
-                g.db_client, meeting
-            )
+            new_meeting = database.insert_meeting(g.db_client, meeting)
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("Yikes! Failed to add meeting. Check logs.", "danger")
@@ -201,7 +199,6 @@ def verify_attendance():
     Handles verifying a user ID given a meeting ID.
     """
     payload: Optional[Dict[str, Any]] = request.json
-    print(payload)
     if payload is None:
         return "Missing payload", 400
 
@@ -212,8 +209,7 @@ def verify_attendance():
         return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
 
     # get the user ID from RCS ID
-    user = database.find_user_by_rcs_id(g.db_client, user_id)
-    print(user)
+    user = database.get_user(g.db_client, user_id=user_id)
     if user is None:
         return "Can't find user with that RCS ID!", 400
 
@@ -235,13 +231,35 @@ def detail(meeting_id: str):
     )
 
 
-@bp.route("/<meeting_id>/edit")
+@bp.route("/<meeting_id>/edit", methods=("GET", "POST"))
 @for_meeting
 def edit(meeting_id: str):
     """Renders the edit page for a particular meeting."""
-    form = forms.MeetingForm()
+    form = forms.MeetingForm(data=g.meeting)
+    form.type.choices = (
+        [
+            "small group",
+            "large group",
+            "workshop",
+            "bonus",
+            "mentors",
+            "coordinators",
+            "other",
+        ]
+        if session.get("is_coordinator_or_above")
+        else ["workshop"]
+    )
 
-    # if form.validate_on_submit():
+    if isinstance(form.start_date_time.data, str):
+        form.start_date_time.data = datetime.fromisoformat(form.start_date_time.data)
+    if isinstance(form.end_date_time.data, str):
+        form.end_date_time.data = datetime.fromisoformat(form.end_date_time.data)
+
+    if form.validate_on_submit():
+        form.populate_obj(g.meeting)
+        database.update_meeting(g.db_client, meeting_id, g.meeting)
+        flash("Updated meeting.", "info")
+        return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
     return render_template("meetings/edit.html", **g.context, form=form)
 

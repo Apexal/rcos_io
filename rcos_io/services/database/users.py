@@ -50,7 +50,7 @@ def get_users(
     return cast(List[Dict[str, Any]], result["users"])
 
 
-def find_or_create_user_by_email(
+def get_or_create_user_by_email(
     client: Client, email: str, role: str
 ) -> Tuple[Dict[str, Any], bool]:
     """
@@ -61,7 +61,7 @@ def find_or_create_user_by_email(
         found or created user
         whether the user was newly created or not
     """
-    user = find_user_by_email(client, email)
+    user = get_user(client, email=email)
 
     # Create if not found
     if user is None:
@@ -71,7 +71,13 @@ def find_or_create_user_by_email(
     return user, False
 
 
-def find_user_by_email(client: Client, email: str):
+def get_user(
+    client: Client,
+    user_id: Optional[str] = None,
+    email: Optional[str] = None,
+    rcs_id: Optional[str] = None,
+    include_enrollments: Optional[bool] = False,
+):
     """
     Given an email, finds the user with that email.
 
@@ -81,26 +87,62 @@ def find_user_by_email(client: Client, email: str):
     Returns:
         found/created user or `None`
     """
+
+    if user_id:
+        where_clause = {"id": {"_eq": user_id}}
+    elif email:
+        where_clause = {
+            "_or": [
+                {"email": {"_eq": email}},
+                {
+                    "is_secondary_email_verified": {"_eq": True},
+                    "secondary_email": {"_eq": email},
+                },
+            ]
+        }
+    elif rcs_id:
+        where_clause = {"rcs_id": {"_eq": rcs_id}}
+    else:
+        raise RuntimeError("No user identifier passed.")
+
     # First attempt to find user via email
     query = gql(
         fragments.BASIC_USER_DATA_FRAGMENT_INLINE
         + """
-        query find_user($email: String!) {
-            users(limit: 1, where: {_or: [{email: {_eq: $email}}, {_and: [{is_secondary_email_verified: {_eq:true}, secondary_email: {_eq: $email}}]}]}) {
+        query get_user($where_clause: users_bool_exp!, $include_enrollments: Boolean!) {
+            users(limit: 1, where: $where_clause) {
                 ...basicUser
+                enrollments @include(if: $include_enrollments) {
+                    credits
+                    project {
+                        id
+                        name
+                    }
+                    semester {
+                        id
+                        name
+                    }
+                    is_project_lead
+                    is_coordinator
+                    is_faculty_advisor
+                }
             }
         }
     """
     )
 
     users: List[Dict[str, Any]] = client.execute(
-        query, variable_values={"email": email}
+        query,
+        variable_values={
+            "where_clause": where_clause,
+            "include_enrollments": include_enrollments,
+        },
     )["users"]
 
     if len(users) == 0:
         return None
-
-    return users[0]
+    print(users)
+    return cast(Dict[str, Any], users[0])
 
 
 def create_user_with_email(client: Client, email: str, role: str):
@@ -143,63 +185,7 @@ def create_user_with_email(client: Client, email: str, role: str):
     return user
 
 
-def find_user_by_id(
-    client: Client, user_id: str, include_enrollments: bool = False
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches a user with the given user_id UUID. Optionally includes their enrollments.
-
-    Args:
-        client: GQL client
-        user_id: the UUID of the user to fetch
-        include_enrollments: whether to also fetch the user's semester enrollments
-    Returns:
-        found user data or `None`
-    """
-    query = gql(
-        """
-        query find_user_by_id($user_id: uuid!, $include_enrollments: Boolean!) {
-            user: users_by_pk(id: $user_id) {
-                id
-                email
-                first_name
-                last_name
-                display_name
-                is_verified
-                graduation_year
-                rcs_id
-                role
-                discord_user_id
-                github_username
-                enrollments @include(if: $include_enrollments) {
-                    credits
-                    project {
-                        id
-                        name
-                    }
-                    semester {
-                        id
-                        name
-                    }
-                    is_project_lead
-                    is_coordinator
-                    is_faculty_advisor
-                }
-            }
-        }
-        """
-    )
-    user = client.execute(
-        query,
-        variable_values={
-            "user_id": user_id,
-            "include_enrollments": include_enrollments,
-        },
-    )["user"]
-    return user
-
-
-def update_user_by_id(
+def update_user(
     client: Client, user_id: str, updates: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
@@ -257,60 +243,3 @@ def get_enrollment(
         return None
 
     return enrollments[0]
-
-
-def find_user_by_rcs_id(
-    client: Client, rcs_id: str, include_enrollments: bool = False
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches a user with the given RCS ID. Optionally includes their enrollments.
-
-    Args:
-        client: GQL client
-        rcs_id: the RCS ID of the user to fetch
-        include_enrollments: whether to also fetch the user's semester enrollments
-    Returns:
-        found user data or `None`
-    """
-    query = gql(
-        """
-        query find_user_by_id($rcs_id: String!, $include_enrollments: Boolean!) {
-           users(where: {rcs_id: {_eq: $rcs_id }}) {
-                id
-                email
-                first_name
-                last_name
-                display_name
-                is_verified
-                graduation_year
-                rcs_id
-                role
-                discord_user_id
-                github_username
-                enrollments @include(if: $include_enrollments) {
-                    credits
-                    project {
-                        id
-                        name
-                    }
-                    semester {
-                        id
-                        name
-                    }
-                    is_project_lead
-                    is_coordinator
-                    is_faculty_advisor
-                }
-            }
-        }
-        """
-    )
-    user = client.execute(
-        query,
-        variable_values={
-            "rcs_id": rcs_id,
-            "include_enrollments": include_enrollments,
-        },
-    )["users"]
-
-    return user[0]

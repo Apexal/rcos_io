@@ -74,7 +74,6 @@ def get_small_group_enrollments(client: Client, small_group_id: str):
     )
 
     result = client.execute(query, variable_values={"small_group_id": small_group_id})
-    print(result)
     # Flatten the result into a list of enrollments
     enrollments: List[Dict[str, Any]] = []
 
