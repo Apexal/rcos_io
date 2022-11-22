@@ -39,10 +39,19 @@ Setup is very straightforward.
 We use Redis as a key-value store for temporary data such as attendance sessions. You
 can install Redis by following [the getting started guide.](https://redis.io/docs/getting-started/).
 
-#### Setting up the Flask server
+#### Setting up the Flask server (For Linux / MacOS)
 
 1. `python3 -m venv ./venv`
 2. `source ./venv/bin/activate`
+3. `pip install -r requirements.txt` (note: `pip` and not `pip3`)
+4. `pre-commit install`
+5. `cp .env.example .env`
+6. Fill out `.env` with valid values
+
+#### Setting up the Flask server (For Windows)
+
+1. `python -m venv ./venv`
+2. `.\venv\Scripts\Activate.ps1` (In PowerShell)
 3. `pip install -r requirements.txt` (note: `pip` and not `pip3`)
 4. `pre-commit install`
 5. `cp .env.example .env`
