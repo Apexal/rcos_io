@@ -128,13 +128,19 @@ def add():
             flash("The start date is not within any known semester!", "danger")
             return redirect(url_for("meetings.add"))
 
-        form.start_date_time.data = form.start_date_time.data.isoformat()
-        form.end_date_time.data = form.end_date_time.data.isoformat()
+        meeting = {
+            "semester_id": semester["id"],
+            "name": form.name.data,
+            "type": form.type.data,
+            "start_date_time": form.start_date_time.data.isoformat(),
+            "end_date_time": form.end_date_time.data.isoformat(),
+            "location": form.location.data
+        }
 
         # Attempt to insert meeting into database
         try:
             new_meeting = database.insert_meeting(
-                g.db_client, {"semester_id": semester["id"], **form.data}
+                g.db_client, meeting
             )
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
