@@ -20,42 +20,47 @@
 		</div>
 	</div>
 
-	<hr/>
-
-	<div class="mb-5">
-		<h2 class="mb-3">Team Members <span class="badge bg-secondary">{{ project["enrollments"]|length }} total</span></h2>
+	<div class="row row-cols-1 row-cols-md-2 g-4 my-3">
 		{% for semester_id, enrollments in enrollments_by_semester_id.items() %}
-		<div class="mb-3">
-			<h3>{{ enrollments[0]["semester"]["name"] }} <span class="badge bg-secondary">{{ enrollments|length }}</span></h3>
-			<ul>
-				{% for user in enrollments %}
-					<li>
-						<a href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a>
-						{% if user["is_project_lead"] %}
-						<span class="badge bg-warning">Lead</span>
-						{% endif %}
-						<span class="badge bg-info">{{ user["credits"] }} credits</span>
-					</li>
-				{% endfor %}
-			</ul>
+		<div class="col">
 
-			{% if enrollments[0]["semester_id"] == session.get("semester")["id"] and is_project_lead %}
 			<div class="card">
-				<div class="card-body">
-					<form class="" action="{{ url_for('projects.add_member', project_id=project['id']) }}" method="post">
-						<input type="hidden" name="semester_id" value="{{ enrollments[0]['semester_id'] }}">
-						<div class="mb-3">
+				<div class="card-header d-flex">
+					<span class="me-auto">{{ enrollments[0]["semester"]["name"] }}</span> <span class="text-muted">{{ enrollments|length }} members</span>
+				</div>
+				<ul class="list-group list-group-flush">
+					{% for user in enrollments %}
+						<li class="list-group-item d-flex">
+							<a class="me-auto" href="{{ url_for('users.detail', user_id=user['user_id']) }}">{{ user['user']['display_name'] }}</a>
+							{% if user["is_project_lead"] %}
+							<span class="badge bg-warning mx-2">Project Lead</span>
+							{% endif %}
+							<span class="text-muted">{{ user["credits"] }} credits</span>
+						</li>
+					{% endfor %}
+				</ul>
+	
+				{% if enrollments[0]["semester_id"] == session.get("semester")["id"] and is_project_lead %}
+				<form class="card-body" action="{{ url_for('projects.add_member', project_id=project['id']) }}" method="post">
+					<input type="hidden" name="semester_id" value="{{ enrollments[0]['semester_id'] }}">
+					<div class="row g-2">
+						<div class="col-xs-12 col-md-5">
 							<input class="form-control" name="user_identifier" type="text" placeholder="Student email or RCS ID" required>
 						</div>
-						<div class="input-group mb-3">
-							<input class="form-control" name="credits" type="number" placeholder="Credit count (0 for experience)" value="4" required>
-							<span class="input-group-text">credits</span>
+						<div class="col-xs-12 col-md-4">
+							<div class="input-group ">
+								<input class="form-control" name="credits" type="number" placeholder="Credit count (0 for experience)" value="4" required>
+								<span class="input-group-text">credits</span>
+							</div>
 						</div>
-						<button class="btn btn-success">Add Team Member</button>
-					</form>
-				</div>
+						<div class="col-xs-12 col-md-3">
+							<button class="btn btn-success w-100">Add Student</button>
+						</div>
+					</div>
+
+				</form>
+				{% endif %}
 			</div>
-			{% endif %}
 		</div>
 		{% endfor %}
 	</div>
