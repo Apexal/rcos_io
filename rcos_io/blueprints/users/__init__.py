@@ -2,7 +2,7 @@
 This module contains the users blueprint, which stores
 all user related views and functionality.
 """
-from typing import Any, Dict, List, cast
+from typing import Any, Dict
 from flask import (
     Blueprint,
     render_template,

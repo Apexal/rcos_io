@@ -2,47 +2,14 @@
 
 {% block content %}
 <div class="container">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item active" aria-current="page"><a href="{{ url_for('meetings.index') }}">Meetings</a></li>
-          <li class="breadcrumb-item active" aria-current="page"><a href="#">{{ meeting["semester"]["name"] }}</a></li>
-          <li class="breadcrumb-item active text-capitalize" aria-current="page"><a href="#">{{ meeting["type"] }}s</a></li>
-        </ol>
-      </nav>
-      <div class="row align-items-center">
-        <div class="col">
-            <h1 class="display-1 text-capitalize">{{ meeting["name"] or (meeting["type"] + " Meeting") }}</h1>
-        </div>
-        <div class="col-xs-12 col-sm-3">
-            <h3>{{meeting["start_date_time"]|format_datetime('%A, %B %-d') }}</h3>
-            <div>
-                <strong>{{ meeting["start_date_time"]|format_datetime('%-I:%M %p') }}</strong>
-                to <strong>{{ meeting["end_date_time"]|format_datetime('%-I:%M %p') }}</strong>
-            </div>
-            </div>
-        </div>
-        <h3>
-        <span class="badge bg-primary text-capitalize">{{ meeting["type"] }}</span>
-        <span class="badge bg-secondary text-capitalize">{{ meeting['location'] }}</span>
-    </h3>
+    <h1 class="text-capitalize">{{ meeting["name"] or (meeting["type"] + " Meeting") }}</h1>
+
+    {% if meeting["name"] %}
+    <h5 class="text-muted text-capitalize">{{ meeting["type"] }}</h5>
+    {% endif %}
 
 	{% include '/_includes/flashed_messages.html' %}
 
-    {% if meeting["host"] %}
-    <p>Hosted by <a href="{{ url_for('users.detail', user_id=meeting['host']['id']) }}">{{ meeting["host"]["display_name"] }}</a></p>
-    {% endif %}
-
-    <div class="card" style="width: 18rem;">
-        <div class="card-header">
-            Meetings Links
-        </div>
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">Meeting URL</li>
-            <li class="list-group-item">Presentation URL</li>
-        </ul>
-    </div>
-
-    <br/>
 
     {% if can_open_attendance %}
     <a class="btn btn-primary" href="{{ url_for('meetings.open_attendance', meeting_id=meeting['id']) }}">Open Attendance</a>

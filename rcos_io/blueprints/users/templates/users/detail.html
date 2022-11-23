@@ -10,9 +10,8 @@
     {% else %}
     <span class="badge bg-secondary">External User</span>
     {% endif %}
-    |
     {% if g.is_logged_in and g.user["is_verified"] %}
-    <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
+    | <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
     {% endif %}
     
     
@@ -44,37 +43,42 @@
 
   <div class="row mt-5">
     <div class="col">
-      <h3>RCOS Enrollments</h3>
-      <ol class="list-group">
-        {% for enrollment in user["enrollments"] %}
-        <li class="list-group-item d-flex align-items-center">
-          <div class="me-auto">
-            <div class="fs-3">
-              {% if enrollment["project"] %}
-              <a class="fw-bold text-decoration-none" href="{{ url_for('projects.detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
-              {% else %}
-              <span class="text-muted">No Project</span>
-              {% endif %}
+      <div class="mb-5">
+        <ol class="list-group">
+          {% for enrollment in user["enrollments"] %}
+          <li class="list-group-item d-flex align-items-center">
+            <div class="me-auto">
+              <div class="fs-3">
+                {% if enrollment["project"] %}
+                <a class="fw-bold text-decoration-none" href="{{ url_for('projects.detail', project_id=enrollment['project']['id'], semester_id=enrollment['semester']['id']) }}">{{ enrollment["project"]["name"] }}</a>
+                {% else %}
+                <span class="text-muted">No Project</span>
+                {% endif %}
+              </div>
+              <div>
+                {% if enrollment["is_project_lead"] %}
+                <span class="badge bg-info">Project Lead</span>
+                {% endif %}
+  
+                {% if enrollment["is_coordinator"] %}
+                <span class="badge bg-warning">Coordinator</span>
+                {% endif %}
+  
+                {% if enrollment["is_faculty_advisor"] %}
+                <span class="badge bg-dark">Faculty Advisor</span>
+                {% endif %}
+              </div>
             </div>
-            <div>
-              {% if enrollment["is_project_lead"] %}
-              <span class="badge bg-info">Project Lead</span>
-              {% endif %}
+            <div class="fw-bold text-capitalize me-3">{{ enrollment["semester"]["name"] }}</div>
+          </li>
+          {% endfor %}
+        </ol>
+      </div>
 
-              {% if enrollment["is_coordinator"] %}
-              <span class="badge bg-warning">Coordinator</span>
-              {% endif %}
-
-              {% if enrollment["is_faculty_advisor"] %}
-              <span class="badge bg-dark">Faculty Advisor</span>
-              {% endif %}
-            </div>
-          </div>
-          <div class="fw-bold text-capitalize me-3">{{ enrollment["semester"]["name"] }}</div>
-        </li>
-        {% endfor %}
-      </ol>
-
+      <div class="mb-5">
+        <h3 class="">Hosted Meetings</h3>
+        <p class="text-muted">Coming soon...</p>
+      </div>
     </div>
     <div class="col-xs-12 col-md-4">
       {% if user["github_username"] %}

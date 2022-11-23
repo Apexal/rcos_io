@@ -2,14 +2,11 @@
 {% block content %}
 <div class="container">
   <h1 class="text-capitalize">
-    
     {% if semester %}
     {{ semester["name"] }} users
     {% else %}
     users Across All Semesters
     {% endif %}
-    
-    <span class="badge bg-secondary">{{ users | length }}</span>
   </h1>
   {% include '/_includes/flashed_messages.html' %}
 
@@ -33,6 +30,10 @@
       </div>
     </div>
   </form>
+
+  <div class="text-muted">
+    {{ users | length }} results
+  </div>
 
   <div class="row">
     {% for user in users %}
@@ -58,9 +59,8 @@
                 {% endif %}
               </span>
               {% if user["github_username"] %}
-              <a class="badge bg-dark text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
+              <a class="text-dark text-decoration-none" href="https://github.com/{{ user['github_username'] }}" target="_blank">
                 <i class="bi-github"></i>
-                {{ user["github_username"] }}
               </a>
               {% endif %}
             </div>

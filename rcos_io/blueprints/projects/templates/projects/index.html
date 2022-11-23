@@ -37,14 +37,11 @@
 {% block content %}
 <div class="container">
   <h1 class="text-capitalize">
-    
     {% if semester %}
     {{ semester["name"] }} Projects
     {% else %}
     Projects Across All Semesters
     {% endif %}
-    
-    <span class="badge bg-secondary">{{ projects | length }}</span>
   </h1>
 
   {% include '/_includes/flashed_messages.html' %}
@@ -87,10 +84,14 @@
         />
       </div>
       <div class="col-auto">
-        <button type="submit" class="btn btn-dark">Search</button>
+        <button type="submit" class="btn btn-dark">Apply Filters</button>
       </div>
     </div>
   </form>
+
+  <div class="text-muted">
+    {{ projects | length }} results
+  </div>
 
   <div class="row">
     {% for project in projects %}
