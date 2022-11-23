@@ -3,7 +3,7 @@ This module contains the projects blueprint, which stores
 all project related views and functionality.
 """
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, DefaultDict, Dict, List
 from flask import (
     Blueprint,
     request,
@@ -192,7 +192,7 @@ def detail(project_id: str):
         return redirect(url_for("projects.index"))
 
     # Group enrollments by semesters
-    enrollments_by_semester_id: defaultdict[str, List[Dict[str, Any]]] = defaultdict(
+    enrollments_by_semester_id: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(
         lambda: []
     )
 
