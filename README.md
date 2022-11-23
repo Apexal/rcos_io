@@ -2,70 +2,43 @@
 
 The final RCOS web client. Built on the RCOS database via Hasura and an extremely safe and boring Python Flask stack.
 
-# Motivation
 
-The RCOS website goes through a periodic cycle of being frantically written, never finished, losing the maintainers to graduation, falling out of use, and then eventually being rewritten. We need to **break** this cycle! Below are the reasonings for the technologies used.
+## Local Development
 
-## Stack
-
-### Python
-
-Python is a well-known, general purpose language taught at RPI. It has a huge ecosystem and support community. Pick a random RCOS Coordinator or member and they will be comfortable with Python. Every future group of Coordinators will likely have at least a few Python developers, and this cannot be said for less popular languages. It has happened before that all Coordinators present don't know the language the current RCOS website used. That can't happen again.
-
-#### Flask
-
-Flask is an extremely popular Python microframework. It's simple, powerful, easy to deploy, and easy to find answers to online. It was chosen over a larger framework like Django as we don't need the "batteries included" and added complexity.
-
-A traditional server-rendered website is preferred to a fancy, modern single page application because it is simpler to understand, less code to write (no separate frontend and backend projects) and no crazy Javascript build steps that require understanding of 10 different tools and configuration files. Do we need React for a CRUD application that isn't real-time or particularly interactive? No.
-
-#### Bootstrap CSS
-
-Mocked for being easy-to-use and generic, that's exactly the reason to use it here! It is recognizable to developers, easy to pickup, and avoids the need for custom CSS in most cases. Less written CSS is better CSS.
-
-## Developing Locally
-
-Setup is very straightforward.
+Setup is very straightforward. If you run into **any** problems big or small while going through these stesp, open an [Issue](https://github.com/Apexal/rcos_io/issues/new). It will greatly help us improve the docs.
 
 ### Requirements
-1. Python 3.8+
-2. `venv` (might need to run `sudo apt install sudo apt install python3.8-venv` or similar)
-3. Read the [Flask Quickstart](https://flask.palletsprojects.com/en/2.2.x/quickstart/) 
-4. Redis (running locally)
+1. Python 3.8 or above
+2. An understanding of [Flask](https://flask.palletsprojects.com/en/2.2.x/quickstart/) 
 
 ### Setup
 
-#### Setting up Redis
-
-We use Redis as a key-value store for temporary data such as attendance sessions. You
-can install Redis by following [the getting started guide.](https://redis.io/docs/getting-started/).
-
-#### Setting up the Flask server (For Linux / MacOS)
+#### Setting up the Flask server
 
 1. `python3 -m venv ./venv`
+    or `python -m venv ./venv` for Windows
 2. `source ./venv/bin/activate`
+    - or `.\venv\Scripts\Activate.ps1` (in PowerShell) for Windows
 3. `pip install -r requirements.txt` (note: `pip` and not `pip3`)
 4. `pre-commit install`
 5. `cp .env.example .env`
 6. Fill out `.env` with valid values
+    - these come from current Coordinators
 
-#### Setting up the Flask server (For Windows)
-
-1. `python -m venv ./venv`
-2. `.\venv\Scripts\Activate.ps1` (In PowerShell)
-3. `pip install -r requirements.txt` (note: `pip` and not `pip3`)
-4. `pre-commit install`
-5. `cp .env.example .env`
-6. Fill out `.env` with valid values
 
 ### Running
 
-1. `redis-server` (in a separate terminal window)
-2. `source ./venv/bin/activate`
-3. `flask run`
+1. `source ./venv/bin/activate`
+    - or `.\venv\Scripts\Activate.ps1` (in PowerShell) for Windows
+2. `flask run`
+3. Navigate to the URL printed in the console, typically http://127.0.0.1:5000
 
-## Deploying
+Any code or template changes you make will automatically restart the server.
 
-The test deployment at https://rcos.up.railway.app/ automatically deploys on updates to the `main` branch!
+## Deploying to Production
+
+Pushes to `main` automatically deploy to https://rcos.up.railway.app/
+
 ## License
 
 MIT
