@@ -3,7 +3,8 @@ This module contains the projects blueprint, which stores
 all project related views and functionality.
 """
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List
+import functools
+from typing import Any, Callable, DefaultDict, Dict, List, TypeVar, cast
 from flask import (
     Blueprint,
     request,
@@ -23,7 +24,49 @@ from gql.transport.exceptions import TransportQueryError
 from rcos_io.services import utils, database
 from rcos_io.blueprints import auth
 
+C = TypeVar("C", bound=Callable[..., Any])
+
 bp = Blueprint("projects", __name__, template_folder="templates")
+
+
+def for_project(view: C) -> C:
+    """Fetches project from project_id URL parameter."""
+
+    @functools.wraps(view)
+    def wrapped_view(**kwargs: Any):
+        # Attempt to fetch meeting
+        try:
+            project = database.get_project(g.db_client, kwargs["project_id"])
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash("There was an error fetching the project.", "warning")
+            return redirect(url_for("projects.index"))
+
+        # Handle project not found or not approved
+        if project is None or (
+            not project["is_approved"] and not session.get("is_coordinator_or_above")
+        ):
+            flash("No such project with that ID exists!", "warning")
+            return redirect(url_for("projects.index"))
+
+        is_project_lead = False
+        for enrollment in project["enrollments"]:
+            # Determine if the logged in user is currently a project lead
+            if (
+                g.is_logged_in
+                and session.get("semester")
+                and enrollment["semester_id"] == session.get("semester")["id"]
+                and enrollment["user_id"] == session.get("user")["id"]
+            ):
+                is_project_lead = enrollment["is_project_lead"]
+
+        g.project = project
+        g.is_project_lead = is_project_lead
+        g.context = {"project": project, "is_project_lead": is_project_lead}
+        print(g.is_project_lead)
+        return view(**kwargs)
+
+    return cast(C, wrapped_view)
 
 
 @bp.route("/")
@@ -173,36 +216,22 @@ def approve():
 
 
 @bp.route("/<project_id>")
+@for_project
 def detail(project_id: str):
     """Renders the detail page for a specific project."""
-
-    # Attempt to fetch project
-    try:
-        project = database.get_project(g.db_client, project_id)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("Invalid project ID!", "danger")
-        return redirect(url_for("projects.index"))
-
-    # Handle project not found or not approved
-    if project is None or (
-        not project["is_approved"] and not session.get("is_coordinators_or_above")
-    ):
-        flash("No such project with that ID exists!", "warning")
-        return redirect(url_for("projects.index"))
 
     # Group enrollments by semesters
     enrollments_by_semester_id: DefaultDict[str, List[Dict[str, Any]]] = defaultdict(
         lambda: []
     )
 
-    for enrollment in project["enrollments"]:
+    for enrollment in g.project["enrollments"]:
         enrollments_by_semester_id[enrollment["semester_id"]].append(enrollment)
 
     # Sanitize the project's markdown description to remove any sketchy HTML
     # This prevents Cross-Site Scripting (XSS) attacks (hopefully...)
-    compiled_md = markdown.markdown(project["description_markdown"])
-    project["description_markdown"] = Markup(
+    compiled_md = markdown.markdown(g.project["description_markdown"])
+    g.project["description_markdown"] = Markup(
         bleach.clean(
             compiled_md,
             tags=[
@@ -227,6 +256,42 @@ def detail(project_id: str):
 
     return render_template(
         "projects/detail.html",
-        project=project,
+        **g.context,
         enrollments_by_semester_id=enrollments_by_semester_id,
     )
+
+
+@bp.route("/<project_id>/addmember", methods=("POST",))
+@auth.setup_required
+@for_project
+def add_member(project_id: str):
+    """Handles upserting a new project enrollment."""
+
+    if not g.is_project_lead:
+        flash("Only current project leads can add team members!", "danger")
+        return redirect(url_for("projects.detail", project_id=project_id))
+
+    semester_id = request.form["semester_id"]
+    user_identifier = request.form["user_identifier"]
+    credit_count = int(request.form["credits"])
+
+    # TODO: error handle
+    user = database.get_user(g.db_client, email=user_identifier, rcs_id=user_identifier)
+
+    if user is None:
+        flash("Student not found!", "danger")
+        return redirect(url_for("projects.detail", project_id=project_id))
+
+    # TODO: error handle
+    database.set_enrollment(
+        g.db_client,
+        {
+            "semester_id": semester_id,
+            "user_id": user["id"],
+            "project_id": project_id,
+            "credits": credit_count,
+        },
+    )
+
+    flash(f"Added {user['display_name']} to the team!", "success")
+    return redirect(url_for("projects.detail", project_id=project_id))

@@ -34,9 +34,28 @@
 						{% if user["is_project_lead"] %}
 						<span class="badge bg-warning">Lead</span>
 						{% endif %}
+						<span class="badge bg-info">{{ user["credits"] }} credits</span>
 					</li>
 				{% endfor %}
 			</ul>
+
+			{% if enrollments[0]["semester_id"] == session.get("semester")["id"] and is_project_lead %}
+			<div class="card">
+				<div class="card-body">
+					<form class="" action="{{ url_for('projects.add_member', project_id=project['id']) }}" method="post">
+						<input type="hidden" name="semester_id" value="{{ enrollments[0]['semester_id'] }}">
+						<div class="mb-3">
+							<input class="form-control" name="user_identifier" type="text" placeholder="Student email or RCS ID" required>
+						</div>
+						<div class="input-group mb-3">
+							<input class="form-control" name="credits" type="number" placeholder="Credit count (0 for experience)" value="4" required>
+							<span class="input-group-text">credits</span>
+						</div>
+						<button class="btn btn-success">Add Team Member</button>
+					</form>
+				</div>
+			</div>
+			{% endif %}
 		</div>
 		{% endfor %}
 	</div>

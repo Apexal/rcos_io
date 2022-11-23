@@ -30,6 +30,7 @@ def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
                     semester {
                         name
                     }
+                    credits
                     user_id
                     is_project_lead
                     user {

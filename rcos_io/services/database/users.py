@@ -243,3 +243,26 @@ def get_enrollment(
         return None
 
     return enrollments[0]
+
+
+def set_enrollment(client: Client, enrollment_data: Dict[str, Any]):
+    """Upsert a specific enrollment."""
+    query = gql(
+        """
+        mutation upsert_enrollment($enrollment_data: enrollments_insert_input!) {
+            insert_enrollments_one(
+                object: $enrollment_data,
+                on_conflict: {
+                    constraint: enrollments_pkey,
+                    update_columns: [credits, project_id, is_project_lead]
+                }
+            ) {
+                user_id
+                semester_id
+            }
+        }
+    """
+    )
+
+    result = client.execute(query, variable_values={"enrollment_data": enrollment_data})
+    return cast(Dict[str, any], result["insert_enrollments_one"])

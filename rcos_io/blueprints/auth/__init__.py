@@ -293,7 +293,7 @@ def login():
 
     # Try sending OTP via Discord direct message
     try:
-        user = database.find_user_by_email(g.db_client, user_email)
+        user = database.get_user(g.db_client, email=user_email)
         if user and user["discord_user_id"]:
             dm_channel = discord.create_user_dm_channel(user["discord_user_id"])
             discord.dm_user(
@@ -379,7 +379,8 @@ def impersonate():
     # Find or create the user from the email entered
     try:
         user = database.get_user(g.db_client, rcs_id=rcs_id, user_id=user_id)
-    except:
+    except (GraphQLError, TransportQueryError) as error:
+        current_app.logger.exception(error)
         flash("No user ID or RCS ID provided.", "warning")
         return redirect(url_for("index"))
 
