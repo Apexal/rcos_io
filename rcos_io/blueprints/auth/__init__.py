@@ -53,7 +53,7 @@ def load_logged_in_user():
     if not session.get("semester") or session["semester"]["end_date"] < str(
         date.today()
     ):
-        session["semester"] = utils.active_semester(session["semesters"])
+        session["semester"] = utils.get_active_semester(session["semesters"])
 
     g.is_logged_in = user is not None
     if user is None:
@@ -350,7 +350,7 @@ def submit_otp():
     ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
-    session["user"], is_new_user = database.find_or_create_user_by_email(
+    session["user"], is_new_user = database.get_or_create_user_by_email(
         g.db_client, user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
@@ -376,12 +376,10 @@ def impersonate():
     rcs_id = request.args.get("rcs_id")
     user_id = request.args.get("user_id")
 
-    if rcs_id:
-        # Find or create the user from the email entered
-        user = database.find_user_by_rcs_id(g.db_client, rcs_id)
-    elif user_id:
-        user = database.find_user_by_id(g.db_client, user_id)
-    else:
+    # Find or create the user from the email entered
+    try:
+        user = database.get_user(g.db_client, rcs_id=rcs_id, user_id=user_id)
+    except:
         flash("No user ID or RCS ID provided.", "warning")
         return redirect(url_for("index"))
 
@@ -584,7 +582,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = database.update_user_by_id(g.db_client, g.user["id"], updates)
+    session["user"] = database.update_user(g.db_client, g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname

@@ -5,7 +5,7 @@ This module contains the meetings blueprint, which stores
 all meeting related views and functionality.
 """
 import functools
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Set, TypeVar, cast
 
 from flask import (
@@ -27,6 +27,7 @@ from rcos_io.blueprints.auth import (
     mentor_or_above_required,
 )
 from rcos_io.services import attendance, database, utils
+from . import forms
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -40,7 +41,7 @@ def for_meeting(view: C) -> C:
     def wrapped_view(**kwargs: Any):
         # Attempt to fetch meeting
         try:
-            meeting = database.get_meeting_by_id(g.db_client, kwargs["meeting_id"])
+            meeting = database.get_meeting(g.db_client, kwargs["meeting_id"])
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("There was an error fetching the meeting.", "warning")
@@ -95,61 +96,62 @@ def events_api():
 @mentor_or_above_required
 def add():
     """Renders the add meeting form and handles form submissions."""
-    if request.method == "GET":
-
-        # This list must match the meeting_types enum in the database!
-        # Mentors can only create workshops
-        meeting_types = (
-            [
-                "small group",
-                "large group",
-                "workshop",
-                "bonus",
-                "mentors",
-                "coordinators",
-                "other",
-            ]
-            if session.get("is_coordinator_or_above")
-            else ["workshop"]
-        )
-
-        return render_template("meetings/add.html", meeting_types=meeting_types)
-
-    # HANDLE FORM SUBMISSION
-
-    # Mentors can only create workshops
-    if request.form["type"] == "small_group" and not session["is_mentor_or_above"]:
-        flash("Mentors can only create workshops!", "warning")
-        return redirect(url_for("meetings.index"))
-
-    # Determine the semester from the date
-    semester = utils.active_semester(
-        session["semesters"], datetime.fromisoformat(request.form["start_date_time"])
+    form = forms.MeetingForm()
+    form.type.choices = (
+        [
+            "small group",
+            "large group",
+            "workshop",
+            "bonus",
+            "mentors",
+            "coordinators",
+            "other",
+        ]
+        if session.get("is_coordinator_or_above")
+        else ["workshop"]
     )
-    if semester is None:
-        flash("The start date is not within any known semester!", "danger")
-        return redirect(url_for("meetings.add"))
+    if request.method == "GET":
+        form.start_date_time.data = datetime.today()
+        form.end_date_time.data = form.start_date_time.data + timedelta(hours=2)
 
-    # Form new meeting dictionary for insert
-    meeting_data: Dict[str, Optional[str]] = {
-        "semester_id": semester["id"],
-        "name": request.form["name"].strip(),
-        "type": request.form["type"],
-        "start_date_time": request.form["start_date_time"],
-        "end_date_time": request.form["end_date_time"],
-        "location": request.form["location"].strip(),
-    }
+    if form.validate_on_submit():
+        # Mentors can only create workshops
+        if form.type.data == "small_group" and not session["is_mentor_or_above"]:
+            flash("Mentors can only create workshops!", "warning")
+            return redirect(url_for("meetings.index"))
 
-    # Attempt to insert meeting into database
-    try:
-        new_meeting = database.insert_meeting(g.db_client, meeting_data)
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("Yikes! Failed to add meeting. Check logs.", "danger")
-        return redirect(url_for("meetings.index"))
+        # Determine the semester from the date
+        semester = utils.get_active_semester(
+            session["semesters"], form.start_date_time.data
+        )
+        if semester is None:
+            flash("The start date is not within any known semester!", "danger")
+            return redirect(url_for("meetings.add"))
 
-    # Redirect to the new meeting's detail page
-    return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
+        meeting = {
+            "semester_id": semester["id"],
+            "name": form.name.data,
+            "type": form.type.data,
+            "start_date_time": form.start_date_time.data.isoformat(),
+            "end_date_time": form.end_date_time.data.isoformat(),
+            "location": form.location.data,
+        }
+
+        # Attempt to insert meeting into database
+        try:
+            new_meeting = database.insert_meeting(g.db_client, meeting)
+        except (GraphQLError, TransportQueryError) as error:
+            current_app.logger.exception(error)
+            flash("Yikes! Failed to add meeting. Check logs.", "danger")
+            return redirect(url_for("meetings.index"))
+
+        # Redirect to the new meeting's detail page
+        return redirect(url_for("meetings.detail", meeting_id=new_meeting["id"]))
+
+    return render_template("meetings/add.html", form=form)
+
+    # # This list must match the meeting_types enum in the database!
+    # # Mentors can only create workshops
 
 
 @bp.route("/attend", methods=("GET", "POST"))
@@ -197,7 +199,6 @@ def verify_attendance():
     Handles verifying a user ID given a meeting ID.
     """
     payload: Optional[Dict[str, Any]] = request.json
-    print(payload)
     if payload is None:
         return "Missing payload", 400
 
@@ -208,8 +209,7 @@ def verify_attendance():
         return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
 
     # get the user ID from RCS ID
-    user = database.find_user_by_rcs_id(g.db_client, user_id)
-    print(user)
+    user = database.get_user(g.db_client, user_id=user_id)
     if user is None:
         return "Can't find user with that RCS ID!", 400
 
@@ -229,6 +229,39 @@ def detail(meeting_id: str):
         "meetings/detail.html",
         **g.context,
     )
+
+
+@bp.route("/<meeting_id>/edit", methods=("GET", "POST"))
+@for_meeting
+def edit(meeting_id: str):
+    """Renders the edit page for a particular meeting."""
+    form = forms.MeetingForm(data=g.meeting)
+    form.type.choices = (
+        [
+            "small group",
+            "large group",
+            "workshop",
+            "bonus",
+            "mentors",
+            "coordinators",
+            "other",
+        ]
+        if session.get("is_coordinator_or_above")
+        else ["workshop"]
+    )
+
+    if isinstance(form.start_date_time.data, str):
+        form.start_date_time.data = datetime.fromisoformat(form.start_date_time.data)
+    if isinstance(form.end_date_time.data, str):
+        form.end_date_time.data = datetime.fromisoformat(form.end_date_time.data)
+
+    if form.validate_on_submit():
+        form.populate_obj(g.meeting)
+        database.update_meeting(g.db_client, meeting_id, g.meeting)
+        flash("Updated meeting.", "info")
+        return redirect(url_for("meetings.detail", meeting_id=meeting_id))
+
+    return render_template("meetings/edit.html", **g.context, form=form)
 
 
 @bp.route("/<meeting_id>/attendance")

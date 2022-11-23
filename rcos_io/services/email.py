@@ -28,6 +28,4 @@ def send_otp_email(email: str, otp: str):
         ]
     }
     result = mailjet.send.create(data=data)
-    print(result.status_code)
-    print(result.json())
     return result

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from gql import Client, gql
 
 
-def get_project_by_id(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
+def get_project(client: Client, project_id: str) -> Optional[Dict[str, Any]]:
     """
     Fetches the project with the given ID.
     Returns project name, participants, description, tags and relevant repos.

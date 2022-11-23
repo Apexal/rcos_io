@@ -178,7 +178,7 @@ def detail(project_id: str):
 
     # Attempt to fetch project
     try:
-        project = database.get_project_by_id(g.db_client, project_id)
+        project = database.get_project(g.db_client, project_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Invalid project ID!", "danger")

@@ -2,13 +2,13 @@
 
 {% block content %}
 <div class="container">
-    <h1>Add Meeting</h1>
+    <h1>Edit Meeting</h1>
 
 	{% include '/_includes/flashed_messages.html' %}
 
     <form method="post">
         {% include "meetings/_form.html" %}
-        <button type="submit" class="btn btn-success">Add</button>
+        <button type="submit" class="btn btn-success">Save</button>
     </form>
 </div>
 {% endblock %}
