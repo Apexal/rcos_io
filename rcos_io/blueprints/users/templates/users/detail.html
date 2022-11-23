@@ -2,17 +2,20 @@
 <div class="container">
   <h1 class="display-2">{{ user['display_name'] or "Unnamed Member" }}</h1>
   <p class="fs-3">
-    {% if g.is_logged_in and g.user["is_verified"] %}
-    <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
-    {% endif %}
     {% if user["role"] == "rpi" %}
-    <span class="badge bg-primary">
-      RPI
-      {% if user["graduation_year"] %}Class of {{ user["graduation_year"] }}{% endif %}
+    <span class="">
+      Student
+      {% if user["graduation_year"] %} | Class of {{ user["graduation_year"] }}{% endif %}
     </span>
     {% else %}
     <span class="badge bg-secondary">External User</span>
     {% endif %}
+    |
+    {% if g.is_logged_in and g.user["is_verified"] %}
+    <a href="mailto:{{ user['email'] }}">{{ user["email"] }}</a>
+    {% endif %}
+    
+    
 
     {% if not user["is_verified"] %}
     <span class="badge bg-danger">UNVERIFIED</span>
@@ -39,13 +42,12 @@
   </div>
   {% endif %}
 
-  <div class="row">
+  <div class="row mt-5">
     <div class="col">
-
+      <h3>RCOS Enrollments</h3>
       <ol class="list-group">
         {% for enrollment in user["enrollments"] %}
         <li class="list-group-item d-flex align-items-center">
-          
           <div class="me-auto">
             <div class="fs-3">
               {% if enrollment["project"] %}
