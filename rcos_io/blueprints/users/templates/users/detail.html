@@ -132,5 +132,9 @@
       {% endif %}
     </div>
   </div>
+
+  {% if config["ENV"] == "development" or session.get("is_coordinator_or_above") %}
+  <a href="{{ url_for('auth.impersonate', user_id=user['id']) }}" class="btn btn-warning">Login As</a>
+  {% endif %}
 </div>
 {% endblock %}

@@ -20,6 +20,7 @@ app.config["SECRET_KEY"] = settings.SECRET_KEY
 # so we can access them in templates (config is accessible in all templates)
 app.config["HASURA_CONSOLE_URL"] = settings.HASURA_CONSOLE_URL
 app.config["RAILWAY_PROJECT_URL"] = settings.RAILWAY_PROJECT_URL
+app.config["ENV"] = settings.ENV
 
 
 @app.before_request
