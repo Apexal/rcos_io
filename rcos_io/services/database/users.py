@@ -141,7 +141,6 @@ def get_user(
 
     if len(users) == 0:
         return None
-    print(users)
     return cast(Dict[str, Any], users[0])
 
 

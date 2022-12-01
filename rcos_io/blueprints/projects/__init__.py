@@ -63,7 +63,6 @@ def for_project(view: C) -> C:
         g.project = project
         g.is_project_lead = is_project_lead
         g.context = {"project": project, "is_project_lead": is_project_lead}
-        print(g.is_project_lead)
         return view(**kwargs)
 
     return cast(C, wrapped_view)
