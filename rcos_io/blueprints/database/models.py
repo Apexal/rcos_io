@@ -22,6 +22,7 @@ db = PostgresqlExtDatabase(
     host=settings.PGHOST,
     port=settings.PGPORT,
 )
+"""The database instance."""
 
 
 class BaseModel(Model):
@@ -57,23 +58,50 @@ class User(BaseModel):
 
     email = CharField(unique=True)
 
-    secondary_email = CharField()
+    secondary_email = CharField(null=True)
 
     is_secondary_email_verified = BooleanField(default=False)
 
     role = CharField(choices=(("rpi", "RPI"), ("external", "External")))
 
-    first_name = CharField()
+    first_name = CharField(null=True)
 
-    last_name = CharField()
+    last_name = CharField(null=True)
 
-    rcs_id = CharField(unique=True)
+    rcs_id = CharField(unique=True, null=True)
 
-    discord_user_id = CharField(unique=True)
+    discord_user_id = CharField(unique=True, null=True)
 
-    github_username = CharField(unique=True)
+    github_username = CharField(unique=True, null=True)
 
     graduation_year = IntegerField(null=True)
+
+    @property
+    def full_name(self):
+        """
+        The user's full name, taking into account either or both
+        first and last names being null.
+        """
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return self.first_name
+        if self.last_name:
+            return self.last_name
+        return "Unnamed User"
+
+    @property
+    def display_name(self):
+        """The publicly displayable display name for the user."""
+        if self.role == "rpi":
+            name = self.full_name
+            if self.graduation_year:
+                name += " '" + str(self.graduation_year)[2:]
+            return name
+        return self.full_name
+
+    def __str__(self) -> str:
+        return f"<{self.role} user {self.email}>"
 
 
 class Project(BaseModel):

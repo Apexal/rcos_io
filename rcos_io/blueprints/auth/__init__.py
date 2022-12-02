@@ -2,28 +2,30 @@
 This module contains the authentication blueprint, which stores
 all auth related views and functionality.
 """
-from datetime import date
 import functools
 import random
 import string
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union, cast
-from requests import HTTPError
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
+import peewee
 from flask import (
-    current_app,
     Blueprint,
+    abort,
+    current_app,
+    flash,
     g,
     redirect,
     render_template,
     request,
     session,
     url_for,
-    flash,
-    abort,
 )
-from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import github, discord, email, utils, database_old, settings
+from graphql.error import GraphQLError
+from requests import HTTPError
+
+from rcos_io.blueprints.database import db, models
+from rcos_io.services import database_old, discord, email, github, settings
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -32,7 +34,7 @@ bp = Blueprint("auth", __name__, template_folder="templates")
 
 
 @bp.before_app_request
-def load_logged_in_user():
+def fetch_logged_in_user():
     """
     Set global user variables
     - is_logged_in
@@ -44,16 +46,22 @@ def load_logged_in_user():
     You can access these in views OR in templates with `g.user`
     """
 
-    user: Optional[Dict[str, Any]] = session.get("user")
+    user = None
+    if session.get("user_id"):
+        try:
+            user: models.User = models.User.get_by_id(session.get("user_id"))
+        except peewee.DoesNotExist:
+            session.clear()
+            flash("Your account has been removed!", "danger")
 
-    # Fetch and store semester in session if not there or if it's changed
-    if not session.get("semesters"):
-        session["semesters"] = database_old.get_semesters(g.db_client)
+    # # Fetch and store semester in session if not there or if it's changed
+    # if not session.get("semesters"):
+    #     session["semesters"] = database_old.get_semesters(g.db_client)
 
-    if not session.get("semester") or session["semester"]["end_date"] < str(
-        date.today()
-    ):
-        session["semester"] = utils.get_active_semester(session["semesters"])
+    # if not session.get("semester") or session["semester"]["end_date"] < str(
+    #     date.today()
+    # ):
+    #     session["semester"] = utils.get_active_semester(session["semesters"])
 
     g.is_logged_in = user is not None
     if user is None:
@@ -61,21 +69,21 @@ def load_logged_in_user():
     else:
         g.user = user
 
-        if (
-            "is_mentor_or_above" not in session
-            or "is_coordinator_or_above" not in session
-            or "is_faculty_advisor" not in session
-        ):
-            enrollment = database_old.get_enrollment(
-                g.db_client, g.user["id"], session["semester"]["id"]
-            )
-            if enrollment:
-                session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
-                session["is_coordinator_or_above"] = (
-                    enrollment["is_coordinator"] or session["is_faculty_advisor"]
-                )
-                # TODO
-                session["is_mentor_or_above"] = session["is_coordinator_or_above"]
+    # if (
+    #     "is_mentor_or_above" not in session
+    #     or "is_coordinator_or_above" not in session
+    #     or "is_faculty_advisor" not in session
+    # ):
+    #     enrollment = database_old.get_enrollment(
+    #         g.db_client, g.user["id"], session["semester"]["id"]
+    #     )
+    #     if enrollment:
+    #         session["is_faculty_advisor"] = enrollment["is_faculty_advisor"]
+    #         session["is_coordinator_or_above"] = (
+    #             enrollment["is_coordinator"] or session["is_faculty_advisor"]
+    #         )
+    #         # TODO
+    #         session["is_mentor_or_above"] = session["is_coordinator_or_above"]
 
 
 def login_required(view: C) -> C:
@@ -293,9 +301,12 @@ def login():
 
     # Try sending OTP via Discord direct message
     try:
-        user = database_old.get_user(g.db_client, email=user_email)
-        if user and user["discord_user_id"]:
-            dm_channel = discord.create_user_dm_channel(user["discord_user_id"])
+        user: Optional[models.User] = models.User.get_or_none(
+            models.User.email == user_email
+        )
+
+        if user and user.discord_user_id:
+            dm_channel = discord.create_user_dm_channel(user.discord_user_id)
             discord.dm_user(
                 dm_channel["id"],
                 f"**{otp}** is your one-time password to complete your login.",
@@ -350,10 +361,18 @@ def submit_otp():
     ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
-    session["user"], is_new_user = database_old.get_or_create_user_by_email(
-        g.db_client, user_email, "rpi" if "@rpi.edu" in user_email else "external"
+    role = "rpi" if "@rpi.edu" in user_email else "external"
+    rcs_id = user_email.replace("@rpi.edu", "") if role == "rpi" else None
+
+    user: models.User
+    is_new_user: bool
+    user, is_new_user = models.User.get_or_create(
+        email=user_email,
+        defaults={"is_approved": role == "rpi", "role": role, "rcs_id": rcs_id},
     )
-    g.user = session["user"]
+    session["user_id"] = user.get_id()
+
+    print(session)
 
     # Go home OR to the desired path the user tried going to before login
     if redirect_to:
@@ -528,44 +547,46 @@ def github_callback():
 def profile():
     """Renders the profile form on GET request and updates it on POST."""
 
+    user: models.User = g.user
+
     if request.method == "GET":
         # Fetch Discord user profile if linked
         context: Dict[str, Any] = {}
-        if g.user["discord_user_id"]:
-            context["discord_user"] = discord.get_user(g.user["discord_user_id"])
+        if user.discord_user_id:
+            context["discord_user"] = discord.get_user(user.discord_user_id)
 
-        return render_template("auth/profile.html", **context)
+        return render_template("auth/profile.html", **context, user=user)
 
     # HANDLE FORM SUBMISSION
 
-    # Store in database
-    updates: Dict[str, Union[str, int]] = {}
+    # # Store in database
+    # updates: Dict[str, Union[str, int]] = {}
 
-    def handle_update(input_name: str):
-        if (
-            input_name in request.form
-            and request.form[input_name].strip()
-            and len(request.form[input_name].strip()) > 0
-        ):
-            updates[input_name] = request.form[input_name].strip()
+    # def handle_update(input_name: str):
+    #     if (
+    #         input_name in request.form
+    #         and request.form[input_name].strip()
+    #         and len(request.form[input_name].strip()) > 0
+    #     ):
+    #         updates[input_name] = request.form[input_name].strip()
 
-    handle_update("first_name")
-    handle_update("last_name")
-    handle_update("graduation_year")
-    handle_update("secondary_email")
+    # handle_update("first_name")
+    # handle_update("last_name")
+    # handle_update("graduation_year")
+    # handle_update("secondary_email")
 
-    # If changing secondary email, mark it as unverified
-    if "secondary_email" in updates:
-        updates["is_secondary_email_verified"] = False
+    # # If changing secondary email, mark it as unverified
+    # if "secondary_email" in updates:
+    #     updates["is_secondary_email_verified"] = False
 
-    # Attempt to apply updates in database.
-    # This will fail if constraints fails like secondary email is reused
-    try:
-        update_logged_in_user(updates)
-        flash("Updated your profile!", "success")
-    except (GraphQLError, TransportQueryError) as error:
-        current_app.logger.exception(error)
-        flash("There was an error while updating your profile!", "danger")
+    # # Attempt to apply updates in database.
+    # # This will fail if constraints fails like secondary email is reused
+    # try:
+    #     update_logged_in_user(updates)
+    #     flash("Updated your profile!", "success")
+    # except (GraphQLError, TransportQueryError) as error:
+    #     current_app.logger.exception(error)
+    #     flash("There was an error while updating your profile!", "danger")
 
     return redirect(url_for("auth.profile"))
 

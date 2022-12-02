@@ -12,8 +12,6 @@
 
   {% include '/_includes/flashed_messages.html' %}
 
-  <!-- OTP for testing: {{ otp }} -->
-
   <form action="{{ url_for('auth.submit_otp') }}" method="POST">
     <div class="row">   
       <div class="col">   
@@ -23,6 +21,9 @@
           name="otp"
           id="otp"
           placeholder="OTP"
+          {% if config["ENV"] == "development" %}
+          value="{{ otp }}"
+          {% endif %}
           required
         />
       </div>
