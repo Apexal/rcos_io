@@ -2,8 +2,10 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import date
+from flask import g
 from flask.wrappers import Request
 from flask.sessions import SessionMixin
+from rcos_io.blueprints.database import models
 
 
 class NotFoundError(Exception):
@@ -11,8 +13,8 @@ class NotFoundError(Exception):
 
 
 def get_active_semester(
-    semesters: List[Dict[str, Any]], on_date: Optional[date] = date.today()
-) -> Optional[Dict[str, Any]]:
+    semesters: List[models.Semester], on_date: Optional[date] = date.today()
+) -> Optional[models.Semester]:
     """
     Returns the semester that's either in progress or next up.
 
@@ -25,12 +27,11 @@ def get_active_semester(
         the current or next semester OR `None` if neither exists
     """
 
-    today = str(on_date)
-
     for semester in semesters:
-        if semester["start_date"] <= today <= semester["end_date"]:
+        print("jere", semester)
+        if semester.start_date <= on_date <= semester.end_date:
             return semester
-        if semester["start_date"] > today:
+        if semester.start_date > on_date:
             return semester
 
     return None
@@ -60,14 +61,14 @@ def get_target_semester(request: Request, session: SessionMixin):
     """
     semester_id: Optional[str] = request.args.get("semester_id")
 
-    if not semester_id and session.get("semester"):
-        semester_id = session["semester"]["id"]
+    if not semester_id and g.semester:
+        semester_id = g.semester.id
     elif not semester_id or semester_id == "all":
         semester_id = None
 
     semester = None
     if semester_id:
-        semester = get_semester_by_id(session["semesters"], semester_id)
+        semester = get_semester_by_id(g.semesters, semester_id)
 
     if semester_id and not semester:
         raise NotFoundError(f"Semester {semester_id} not found")

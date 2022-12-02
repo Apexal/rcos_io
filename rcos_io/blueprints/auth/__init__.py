@@ -2,11 +2,12 @@
 This module contains the authentication blueprint, which stores
 all auth related views and functionality.
 """
+import datetime
 import functools
 import random
 import string
 from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
-
+from playhouse.shortcuts import model_to_dict, dict_to_model
 import peewee
 from flask import (
     Blueprint,
@@ -24,8 +25,8 @@ from gql.transport.exceptions import TransportQueryError
 from graphql.error import GraphQLError
 from requests import HTTPError
 
-from rcos_io.blueprints.database import db, models
-from rcos_io.services import database_old, discord, email, github, settings
+from rcos_io.blueprints.database import models
+from rcos_io.services import database_old, discord, email, github, settings, utils
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -54,14 +55,12 @@ def fetch_logged_in_user():
             session.clear()
             flash("Your account has been removed!", "danger")
 
-    # # Fetch and store semester in session if not there or if it's changed
-    # if not session.get("semesters"):
-    #     session["semesters"] = database_old.get_semesters(g.db_client)
+    # Fetch and store semester in session if not there or if it's changed
+    g.semesters = models.Semester.select().order_by(models.Semester.start_date.asc())
+    g.semester = utils.get_active_semester(g.semesters)
 
-    # if not session.get("semester") or session["semester"]["end_date"] < str(
-    #     date.today()
-    # ):
-    #     session["semester"] = utils.get_active_semester(session["semesters"])
+    print(g.semesters)
+    print(g.semester)
 
     g.is_logged_in = user is not None
     if user is None:

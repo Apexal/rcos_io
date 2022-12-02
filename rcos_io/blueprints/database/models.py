@@ -39,12 +39,21 @@ class BaseModel(Model):
 class Semester(BaseModel):
     """Represents a school semester that RCOS takes place during."""
 
-    type = CharField(
-        choices=(("spring", "Spring"), ("summer", "Summer"), ("fall", "Fall"))
-    )
+    TYPE_CHOICES = (("spring", "Spring"), ("summer", "Summer"), ("fall", "Fall"))
+
+    type = CharField(choices=TYPE_CHOICES)
     start_date = DateField()
     end_date = DateField()
     is_accepting_new_projects = BooleanField(default=False)
+
+    @property
+    def name(self):
+        """Public facing name of semester, e.g. 'Fall 2022'"""
+        return str(self)
+
+    def __str__(self) -> str:
+        choices = dict(self.TYPE_CHOICES)
+        return f"{choices[self.type]} {self.start_date.year}"
 
 
 class User(BaseModel):
@@ -114,6 +123,9 @@ class Project(BaseModel):
     is_seeking_members = BooleanField(default=False)
     tags = ArrayField(CharField)
     github_repos = ArrayField(CharField)
+
+    def __str__(self) -> str:
+        return f"<project {self.name}: {self.short_description}>"
 
 
 class Enrollment(BaseModel):
