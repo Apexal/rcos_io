@@ -6,11 +6,11 @@ which handle the different routes, filters, and functionality of the app.
 """
 
 from flask import Flask, render_template, g
-from .services import filters, database, settings
+from .services import filters, database_old, settings
 
 # Import and register blueprints
 # See https://flask.palletsprojects.com/en/2.2.x/blueprints/
-from .blueprints import auth, meetings, users, projects
+from .blueprints import auth, meetings, users, projects, database
 
 # Create and configure the app
 app = Flask(__name__)
@@ -26,7 +26,7 @@ app.config["ENV"] = settings.ENV
 @app.before_request
 def attach_db_client():
     """Creates a new GQL client and attach it to the every reqest as `g.db_client`."""
-    g.db_client = database.client_factory()
+    g.db_client = database_old.client_factory()
 
 
 # Temporary home route
@@ -37,6 +37,7 @@ def index():
 
 
 # Register app blueprints
+app.register_blueprint(database.bp)
 app.register_blueprint(filters.bp)
 app.register_blueprint(auth.bp, url_prefix="/")
 app.register_blueprint(projects.bp, url_prefix="/projects")

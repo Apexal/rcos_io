@@ -105,3 +105,15 @@ REDISPASSWORD = env_get("REDISPASSWORD")
 MAILJET_API_KEY = env_get("MAILJET_API_KEY")
 
 MAILJET_API_SECRET = env_get("MAILJET_API_SECRET")
+
+# Database
+
+PGDATABASE = env_get("PGDATABASE")
+
+PGHOST = env_get("PGHOST")
+
+PGPASSWORD = env_get("PGPASSWORD")
+
+PGPORT = env_get("PGPORT")
+
+PGUSER = env_get("PGUSER")

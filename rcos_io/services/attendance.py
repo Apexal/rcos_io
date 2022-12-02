@@ -12,7 +12,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, cast
 from gql import Client
-from rcos_io.services import cache, database
+from rcos_io.services import cache, database_old
 
 ATTENDANCE_CODE_LENGTH = 6
 EXPIRATION_MINUTES = 30
@@ -78,7 +78,7 @@ def record_attendance(client: Client, user_id: str, meeting_id: str):
     to the cache so that it is very quick to verify if someone has already
     recorded an attendance for a meeting -- no extra database calls!
     """
-    database.insert_attendance(client, user_id, meeting_id)
+    database_old.insert_attendance(client, user_id, meeting_id)
     cache.get_cache().sadd("recorded_attendances", f"{user_id}:{meeting_id}")
 
     # Refresh the expiration of the table to be 30 minutes after the *last*

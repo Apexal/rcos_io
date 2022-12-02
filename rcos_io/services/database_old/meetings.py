@@ -110,3 +110,4 @@ def update_meeting(client: Client, meeting_id: str, meeting_data: Dict[str, Any]
     """
     )
     result = client.execute(query)
+    return result
