@@ -16,7 +16,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import database, discord, utils
+from rcos_io.services import database_old, discord, utils
 from rcos_io.blueprints.auth import coordinator_or_above_required, login_required
 
 bp = Blueprint("users", __name__, template_folder="templates")
@@ -49,7 +49,7 @@ def index():
     }
 
     try:
-        context["users"] = database.get_users(g.db_client, semester_id=semester_id)
+        context["users"] = database_old.get_users(g.db_client, semester_id=semester_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Yikes! Failed to fetch users.", "danger")
@@ -57,7 +57,9 @@ def index():
 
     # Only coordinators+ need to know about unverified users
     if session.get("is_coordinator_or_above"):
-        context["unverified_users"] = database.get_users(g.db_client, is_verified=False)
+        context["unverified_users"] = database_old.get_users(
+            g.db_client, is_verified=False
+        )
 
     return render_template("users/index.html", **context)
 
@@ -69,7 +71,7 @@ def verify():
     """Renders the list of **unverified** users and handles verifying them."""
     if request.method == "GET":
         try:
-            unverified_users = database.get_users(g.db_client, is_verified=False)
+            unverified_users = database_old.get_users(g.db_client, is_verified=False)
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash(
@@ -96,7 +98,7 @@ def verify():
     # Apply action
     if target_user_action == "verify":
         flash(f"Verified user {target_user_id}", "success")
-        database.update_user(g.db_client, target_user_id, {"is_verified": True})
+        database_old.update_user(g.db_client, target_user_id, {"is_verified": True})
     else:
         # TODO: actually delete user
         flash(f"Deleted user {target_user_id}", "info")
@@ -109,7 +111,9 @@ def detail(user_id: str):
     """Renders a specific user's profile."""
 
     try:
-        user = database.get_user(g.db_client, user_id=user_id, include_enrollments=True)
+        user = database_old.get_user(
+            g.db_client, user_id=user_id, include_enrollments=True
+        )
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("That is not a valid user ID!", "warning")

@@ -23,7 +23,7 @@ from flask import (
 )
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import github, discord, email, utils, database, settings
+from rcos_io.services import github, discord, email, utils, database_old, settings
 
 C = TypeVar("C", bound=Callable[..., Any])
 
@@ -48,7 +48,7 @@ def load_logged_in_user():
 
     # Fetch and store semester in session if not there or if it's changed
     if not session.get("semesters"):
-        session["semesters"] = database.get_semesters(g.db_client)
+        session["semesters"] = database_old.get_semesters(g.db_client)
 
     if not session.get("semester") or session["semester"]["end_date"] < str(
         date.today()
@@ -66,7 +66,7 @@ def load_logged_in_user():
             or "is_coordinator_or_above" not in session
             or "is_faculty_advisor" not in session
         ):
-            enrollment = database.get_enrollment(
+            enrollment = database_old.get_enrollment(
                 g.db_client, g.user["id"], session["semester"]["id"]
             )
             if enrollment:
@@ -293,7 +293,7 @@ def login():
 
     # Try sending OTP via Discord direct message
     try:
-        user = database.get_user(g.db_client, email=user_email)
+        user = database_old.get_user(g.db_client, email=user_email)
         if user and user["discord_user_id"]:
             dm_channel = discord.create_user_dm_channel(user["discord_user_id"])
             discord.dm_user(
@@ -350,7 +350,7 @@ def submit_otp():
     ### Correct OTP, time to login! ###
 
     # Find or create the user from the email entered
-    session["user"], is_new_user = database.get_or_create_user_by_email(
+    session["user"], is_new_user = database_old.get_or_create_user_by_email(
         g.db_client, user_email, "rpi" if "@rpi.edu" in user_email else "external"
     )
     g.user = session["user"]
@@ -378,7 +378,7 @@ def impersonate():
 
     # Find or create the user from the email entered
     try:
-        user = database.get_user(g.db_client, rcs_id=rcs_id, user_id=user_id)
+        user = database_old.get_user(g.db_client, rcs_id=rcs_id, user_id=user_id)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("No user ID or RCS ID provided.", "warning")
@@ -583,7 +583,7 @@ def update_logged_in_user(updates: Dict[str, Any]):
     2. Updates `session['user']` and `g.user`
     3. Updates Discord nickname if linked
     """
-    session["user"] = database.update_user(g.db_client, g.user["id"], updates)
+    session["user"] = database_old.update_user(g.db_client, g.user["id"], updates)
     g.user = session["user"]
 
     # Update Discord nickname

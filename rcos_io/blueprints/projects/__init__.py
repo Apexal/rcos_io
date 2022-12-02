@@ -21,7 +21,7 @@ import bleach
 import markdown
 from graphql.error import GraphQLError
 from gql.transport.exceptions import TransportQueryError
-from rcos_io.services import utils, database
+from rcos_io.services import utils, database_old
 from rcos_io.blueprints import auth
 
 C = TypeVar("C", bound=Callable[..., Any])
@@ -36,7 +36,7 @@ def for_project(view: C) -> C:
     def wrapped_view(**kwargs: Any):
         # Attempt to fetch meeting
         try:
-            project = database.get_project(g.db_client, kwargs["project_id"])
+            project = database_old.get_project(g.db_client, kwargs["project_id"])
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("There was an error fetching the project.", "warning")
@@ -101,7 +101,7 @@ def index():
 
     # Attempt to fetch APPROVED projects
     try:
-        context["projects"] = database.get_projects(
+        context["projects"] = database_old.get_projects(
             g.db_client,
             False,
             semester_id=semester_id,
@@ -114,7 +114,7 @@ def index():
 
     # Only coordinators+ need to know about unapproved projects
     if session.get("is_coordinator_or_above"):
-        context["unapproved_projects"] = database.get_projects(
+        context["unapproved_projects"] = database_old.get_projects(
             g.db_client, False, is_approved=False
         )
 
@@ -151,7 +151,7 @@ def add():
     }
 
     try:
-        inserted_project = database.add_project(g.db_client, project_data)
+        inserted_project = database_old.add_project(g.db_client, project_data)
     except (GraphQLError, TransportQueryError) as error:
         current_app.logger.exception(error)
         flash("Oops! There was en error while submitting the project.", "danger")
@@ -176,7 +176,7 @@ def approve():
     """Renders the list of **unapproved** projects and handles verifying them."""
     if request.method == "GET":
         try:
-            unapproved_projects = database.get_projects(
+            unapproved_projects = database_old.get_projects(
                 g.db_client, False, is_approved=False
             )
 
@@ -275,14 +275,16 @@ def add_member(project_id: str):
     credit_count = int(request.form["credits"])
 
     # TODO: error handle
-    user = database.get_user(g.db_client, email=user_identifier, rcs_id=user_identifier)
+    user = database_old.get_user(
+        g.db_client, email=user_identifier, rcs_id=user_identifier
+    )
 
     if user is None:
         flash("Student not found!", "danger")
         return redirect(url_for("projects.detail", project_id=project_id))
 
     # TODO: error handle
-    database.set_enrollment(
+    database_old.set_enrollment(
         g.db_client,
         {
             "semester_id": semester_id,

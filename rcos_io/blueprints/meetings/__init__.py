@@ -26,7 +26,7 @@ from rcos_io.blueprints.auth import (
     rpi_required,
     mentor_or_above_required,
 )
-from rcos_io.services import attendance, database, utils
+from rcos_io.services import attendance, database_old, utils
 from . import forms
 
 C = TypeVar("C", bound=Callable[..., Any])
@@ -41,7 +41,7 @@ def for_meeting(view: C) -> C:
     def wrapped_view(**kwargs: Any):
         # Attempt to fetch meeting
         try:
-            meeting = database.get_meeting(g.db_client, kwargs["meeting_id"])
+            meeting = database_old.get_meeting(g.db_client, kwargs["meeting_id"])
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("There was an error fetching the meeting.", "warning")
@@ -82,7 +82,7 @@ def events_api():
     )
 
     # Fetch meetings
-    meetings = database.get_meetings(
+    meetings = database_old.get_meetings(
         g.db_client, only_published=True, start_at=start, end_at=end
     )
 
@@ -139,7 +139,7 @@ def add():
 
         # Attempt to insert meeting into database
         try:
-            new_meeting = database.insert_meeting(g.db_client, meeting)
+            new_meeting = database_old.insert_meeting(g.db_client, meeting)
         except (GraphQLError, TransportQueryError) as error:
             current_app.logger.exception(error)
             flash("Yikes! Failed to add meeting. Check logs.", "danger")
@@ -209,12 +209,12 @@ def verify_attendance():
         return "Failed to verify user. Are you sure the RCS ID is spelled correct?", 400
 
     # get the user ID from RCS ID
-    user = database.get_user(g.db_client, user_id=user_id)
+    user = database_old.get_user(g.db_client, user_id=user_id)
     if user is None:
         return "Can't find user with that RCS ID!", 400
 
     # successfully verified; submit attendence for the verified user
-    database.insert_attendance(g.db_client, user["id"], meeting_id)
+    database_old.insert_attendance(g.db_client, user["id"], meeting_id)
 
     return "Successfully verified!", 200
 
@@ -257,7 +257,7 @@ def edit(meeting_id: str):
 
     if form.validate_on_submit():
         form.populate_obj(g.meeting)
-        database.update_meeting(g.db_client, meeting_id, g.meeting)
+        database_old.update_meeting(g.db_client, meeting_id, g.meeting)
         flash("Updated meeting.", "info")
         return redirect(url_for("meetings.detail", meeting_id=meeting_id))
 
@@ -279,11 +279,11 @@ def meeting_attendance(meeting_id: str):
     small_group_id: Optional[str] = request.args.get("small_group_id")
     small_group: Optional[Dict[str, Any]] = None
     if small_group_id is None:
-        small_group = database.get_mentor_small_group(
+        small_group = database_old.get_mentor_small_group(
             g.db_client, semester_id, g.user["id"]
         )
     else:
-        small_group = database.get_small_group(g.db_client, small_group_id)
+        small_group = database_old.get_small_group(g.db_client, small_group_id)
 
     # If we have a small group ID, make sure it's real
     if small_group_id and not small_group:
@@ -291,7 +291,7 @@ def meeting_attendance(meeting_id: str):
         return redirect(url_for("meetings.meeting_attendance", meeting_id=meeting_id))
 
     # Get this meeting's attendances
-    attendances = database.get_attendances(
+    attendances = database_old.get_attendances(
         g.db_client, meeting_id=meeting_id, small_group_id=small_group_id
     )
 
@@ -306,9 +306,9 @@ def meeting_attendance(meeting_id: str):
         )
 
         if small_group is None:
-            expected_attendee_users = database.get_users(g.db_client, semester_id)
+            expected_attendee_users = database_old.get_users(g.db_client, semester_id)
         else:
-            expected_attendee_enrollments = database.get_small_group_enrollments(
+            expected_attendee_enrollments = database_old.get_small_group_enrollments(
                 g.db_client, small_group["id"]
             )
             expected_attendee_users = [
@@ -346,7 +346,7 @@ def open_attendance(meeting_id: str):
 
         # Find this mentor's small group
         try:
-            small_group = database.get_mentor_small_group(
+            small_group = database_old.get_mentor_small_group(
                 g.db_client, semester_id, user["id"]
             )
             if small_group is None:
